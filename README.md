@@ -1,5 +1,6 @@
-![logo](img/diskbutler.png) 
-#Diskbutler
+![logo](img/diskbutler.png)
+
+# Diskbutler
 
 ## The free x-platform CD/DVD/BD recording software
 
