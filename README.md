@@ -1,10 +1,9 @@
 # diskbutler
 
-## Precision colors for machines and people
+## The free x-platform CD/DVD/BD recording software
 
-Solarized is a sixteen color palette (eight monotones, eight accent colors)
-designed for use with terminal and gui applications. It has several [unique
-properties](#features). I designed this colorscheme with both precise
+Diskbutler was born some times ago to bring a professional CD/DVD/BD recording software, that will work on macOS, Linux and Windows and with the full features set, to the end user. 
+Diskbutler is written in QT and use the well know FoxBurner SDK.
 
 ![logo](img/diskbutler.png)
 
