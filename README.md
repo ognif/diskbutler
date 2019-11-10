@@ -1,8 +1,5 @@
 # diskbutler
 
-Solarized
-=========
-
 ## Precision colors for machines and people
 
 Solarized is a sixteen color palette (eight monotones, eight accent colors)
