@@ -1,3 +1,22 @@
+/*
+ *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
+ *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License 3 as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
@@ -11,6 +30,7 @@
 #include "mdichild_diskinfo.h"
 #include "mdichild_deviceinfo.h"
 #include "mdichild_hex.h"
+#include "mdichild_scan.h"
 
 class MdiChildDialog;
 QT_BEGIN_NAMESPACE
@@ -52,6 +72,8 @@ private:
     MdiChildDiskInfo *activeMdiInfoChild();
     MdiChildDeviceInfo *activeMdiDeviceChild();
     MdiChildHex *activeMdiHexChild();
+    MdiChildScan *activeMdiScanChild();
+
 
     QMdiSubWindow *currentSubWindow;
     QMdiSubWindow *findMdiChild(const QString &fileName, bool isFile = true);
@@ -62,6 +84,7 @@ private:
 
     void createStatusBar();
     QLabel *mStatusTextLabel;
+    QLabel *mStatusInfoLabel;
 
     void createOwnMenuBar();
 
@@ -213,6 +236,7 @@ private slots:
 
     void newDiskInfo();
     void openHexEditor();
+    void openScanDialog();
     void newDeviceInfo();
 
     void burnDriveChanged(int index);

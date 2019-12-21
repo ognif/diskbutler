@@ -1,4 +1,24 @@
 /*
+ *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
+ *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License 3 as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+
+/* Todos
  * Die Buttons für die Fenster Ansicht einbauen.
  * AddFile etc. nur Aktiv wenn Project aktiv ist. Folder Regeln beobachten.
  * Im Moment sind ja Gruppe inaktiv also auch die Gruppenbeueichnungen, ich finde es aber besse wenn ur die Buttons selber,
@@ -56,10 +76,11 @@ void CheckVersionThread::run()
     if (reply->error() == QNetworkReply::NoError) {
         //success
         QString strReply = (QString)reply->readAll();
+        qDebug("List: %s",strReply.toLatin1().constData());
         QJsonDocument jsonResponse = QJsonDocument::fromJson(strReply.toUtf8());
         QJsonObject jsonObj = jsonResponse.object();
 
-        //qDebug() << jsonObj["Version"].toString();
+        qDebug() << jsonObj["Version"].toString();
 
         if(jsonObj["Version"].toString().compare("no")!=0){
             emit tNewVersion(jsonObj["Version"].toString());
@@ -69,6 +90,7 @@ void CheckVersionThread::run()
     }
 }
 
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -76,6 +98,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     setWindowTitle(tr("Diskbutler"));
+
 
 #if defined (LINUX)
     QString mLicense = "A2JTSM-V8L7AO-G2RA75-AU0L0A-KPM0GP";
@@ -105,14 +128,11 @@ MainWindow::MainWindow(QWidget *parent) :
      mdiArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
      setCentralWidget(mdiArea);
 
-
-
      res = ::CreateProject(BS_BURNER_ISOUDF,BS_CONTINUE_NO_SESSION );
      if(res!=0){
          QMessageBox::information(this, tr("Information"),
                                   tr("Error in Create Projekt"));
      }
-
 
      //Test Versionchecker here. Will it block the UI?
      mCheckVersionThread  = new CheckVersionThread();
@@ -131,7 +151,6 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addTab(QIcon(":/icons/extiso.png"), tr("ISO Extended"));
      ui->ribbonTabWidget->addTab(QIcon(":/icons/boot.png"), tr("Boot Disc"));
      ui->ribbonTabWidget->addTab(QIcon(":/icons/025.png"), tr("View"));
-
 
      // Add 'Open project' button
      dataIsoProjectButton = new QToolButton;
@@ -325,11 +344,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 
-
-
-
-
-
      QHBoxLayout *readdevices = new QHBoxLayout(this);
      QWidget * wdgReadDiskWidget = new QWidget(this);
 
@@ -417,7 +431,7 @@ MainWindow::MainWindow(QWidget *parent) :
      scanMediaButton->setIcon(QIcon(":/icons/diskscan.png"));
      scanMediaButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("Device"), tr("Media"), scanMediaButton,nullptr);
-     //connect(scanMediaButton, SIGNAL(clicked()), this, SLOT(reverseSelection()));
+     connect(scanMediaButton, SIGNAL(clicked()), this, SLOT(openScanDialog()));
 
      hexMediaButton = new QToolButton;
      hexMediaButton->setText(tr("Sector Viewer"));
@@ -442,7 +456,6 @@ MainWindow::MainWindow(QWidget *parent) :
                 this, SLOT(updateBurnDeviceSel(QListWidgetItem*)));
 
      fillBurnDriveList();
-
 
      burndevices->addWidget(listBurnDevicesWidget);
      burndevices->setContentsMargins(3,0,3,0);
@@ -645,8 +658,7 @@ MainWindow::MainWindow(QWidget *parent) :
      eraseGeneralButton->setIcon(QIcon(":/icons/Erase_32.png"));
      eraseGeneralButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("General"), tr("Execute"), eraseGeneralButton,nullptr);
-     //connect(dataUdfProjectButton, SIGNAL(clicked()), mapperNewFile, SLOT(map()));
-
+     //connect(dataUdfProjectButton, SIGNAL(clicked()), mapperNewFile, SLOT(map()));;
 
      //View
      viewBrowserButton = new QToolButton;
@@ -1008,8 +1020,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
      ui->ribbonTabWidget->addWidgetGroup(tr("Boot Disc"), tr("El-Torito"), wdgBootFeatues);
 
-
-
      //ISO Extended
      //Group Selection
      //Track & Session
@@ -1041,15 +1051,49 @@ MainWindow::MainWindow(QWidget *parent) :
 
 }
 
+
+
 void MainWindow::createStatusBar()
 {
-  mStatusTextLabel = new QLabel;
-  mStatusTextLabel->setText(tr("Ready"));
-  statusBar()->addPermanentWidget(mStatusTextLabel);
 
-  //statusBar()->showMessage(tr("Ready"));
-  //connect(statusBar(), SIGNAL(status_changed(const QString&)),
-  //        this, SLOT(statusbar_changed(const QString&)));
+  /*
+   * Ich möchte gerne links Info Text und recht Status text, dzwischen einen Spacer
+   * Horizontal Layout
+   * Label
+   * Spacer
+   * Label
+   * Und los
+   */
+
+  QHBoxLayout *statusbarLayout = new QHBoxLayout(this);
+  QWidget * statusWidget = new QWidget(this);
+
+  mStatusInfoLabel = new QLabel;
+  mStatusInfoLabel->setText(tr("..."));
+  mStatusInfoLabel->setAlignment(Qt::AlignLeft);
+  mStatusInfoLabel->setSizePolicy(QSizePolicy::Expanding,
+                       QSizePolicy::Expanding);
+
+  mStatusTextLabel = new QLabel;
+  mStatusTextLabel->setText(tr("Welcome to Diskbutler"));
+  mStatusTextLabel->setSizePolicy(QSizePolicy::Expanding,
+                       QSizePolicy::Expanding);
+
+  QSpacerItem *item = new QSpacerItem(1,1, QSizePolicy::Expanding, QSizePolicy::Fixed);
+
+  statusbarLayout->addWidget(mStatusInfoLabel);
+  statusbarLayout->addSpacerItem(item);
+  statusbarLayout->addWidget(mStatusTextLabel);
+
+
+  statusbarLayout->setContentsMargins(0,0,0,0);
+  statusbarLayout->setSpacing(0);
+  statusbarLayout->setMargin(0);
+
+  statusWidget->setLayout(statusbarLayout);
+
+  statusBar()->addPermanentWidget(statusWidget,1);
+
 }
 
 void MainWindow::statusbar_changed(const QString &text)
@@ -1127,7 +1171,8 @@ void MainWindow::newProject(int type)
     //str += "  Support: ";
     //str += RuleManager::GetOptionsStr(projectType);
     //statusBar()->showMessage(str);
-    updateStatusBarText(str);
+    //updateStatusBarText(str);
+    updateStatusBarText(child->updateStatus());
 
     //Switch to Tab Edit to start direktly with editing projekt.
     //Maybe we will do this editable.
@@ -1192,6 +1237,14 @@ MdiChildHex *MainWindow::activeMdiHexChild()
 {
     if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
         return qobject_cast<MdiChildHex *>(activeSubWindow->widget());
+    }
+    return nullptr;
+}
+
+MdiChildScan *MainWindow::activeMdiScanChild()
+{
+    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
+        return qobject_cast<MdiChildScan *>(activeSubWindow->widget());
     }
     return nullptr;
 }
@@ -1715,6 +1768,7 @@ void MainWindow::insertCustomRibbonTabs()
     bool hasMdiInfoChild = (activeMdiInfoChild() != nullptr);
     bool hasMdiDeviceChild = (activeMdiDeviceChild() != nullptr);
     bool hasMdiHexChild = (activeMdiHexChild() != nullptr);
+    bool hasMdiScanChild = (activeMdiScanChild() != nullptr);
 
     //This call hinder us to hide all initilaized Tabs, because on statrup this dialog is not finished.
     if(QWidget::isActiveWindow()){
@@ -1753,7 +1807,7 @@ void MainWindow::insertCustomRibbonTabs()
             }else{
                 ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
             }
-        }else if(hasMdiInfoChild || hasMdiDeviceChild || hasMdiHexChild){
+        }else if(hasMdiInfoChild || hasMdiDeviceChild || hasMdiHexChild || hasMdiScanChild){
             ui->ribbonTabWidget->currentTab(tr("Device"));
             if(hasProjectWindow()==false){
                 ui->ribbonTabWidget->hideTab(tr("File System"));
@@ -1797,12 +1851,13 @@ void MainWindow::updateProjectRibbon()
     bool hasMdiInfoChild = (activeMdiInfoChild() != nullptr);
     bool hasMdiDeviceChild = (activeMdiDeviceChild() != nullptr);
     bool hasMdiHexChild = (activeMdiHexChild() != nullptr);
+    bool hasMdiScanChild = (activeMdiScanChild() != nullptr);
 
     //if(QWidget::isActiveWindow()){
 
 
-        scanMediaButton->setEnabled(hasMdiInfoChild);
-        hexMediaButton->setEnabled(true);
+        //scanMediaButton->setEnabled(hasMdiScanChild);
+        //hexMediaButton->setEnabled(hasMdiHexChild);
         imageMediaButton->setEnabled(hasMdiInfoChild);
 
         viewTileButton->setEnabled(hasMdiChild);
@@ -2828,7 +2883,8 @@ void MainWindow::createOwnMenuBar()
 
 void MainWindow::onNewVersionAvail(QString newVersion)
 {
-    QMessageBox::information(this, tr("New Version"),newVersion);
+    //QMessageBox::information(this, tr("New Version"),newVersion);
+    QMessageBox::information(this, tr("New Version"),tr("Pupsi version"));
 
     //----------------------------------------------------------------------------------------------
     //Additional Infos PHP Version file with json
@@ -2915,6 +2971,44 @@ void MainWindow::openHexEditor()
     //Müssen wir dasa active subfenster definieren des Hex Editors.
 }
 
+void MainWindow::openScanDialog()
+{
+    if(listReadDevicesWidget->count()==0) return;
+
+    //Then we check if there is a selction
+    QListWidgetItem* itemFromList = listReadDevicesWidget->currentItem();
+    if(itemFromList==nullptr) return;
+
+    QString strDriveName = itemFromList->text();
+
+    foreach (QMdiSubWindow *window, mdiArea->subWindowList()) {
+      MdiChildScan *mdiChild = qobject_cast<MdiChildScan *>(window->widget());
+      if (nullptr != mdiChild){
+          //We have now a DeviceInfo child.
+          //We will check now the drive. If the drive is the same, we pop up the mdichild to top.
+          //And return
+          //else we will create a new one
+          //RuleManager::ProjectType myType = mdiChild->GetProjectType();
+          if(strDriveName.at(0)==mdiChild->getBurnDrive().at(0)){
+            mdiArea->setActiveSubWindow(window);
+            return;
+          }
+
+      }
+    }
+
+    MdiChildScan *child = new MdiChildScan(this,strDriveName);
+    mdiArea->addSubWindow(child);
+
+    if(isCascaded()==false){
+        child->showMaximized();
+    }else{
+        child->showNormal();
+    }
+}
+
+
+
 void MainWindow::newDiskInfo()
 {
 
@@ -2944,13 +3038,21 @@ void MainWindow::newDiskInfo()
     }
 
     MdiChildDiskInfo *child = new MdiChildDiskInfo(this,strDriveName);
-    mdiArea->addSubWindow(child);
+    //We will create the child and set the errorhandle inside the class.
+    //If success, we call addSubWindow, if not we will delete it.
+    if(child->thisSuccessfullCreated==true){
+        mdiArea->addSubWindow(child);
 
-    if(isCascaded()==false){
-        child->showMaximized();
+        if(isCascaded()==false){
+            child->showMaximized();
+        }else{
+            child->showNormal();
+        }
     }else{
-        child->showNormal();
+        child->close();
     }
+
+
     //insertCustomRibbonPages();
     //specialActionDiskInfo();
 

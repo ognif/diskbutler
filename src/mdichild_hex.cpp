@@ -1,13 +1,34 @@
+/*
+ *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
+ *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License 3 as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include <QtWidgets>
 #include "mdichild_hex.h"
 #include "FoxSDKBurningLib.h"
 #include "mainwindow.h"
 #include "settingspages.h"
+#include "messanger.h"
 
 MdiChildHex::MdiChildHex(QWidget* parent, const QString &device)
     :strBurnDrive(device){
     setAttribute(Qt::WA_DeleteOnClose);
     mProjectType = RuleManager::TYPE_PROJECT_DEVICEINFO;
+    thisSuccessfullCreated = true;
 
     hexView = new QHexView();
 
@@ -44,7 +65,7 @@ MdiChildHex::MdiChildHex(QWidget* parent, const QString &device)
     updateButton->setFont(font);
     updateButton->setToolTip(tr("Read again the selected drive"));
     updateButton->setText("\uf2f1");
-    connect(updateButton, SIGNAL(clicked()), this, SLOT(updateHex()));
+    //connect(updateButton, SIGNAL(clicked()), this, SLOT(updateHex()));
 
     firstButton = new QPushButton();
     firstButton->setFont(font);
@@ -109,12 +130,11 @@ int32 MdiChildHex::ReadSector(int32 sectorIndex) const
     char *buf = new char[2352];
     QByteArray mdata;
 
-    qDebug("readSector %d",sectorIndex);
 
-    int32 ret = ::ReadSectors(BS_READ_DEVICE, sectorIndex, 1, BS_IMG_ISO, buf, bufferSize);
+    int32 ret = ::ReadSectors(BS_CURRENT_DEVICE, sectorIndex, 1, BS_IMG_ISO, buf, bufferSize);
+    //showDiskbutlerMessage(ret, this);
 
     if (ret != BS_SDK_ERROR_NO){
-
         return ret;
     }
 
@@ -190,22 +210,21 @@ void MdiChildHex::prevSector()
 void MdiChildHex::updateHex()
 {
     //OK, the UI was set, now we need to read the sectors to bytearray.
-    int32 ret = ::SetReadDevice(strBurnDrive.at(0).toLatin1());
-    if (ret != BS_SDK_ERROR_NO){
-        QMessageBox::information(this, tr("Information"),
-                                 tr("FoxSDK Error Device"));
+    int32 ret = ::SetBurnDevice(strBurnDrive.at(0).toLatin1());
+    if(showDiskbutlerMessage(ret, this)==false) {
+        thisSuccessfullCreated = false;
         return;
     }
 
     //We need here threading function with isDeviceReady call.
+    BS_BOOL	bReady = BS_FALSE;
+    ::IsDeviceReady(BS_CURRENT_DEVICE, &bReady);
 
     bool bIsEmptyDisk = false;
     SMediumInfo mi;
-    ret = ::GetMediumInformation(BS_READ_DEVICE, &mi);
-
-    if (ret != BS_SDK_ERROR_NO){
-        QMessageBox::information(this, tr("Information"),
-                                 tr("FoxSDK Error Get Mediainfo"));
+    ret = ::GetMediumInformation(BS_CURRENT_DEVICE, &mi);
+    if(showDiskbutlerMessage(ret, this)==false) {
+        thisSuccessfullCreated = false;
         return;
     }
 
@@ -226,9 +245,9 @@ void MdiChildHex::updateHex()
         editSectors->setValue(0);
 
         ret = ReadSector(0);
-        if (ret != BS_SDK_ERROR_NO){
-            QMessageBox::information(this, tr("Information"),
-                                 tr("FoxSDK Error Read Sector"));
+        if(showDiskbutlerMessage(ret, this)==false) {
+            thisSuccessfullCreated = false;
+            return;
         }
     }
 

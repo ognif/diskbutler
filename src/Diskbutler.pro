@@ -132,9 +132,11 @@ SOURCES_MODEL = \
     model/zInfoTableModel.cpp \
     model/zallocation_table_model.cpp
 HEADERS_HEX = \
-    hex/QHexView.h
+    hex/QHexView.h \
+    hex/QScanBoard.h
 SOURCES_HEX = \
-    hex/QHexView.cpp
+    hex/QHexView.cpp \
+    hex/QScanBoard.cpp
 
 SOURCES += $${SOURCES_CONTROLS} \
         $${SOURCES_NODES} \
@@ -156,7 +158,9 @@ SOURCES += $${SOURCES_CONTROLS} \
         mdichild_dialog.cpp \
         mdichild_diskinfo.cpp \
         mdichild_hex.cpp \
+        mdichild_scan.cpp \
         settingspages.cpp \
+        utils/messanger.cpp \
         xbelgenerator.cpp \
         xbelhandler.cpp
 
@@ -181,7 +185,9 @@ HEADERS += $${HEADERS_CONTROLS} \
         mdichild_dialog.h \
         mdichild_diskinfo.h \
         mdichild_hex.h \
+        mdichild_scan.h \
         settingspages.h \
+        utils/messanger.h \
         xbelgenerator.h \
         xbelhandler.h
 

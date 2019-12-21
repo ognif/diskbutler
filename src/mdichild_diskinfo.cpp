@@ -1,8 +1,28 @@
+/*
+ *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
+ *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License 3 as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include <QtWidgets>
 #include "mdichild_diskinfo.h"
 #include "FoxSDKBurningLib.h"
 #include "mainwindow.h"
 #include "settingspages.h"
+#include "messanger.h"
 
 MdiChildDiskInfo::MdiChildDiskInfo(QWidget* parent, const QString &device)
     :strBurnDrive(device){
@@ -26,12 +46,12 @@ MdiChildDiskInfo::MdiChildDiskInfo(QWidget* parent, const QString &device)
       bEraseFast = true;
       strImagePath = tr("");
       nImageCreateMethode = 0;
+      thisSuccessfullCreated = true;
 
       QString wTitle = tr("Disk Info");
       wTitle += " (";
       wTitle += strBurnDrive;
       wTitle += ")";
-
 
       setWindowTitle(wTitle);
 
@@ -50,7 +70,6 @@ MdiChildDiskInfo::MdiChildDiskInfo(QWidget* parent, const QString &device)
 
 
       readDiskInfo();
-
 }
 
 void MdiChildDiskInfo::updateDiskInfo()
@@ -107,8 +126,7 @@ int32 MdiChildDiskInfo::ExtractTrackTextFromHandle(int32 handle, int32 nTrack, i
     int32 res;
 
     res = ::GetCDTextTrackTagString(handle, nTrack, nCDTCI, nullptr, &nLen);
-    if(res != BS_SDK_ERROR_NO)
-    {
+    if(showDiskbutlerMessage(res, this)==false) {
         return res;
     }
 
@@ -120,8 +138,7 @@ int32 MdiChildDiskInfo::ExtractTrackTextFromHandle(int32 handle, int32 nTrack, i
 
     TCHAR *pBuf = new TCHAR[nLen];
     res = ::GetCDTextTrackTagString(handle, nTrack, nCDTCI, pBuf, &nLen);
-    if(res != BS_SDK_ERROR_NO)
-    {
+    if(showDiskbutlerMessage(res, this)==false) {
         delete[] pBuf;
         return res;
     }
@@ -211,8 +228,18 @@ void MdiChildDiskInfo::readDiskInfo()
 
     stDiskInfo.strMediaSpeeds = tmp;
 
+
+    BS_BOOL	bReady = BS_FALSE;
+    int32 nError = ::IsDeviceReady(BS_CURRENT_DEVICE, &bReady);
+
+
     SMediumInfo mi;
-    int32 nError = ::GetMediumInformation(BS_CURRENT_DEVICE, &mi);
+    nError = ::GetMediumInformation(BS_CURRENT_DEVICE, &mi);
+    if(showDiskbutlerMessage(nError, this)==false) {
+        thisSuccessfullCreated=false;
+        return;
+    }
+
 
     isEraseable = false;
 
@@ -227,10 +254,19 @@ void MdiChildDiskInfo::readDiskInfo()
     }
 
 
-    for (int32 i = mi.nFirstSession; i <= mi.nLastSession; i++)
+
+    //for (int32 i = mi.nFirstSession; i <= mi.nLastSession; i++)
+    //nLastSession = 0 is invalid. But the block before is valid for virtual disc from Image Writer.
+    //So we need to stop try to read from lastSession = 0 but avoid a return.
+    for (int32 i = mi.nFirstSession; i <= mi.nLastSession && ( mi.nLastSession != 0); i++)
     {
         SSessionInfo si;
-        ::GetSessionInformation(BS_CURRENT_DEVICE, i, &si);
+        nError = ::GetSessionInformation(BS_CURRENT_DEVICE, i, &si);
+        if(showDiskbutlerMessage(nError, this)==false) {
+            thisSuccessfullCreated=false;
+            return;
+        }
+
         //SessionSize are sectors? What to do with CD and AudioCD?
 
         QTreeWidgetItem *treechildItem = new QTreeWidgetItem();
@@ -242,10 +278,15 @@ void MdiChildDiskInfo::readDiskInfo()
         double nDiskSize = 0.0;
 
         //Now we need to start the loop
-        for(int32 j = si.nFirstTrack; j <= si.nLastTrack; ++j)
+
+        for (int32 j = si.nFirstTrack; j <= si.nLastTrack && ( si.nLastTrack != 0); ++j)
         {
             STrackInfo ti;
-            ::GetTrackInformation(BS_CURRENT_DEVICE, j, &ti);
+            nError = ::GetTrackInformation(BS_CURRENT_DEVICE, j, &ti);
+            if(showDiskbutlerMessage(nError, this)==false) {
+                thisSuccessfullCreated=false;
+                return;
+            }
 
             QString strInformation;
             switch(ti.nFormat)
@@ -283,11 +324,20 @@ void MdiChildDiskInfo::readDiskInfo()
 
                     //iso
                     HSESSION hSession = nullptr;
-                    ::OpenDiskSession(BS_CURRENT_DEVICE, j, &hSession, BS_FS_ISO9660);
+                    nError = ::OpenDiskSession(BS_CURRENT_DEVICE, j, &hSession, BS_FS_ISO9660);
+                    if(showDiskbutlerMessage(nError, this)==false) {
+                        thisSuccessfullCreated=false;
+                        return;
+                    }
+
                     if(hSession){
                         stISOInfo.isISO = 1;
                         SISOVolumeInfo pISOVolumeInfo;
-                        ::GetISOVolumeInformation(hSession, &pISOVolumeInfo);
+                        nError = ::GetISOVolumeInformation(hSession, &pISOVolumeInfo);
+                        if(showDiskbutlerMessage(nError, this)==false) {
+                            thisSuccessfullCreated=false;
+                            return;
+                        }
 
 #if defined (WIN32)
     stISOInfo.strVolumeLabel = QString::fromUtf16(pISOVolumeInfo.chVolumeLabel);
@@ -374,7 +424,11 @@ void MdiChildDiskInfo::readDiskInfo()
 
                     //UDF Version will be fine
                     HSESSION hSession = nullptr;
-                    ::OpenDiskSession(BS_CURRENT_DEVICE, j, &hSession, BS_FS_UDF);
+                    nError = ::OpenDiskSession(BS_CURRENT_DEVICE, j, &hSession, BS_FS_UDF);
+                    if(showDiskbutlerMessage(nError, this)==false) {
+                        thisSuccessfullCreated=false;
+                        return;
+                    }
 
                     if(hSession){
                         stUDFInfo.isUDF = 1;
@@ -1141,6 +1195,13 @@ void MdiChildDiskInfo::readDiskInfo()
 
     //myUpdateMenus->trigger();
 
-
+    QString style(
+        "QTableView:disabled {"
+            "gridline-color: #32414B;"
+                "border: 1px solid #32414B;"
+                  "color: #32414B;"
+        "}"
+    );
+    diskInfoTable->setStyleSheet(style);
 
 }

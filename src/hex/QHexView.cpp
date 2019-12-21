@@ -1,3 +1,22 @@
+/*
+ *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
+ *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License 3 as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include "QHexView.h"
 #include <QScrollBar>
 #include <QPainter>
@@ -89,8 +108,22 @@ QSize QHexView::fullSize() const
 
 void QHexView::paintEvent(QPaintEvent *event)
 {
-	if(!m_pdata)
-		return;
+    if(!m_pdata){
+        QPainter painter(viewport());
+        QSize areaSize = viewport()->size();
+        QString dataMessage = tr("Empty disc. No data available.");
+        painter.fillRect(event->rect(), this->palette().color(QPalette::Base));
+
+        int pX = (areaSize.width()/2)-((m_charWidth*dataMessage.length())/2);
+        int pY = areaSize.height()/2;
+
+        painter.setPen(Qt::darkGray);
+
+
+        painter.drawText(pX, pY, dataMessage);
+        return;
+    }
+
 	QPainter painter(viewport());
 
 	QSize areaSize = viewport()->size();

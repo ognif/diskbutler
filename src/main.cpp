@@ -1,3 +1,22 @@
+/*
+ *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
+ *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License 3 as published by
+ *  the Free Software Foundation; either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License 3 for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
 #include "mainwindow.h"
 #include <QApplication>
 #include <QTranslator>
@@ -6,11 +25,11 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    QSharedMemory shared("61BB200D-3579-453e-9044-#41");
+    QSharedMemory shared("61BB200D-3579-453e-9044-#74");
     if(!shared.create(512,QSharedMemory::ReadWrite)==true)
     {
         //OK, we now dissallow the app to start twice but we need the possibility to push up the existing window.
-        exit(0);
+       // exit(0);
     }
 
     auto teststyle = R"(
@@ -57,6 +76,8 @@ int main(int argc, char *argv[])
 
     MainWindow w;
     w.show();
+    int result = a.exec();
 
-    return a.exec();
+    shared.detach();
+    return result;
 }
