@@ -1,0 +1,10 @@
+# exclude everything
+                            # allure/allure-results/*
+                            # allure/screenshots/*
+                            node_modules/*
+                            .idea/*
+                            package-lock.json
+
+                            # exception to the rule
+                            # !allure/allure-results/.gitkeep
+                            # !allure/screenshots/.gitkeep
