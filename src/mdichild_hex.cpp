@@ -24,13 +24,21 @@
 #include "settingspages.h"
 #include "messanger.h"
 
+void ThreadHex::run()
+{
+
+    myChild->updateHex();
+
+}
+
 MdiChildHex::MdiChildHex(QWidget* parent, const QString &device)
     :strBurnDrive(device){
     setAttribute(Qt::WA_DeleteOnClose);
-    mProjectType = RuleManager::TYPE_PROJECT_DEVICEINFO;
-    thisSuccessfullCreated = true;
+    mProjectType = RuleManager::TYPE_PROJECT_HEX;
+    mWorkThread = nullptr;
 
     hexView = new QHexView();
+
 
     QString wTitle = tr("Hex ");
     wTitle += " (";
@@ -39,218 +47,169 @@ MdiChildHex::MdiChildHex(QWidget* parent, const QString &device)
 
     setWindowTitle(wTitle);
 
-    QVBoxLayout *dlgSplitter = new QVBoxLayout(this);
-    QHBoxLayout * topNav = new QHBoxLayout(this);
+    setWidget(hexView);
 
-    QLabel *labelTopNav = new QLabel(this);
-    labelTopNav->setText(tr("Sector: "));
+    setDataState(0);
+    setBufferSize(2352);
+    setMaxSector(0) ;
+    setSector(0);
 
-    editSectors = new QDoubleSpinBox;
-    editSectors->setMinimumWidth(150);
-    editSectors->setMaximumWidth(150);
-    editSectors->setRange(0, 2048.0);
-    editSectors->setSingleStep(1.0);
-    editSectors->setValue(0.0);
-    editSectors->setDecimals(0); //No need to abstract int64 spinbox
-    connect(editSectors, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-        [=](double d){ ReadSector(d);});
 
-    QSpacerItem *item = new QSpacerItem(1,1, QSizePolicy::Expanding, QSizePolicy::Fixed);
-
-    QFont font;
-    font.setFamily("Font Awesome 5 Free");
-    font.setPixelSize(16);
-
-    updateButton = new QPushButton();
-    updateButton->setFont(font);
-    updateButton->setToolTip(tr("Read again the selected drive"));
-    updateButton->setText("\uf2f1");
-    //connect(updateButton, SIGNAL(clicked()), this, SLOT(updateHex()));
-
-    firstButton = new QPushButton();
-    firstButton->setFont(font);
-    firstButton->setToolTip(tr("Jump to first sector"));
-    firstButton->setText("\uf100");
-    connect(firstButton, SIGNAL(clicked()), this, SLOT(setFirstSector()));
-
-    nextButton = new QPushButton();
-    nextButton->setFont(font);
-    nextButton->setToolTip(tr("Go to the next sector"));
-    nextButton->setText("\uf105");
-    connect(nextButton, SIGNAL(clicked()), this, SLOT(nextSector()));
-
-    backButton = new QPushButton();
-    backButton->setFont(font);
-    backButton->setToolTip(tr("Go to the previous sector"));
-    backButton->setText("\uf104");
-    connect(backButton, SIGNAL(clicked()), this, SLOT(prevSector()));
-
-    lastButton = new QPushButton();
-    lastButton->setFont(font);
-    lastButton->setToolTip(tr("Jump to the last sector"));
-    lastButton->setText("\uf101");
-    connect(lastButton, SIGNAL(clicked()), this, SLOT(setLastSector()));
-
-    saveButton = new QPushButton();
-    saveButton->setFont(font);
-    saveButton->setToolTip(tr("Save sector to text file"));
-    saveButton->setText("\uf0c7");
-    connect(saveButton, SIGNAL(clicked()), this, SLOT(saveBlock()));
-
-    topNav->addWidget(labelTopNav);
-    topNav->addWidget(editSectors);
-    topNav->addWidget(updateButton);
-    topNav->addWidget(saveButton);
-
-    topNav->addSpacerItem(item);
-    topNav->addWidget(firstButton);
-    topNav->addWidget(backButton);
-    topNav->addWidget(nextButton);
-    topNav->addWidget(lastButton);
-
-    QWidget * wdgSplitter = new QWidget(this);
-
-    topNav->setContentsMargins(1,8,1,0);
-    dlgSplitter->setContentsMargins(0,0,0,0);
-    dlgSplitter->setSpacing(0);
-    dlgSplitter->setMargin(0);
-
-    dlgSplitter->addLayout(topNav);
-    dlgSplitter->addWidget(hexView);
-    wdgSplitter->setLayout(dlgSplitter);
-
-    setCentralWidget(wdgSplitter);
-
-    updateHex();
-
+    QTimer::singleShot( 500, this, SLOT(startUpdate()));
 }
 
-int32 MdiChildHex::ReadSector(int32 sectorIndex) const
+
+
+int32 MdiChildHex::readSector(int sectorIndex, int buffersize)
 {
+
     char *buf = new char[2352];
-    QByteArray mdata;
+    int32 ret = 0;
 
-
-    int32 ret = ::ReadSectors(BS_CURRENT_DEVICE, sectorIndex, 1, BS_IMG_ISO, buf, bufferSize);
-    //showDiskbutlerMessage(ret, this);
-
-    if (ret != BS_SDK_ERROR_NO){
-        return ret;
+    if(buffersize==2048){
+        ret = ::ReadSectors(BS_CURRENT_DEVICE, sectorIndex, 1, BS_IMG_ISO, buf, buffersize);
+    }else{
+        ret = ::ReadSectors(BS_CURRENT_DEVICE, sectorIndex, 1, BS_IMG_BIN, buf, buffersize);
     }
 
-    QByteArray byteArray = QByteArray::fromRawData(buf, bufferSize);
-
-    hexView->clear();
-
-    hexView->setData(new QHexView::DataStorageArray(byteArray));
-
-
-    //delete[] buf;
+    if (ret != BS_SDK_ERROR_NO){
+        //Error weill be handeled outside this function
+        //hexView->setData(nullptr);
+    }else{
+        hexView->clear();
+        QByteArray byteArray = QByteArray::fromRawData(buf, buffersize);
+        hexView->setData(new QHexView::DataStorageArray(byteArray));
+    }
 
     return ret;
 }
 
-void MdiChildHex::setControls(bool isFull)
+void MdiChildHex::qDebugAusgabeSDK(int32 errCode, const QString &customMessage)
 {
-    editSectors->setEnabled(!isFull);
-    firstButton->setEnabled(!isFull);
-    nextButton->setEnabled(!isFull);
-    backButton->setEnabled(!isFull);
-    lastButton->setEnabled(!isFull);
-    saveButton->setEnabled(!isFull);
-}
 
-void MdiChildHex::readDeviceInfo()
-{
+    TCHAR chError[2048];
+    int32 nLength = 2048;
+
+    emit stopSpinner();
+
+    ::GetText(errCode,chError, &nLength);
+    QString errDesc;
+    errDesc= QString::fromUtf8(chError);
+    qDebug("SDKError %s: %s", customMessage.toLatin1().constData(), errDesc.toLatin1().constData());
+
 
 }
 
 void MdiChildHex::saveBlock()
 {
+
     QString fileName = QFileDialog::getSaveFileName(
                     this,
                     tr("Save Sector "),
                     QDir::currentPath(),
                     tr("Text File (*.txt)") );
 
-      if (fileName.isEmpty()){
-          QMessageBox::information(this, tr("Information"),
-                                   tr("No file selected"));
+      if (!fileName.isEmpty()){
+          hexView->saveTofile(fileName);
           return;
       }
 
-    hexView->saveTofile(fileName);
 }
 
-void MdiChildHex::setFirstSector()
+void MdiChildHex::startHexThread()
 {
-    editSectors->setValue(0);
+
+    QTimer::singleShot( 500, this, SLOT(startUpdate()));
 }
 
-void MdiChildHex::setLastSector()
+void MdiChildHex::startUpdate()
 {
-    editSectors->setValue(maxSectors);
+    emit startSpinner();
+    setSector(0);
+    setMaxSector(0) ;
 
-}
+    hexView->setData(nullptr);
 
-void MdiChildHex::nextSector()
-{
-    double cSector = editSectors->value();
-    cSector++;
-    editSectors->setValue(cSector);
-}
+    if(!mWorkThread){
+        mWorkThread = new ThreadHex(this);
+        connect(this, SIGNAL(updatedHexFinished(int,int)), this, SLOT(on_hex_completed(int,int)));
+    }
 
-void MdiChildHex::prevSector()
-{
-    double cSector = editSectors->value();
-    cSector--;
-    editSectors->setValue(cSector);
+    mWorkThread->start();
+
 }
 
 void MdiChildHex::updateHex()
 {
-    //OK, the UI was set, now we need to read the sectors to bytearray.
-    int32 ret = ::SetBurnDevice(strBurnDrive.at(0).toLatin1());
-    if(showDiskbutlerMessage(ret, this)==false) {
-        thisSuccessfullCreated = false;
+
+    int mMaxSize = 0;
+    int bufferSize = 2352;
+    char *buf = new char[2352];
+
+    int32 ret = ::SetBurnDevice(getBurnDrive().at(0).toLatin1());
+    if (ret != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(ret, "SetBurnDevice");
         return;
     }
 
-    //We need here threading function with isDeviceReady call.
     BS_BOOL	bReady = BS_FALSE;
-    ::IsDeviceReady(BS_CURRENT_DEVICE, &bReady);
+    ret = ::IsDeviceReady(BS_CURRENT_DEVICE, &bReady);
+    if (ret != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(ret, "IsDeviceReady");
+        return;
+    }
 
     bool bIsEmptyDisk = false;
     SMediumInfo mi;
     ret = ::GetMediumInformation(BS_CURRENT_DEVICE, &mi);
-    if(showDiskbutlerMessage(ret, this)==false) {
-        thisSuccessfullCreated = false;
+    if (ret != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(ret, "GetMediumInfo");
         return;
     }
 
-    if(mi.nMediumStatus==BS_MS_EMPTY_DISK){
-        bIsEmptyDisk = true;
-    }
 
-    setControls(bIsEmptyDisk);
+
+    if(mi.nMediumStatus==BS_MS_EMPTY_DISK || ret != BS_SDK_ERROR_NO){
+        bIsEmptyDisk = true;
+
+    }
 
     if(bIsEmptyDisk==false){
         bufferSize = 2048;
         if(mi.nExtendedMediumType==BS_EMT_CD_AUDIO){
             bufferSize = 2352;
         }
-        //Disable all controls. Default text possible for control?
-        maxSectors = mi.dMediumUsedSize / bufferSize;
-        editSectors->setRange(0, maxSectors);
-        editSectors->setValue(0);
 
-        ret = ReadSector(0);
-        if(showDiskbutlerMessage(ret, this)==false) {
-            thisSuccessfullCreated = false;
-            return;
+        mMaxSize = static_cast<int>(mi.dMediumUsedSize / static_cast<double>(bufferSize));
+
+
+        ret = readSector(getSector(),bufferSize);
+        if(ret != BS_SDK_ERROR_NO){
+            qDebugAusgabeSDK(ret, "ReadSector");
         }
     }
 
+
+    emit updatedHexFinished(mMaxSize, bufferSize);
 }
 
+void MdiChildHex::on_hex_completed(int mMaxSize, int bufferSize)
+{
+
+    setDataState(0);
+
+    hexView->clear();
+    if(mMaxSize==0){
+        hexView->setData(nullptr);
+    }else{
+        //
+        setDataState(1);
+    }
+
+    setBufferSize(bufferSize);
+    setMaxSector(mMaxSize) ;
+
+    emit stopSpinner();
+    emit datatrack_changed();
+}
 

@@ -31,6 +31,8 @@ QScanBoard::QScanBoard(unsigned int numRows, unsigned int numCols, QWidget* pare
     , m_numCols(numCols)
     , maxSide(0)
 {
+    setFont(QFont("Courier", 14));
+
     m_squareWidth = 8;
     m_squareHeight = 8;
     sOffset = 0;

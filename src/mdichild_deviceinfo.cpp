@@ -45,7 +45,9 @@ MdiChildDeviceInfo::MdiChildDeviceInfo(QWidget* parent, const QString &device)
     splitter = new QSplitter;
     splitter->addWidget(deviceInfoTable);
     splitter->addWidget(treeWidget);
-    setCentralWidget(splitter);
+    //setCentralWidget(splitter);
+    setWidget(splitter);
+
 
     //myRefreshMenus = new QAction(this);
     //connect(myRefreshMenus, SIGNAL(triggered()), parent, SLOT(specialActionDeviceInfo()));

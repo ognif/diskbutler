@@ -17,8 +17,51 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <QMdiArea>
+#include <QtWidgets>
 #include "mdichild_base.h"
+
 
 MdiChildBase::MdiChildBase()
 {
 }
+
+
+/*
+ * Change events include: QEvent::ToolBarChange, QEvent::ActivationChange, QEvent::EnabledChange,
+ * QEvent::FontChange, QEvent::StyleChange, QEvent::PaletteChange, QEvent::WindowTitleChange,
+ * QEvent::IconTextChange, QEvent::ModifiedChange, QEvent::MouseTrackingChange, QEvent::ParentChange,
+ * QEvent::WindowStateChange, QEvent::LanguageChange, QEvent::LocaleChange, QEvent::LayoutDirectionChange.
+ */
+
+//emit subwindowchanged(GetProjectType());
+
+
+void MdiChildBase::windowStateChanged(Qt::WindowStates oldState, Qt::WindowStates newState)
+{
+    qDebug("StateChanged");
+    if(newState & Qt::WindowActive){
+        qDebug("ich bin aktiv");
+    }
+}
+
+void MdiChildBase::changeEvent(QEvent * e) {
+
+    //QMdiSubWindow::changeEvent(e);
+    //Das Problem ist, er geht auf Hidden und der andere auf sichbar Wir müssen also nur activvieren sehen.
+    if (e->type() == QEvent::WindowStateChange) {
+      if (this->windowState() & Qt::WindowActive) {
+        emit subwindowchanged(GetProjectType());
+      }
+      QMdiSubWindow::changeEvent(e);
+    }
+    /*
+    if(e->type() == QEvent::WindowStateChange && this->isActiveWindow()) {
+       // .. this is now the active window
+        //qDebug("Iam active now");
+        emit subwindowchanged(GetProjectType());
+    }
+    */
+
+}
+

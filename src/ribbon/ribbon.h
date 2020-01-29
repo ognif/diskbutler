@@ -74,6 +74,7 @@ public:
   /// \param[in] button The button
   void removeButton(const QString &tabName, const QString &groupName, QToolButton *button);
   void disableButtonGroup(const QString &tabName, const QString &groupName, bool buttonSwitch);
+  bool isTabVisible(const QString &tabName);
 };
 
 #endif // RIBBONTABWIDGET_H

@@ -279,8 +279,10 @@ QString QDataItem::GetDiskPath()
       parent = static_cast<QDataItem*>(parent->parent());
 
   }
+  //qDebug("Path1: %s",disk_path.toLatin1().constData());
  //We have changed it from slash to backslash. We keep everything backslash here.
   disk_path.insert(0, "//");
+  //qDebug("Path2: %s",disk_path.toLatin1().constData());
   return disk_path;
 }
 

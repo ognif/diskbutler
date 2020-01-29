@@ -98,6 +98,9 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     setWindowTitle(tr("Diskbutler"));
+    mBlockSpinner = new QtWaitingSpinner(Qt::ApplicationModal, this, true);
+
+    currentSubWindow = nullptr;
 
 
 #if defined (LINUX)
@@ -121,12 +124,12 @@ MainWindow::MainWindow(QWidget *parent) :
         QMessageBox::information(this, tr("Information"),result);
     }
 
-     ui->ribbonDockWidget->setTitleBarWidget(new QWidget());
+    ui->ribbonDockWidget->setTitleBarWidget(new QWidget());
 
-     mdiArea = new QMdiArea;
-     mdiArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-     mdiArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-     setCentralWidget(mdiArea);
+    mdiArea = new QMdiArea;
+    mdiArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    mdiArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    setCentralWidget(mdiArea);
 
      res = ::CreateProject(BS_BURNER_ISOUDF,BS_CONTINUE_NO_SESSION );
      if(res!=0){
@@ -135,10 +138,11 @@ MainWindow::MainWindow(QWidget *parent) :
      }
 
      //Test Versionchecker here. Will it block the UI?
+     /*
      mCheckVersionThread  = new CheckVersionThread();
      connect(mCheckVersionThread, SIGNAL(tNewVersion(QString)), this, SLOT(onNewVersionAvail(QString)));
      mCheckVersionThread->start();
-
+    */
 
      //fillDriveList();
 
@@ -146,11 +150,15 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addTab(QIcon(":/icons/blueprint.png"), tr("Project"));
      ui->ribbonTabWidget->addTab(QIcon(":/icons/general.png"), tr("Edit"));
      ui->ribbonTabWidget->addTab(QIcon(":/icons/device.png"), tr("Device"));
+     ui->ribbonTabWidget->addTab(QIcon(":/icons/create_image.png"), tr("Create Image"));
+     ui->ribbonTabWidget->addTab(QIcon(":/icons/hexedit.png"), tr("Hex Editor"));
+     ui->ribbonTabWidget->addTab(QIcon(":/icons/diskscan.png"), tr("Scan Editor"));
      ui->ribbonTabWidget->addTab(QIcon(":/icons/projectset.png"), tr("General"));
      ui->ribbonTabWidget->addTab(QIcon(":/icons/filesystem.png"), tr("File System"));
      ui->ribbonTabWidget->addTab(QIcon(":/icons/extiso.png"), tr("ISO Extended"));
      ui->ribbonTabWidget->addTab(QIcon(":/icons/boot.png"), tr("Boot Disc"));
      ui->ribbonTabWidget->addTab(QIcon(":/icons/025.png"), tr("View"));
+
 
      // Add 'Open project' button
      dataIsoProjectButton = new QToolButton;
@@ -228,6 +236,7 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addButton(tr("Project"), tr("Open & Save"), appOpenButton,nullptr);
      connect(appOpenButton, SIGNAL(clicked()), this, SLOT(open()));
 
+
      appSaveButton = new QToolButton;
      appSaveButton->setText(tr("Save"));
      appSaveButton->setToolTip(tr("Save disk to DiskButler project"));
@@ -236,6 +245,7 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addButton(tr("Project"), tr("Open & Save"), appSaveButton,nullptr);
      connect(appSaveButton, SIGNAL(clicked()), this, SLOT(save()));
 
+
      appSaveAsButton = new QToolButton;
      appSaveAsButton->setText(tr("Save As"));
      appSaveAsButton->setToolTip(tr("Save disk to DiskButler project"));
@@ -243,6 +253,7 @@ MainWindow::MainWindow(QWidget *parent) :
      appSaveAsButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("Project"), tr("Open & Save"), appSaveAsButton,nullptr);
      connect(appSaveAsButton, SIGNAL(clicked()), this, SLOT(saveAs()));
+
 
      //Project Things
      addFileEditButton = new QToolButton;
@@ -253,6 +264,7 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addButton(tr("Edit"), tr("Files & Folders"), addFileEditButton,nullptr);
      connect(addFileEditButton, SIGNAL(clicked()), this, SLOT(insertItem()));
 
+
      addFolderEditButton = new QToolButton;
      addFolderEditButton->setText(tr("Add Folder"));
      addFolderEditButton->setToolTip(tr("Add a folder and its content"));
@@ -260,6 +272,7 @@ MainWindow::MainWindow(QWidget *parent) :
      addFolderEditButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("Edit"), tr("Files & Folders"), addFolderEditButton,nullptr);
      connect(addFolderEditButton, SIGNAL(clicked()), this, SLOT(insertNode()));
+
 
      createFolderEditButton = new QToolButton;
      createFolderEditButton->setText(tr("Create Folder"));
@@ -269,6 +282,7 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addButton(tr("Edit"), tr("Files & Folders"), createFolderEditButton,nullptr);
      connect(createFolderEditButton, SIGNAL(clicked()), this, SLOT(addNode()));
 
+
      delEditButton = new QToolButton;
      delEditButton->setText(tr("Delete Item"));
      delEditButton->setToolTip(tr("Delete selected item or folder"));
@@ -276,9 +290,9 @@ MainWindow::MainWindow(QWidget *parent) :
      delEditButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("Edit"), tr("Files & Folders"), delEditButton, nullptr);
      connect(delEditButton, SIGNAL(clicked()), this, SLOT(deleteItem()));
-     //Vertical Buttons
 
-     QVBoxLayout *myVerticalLayout = new QVBoxLayout;
+     //Vertical Buttons
+     QVBoxLayout *myVerticalLayout = new QVBoxLayout();
      ui->ribbonTabWidget->addVerticalLayout(tr("Edit"), tr("Files & Folders"), myVerticalLayout);
 
      renameEditButton = new QToolButton;
@@ -333,6 +347,7 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addButton(tr("Edit"), tr("Selection"), allSelectEditButton,nullptr);
      connect(allSelectEditButton, SIGNAL(clicked()), this, SLOT(selectAll()));
 
+
      inverseSelectEditButton = new QToolButton;
      inverseSelectEditButton->setText(tr("Inverse Selection"));
      inverseSelectEditButton->setToolTip(tr("Selected all expect the selected"));
@@ -342,12 +357,10 @@ MainWindow::MainWindow(QWidget *parent) :
      connect(inverseSelectEditButton, SIGNAL(clicked()), this, SLOT(reverseSelection()));
 
 
+     QHBoxLayout *readdevices = new QHBoxLayout();
+     QWidget * wdgReadDiskWidget = new QWidget();
 
-
-     QHBoxLayout *readdevices = new QHBoxLayout(this);
-     QWidget * wdgReadDiskWidget = new QWidget(this);
-
-     listReadDevicesWidget = new QListWidget(this);
+     listReadDevicesWidget = new QListWidget();
      listReadDevicesWidget->setSelectionMode(QAbstractItemView::SingleSelection);
      listReadDevicesWidget->setMinimumWidth(250);
      //connect(listBurnDevicesWidget,
@@ -396,26 +409,29 @@ MainWindow::MainWindow(QWidget *parent) :
      infoDeviceButton->setIcon(QIcon(":/icons/Device_Infos_32.png"));
      infoDeviceButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("Device"), tr("Device"), infoDeviceButton,nullptr);
-     //connect(inverseSelectEditButton, SIGNAL(clicked()), this, SLOT(reverseSelection()));
      connect(infoDeviceButton, SIGNAL(clicked()), this, SLOT(newDeviceInfo()));
 
 
+     m_diskInfoMenu = new QMenu();
      infoMediaButton = new QToolButton;
      infoMediaButton->setText(tr("Media Info"));
      infoMediaButton->setToolTip(tr("Get the information about the current disk."));
      infoMediaButton->setIcon(QIcon(":/icons/Disco_Infos_32.png"));
      infoMediaButton->setEnabled(true);
-     ui->ribbonTabWidget->addButton(tr("Device"), tr("Media"), infoMediaButton,nullptr);
-     //connect(inverseSelectEditButton, SIGNAL(clicked()), this, SLOT(reverseSelection()));
+     infoMediaButton->setMenu(m_diskInfoMenu);
+     ui->ribbonTabWidget->addButton(tr("Device"), tr("Media"), infoMediaButton, nullptr);
+     connect(m_diskInfoMenu, SIGNAL(aboutToShow()), this, SLOT(updateDiskInfoMenu()));
      connect(infoMediaButton, SIGNAL(clicked()), this, SLOT(newDiskInfo()));
+
 
      imageMediaButton = new QToolButton;
      imageMediaButton->setText(tr("2Image"));
      imageMediaButton->setToolTip(tr("Save the current disk to disk image"));
      imageMediaButton->setIcon(QIcon(":/icons/create_image.png"));
-     imageMediaButton->setEnabled(true);
-     ui->ribbonTabWidget->addButton(tr("Device"), tr("Media"), imageMediaButton,nullptr);
-     //connect(inverseSelectEditButton, SIGNAL(clicked()), this, SLOT(reverseSelection()));
+     imageMediaButton->setEnabled(false);
+     ui->ribbonTabWidget->addButton(tr("Device"), tr("Media"), imageMediaButton, nullptr);
+     connect(imageMediaButton, SIGNAL(clicked()), this, SLOT(release2ImageTab()));
+
 
      grabAudioMediaButton = new QToolButton;
      grabAudioMediaButton->setText(tr("Grab"));
@@ -424,6 +440,7 @@ MainWindow::MainWindow(QWidget *parent) :
      grabAudioMediaButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("Device"), tr("Media"), grabAudioMediaButton,nullptr);
      //connect(grabAudioediaButton, SIGNAL(clicked()), this, SLOT(reverseSelection()));
+
 
      scanMediaButton = new QToolButton;
      scanMediaButton->setText(tr("Scan"));
@@ -441,12 +458,15 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addButton(tr("Device"), tr("Media"), hexMediaButton,nullptr);
      connect(hexMediaButton, SIGNAL(clicked()), this, SLOT(openHexEditor()));
 
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     //Start General Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
      //Widget Tets //Drives, backup Text for later
-     QHBoxLayout *burndevices = new QHBoxLayout(this);
-     QWidget * wdgDisk1Widget = new QWidget(this);
+     QHBoxLayout *burndevices = new QHBoxLayout();
+     QWidget * wdgDisk1Widget = new QWidget();
 
-     listBurnDevicesWidget = new QListWidget(this);
+     listBurnDevicesWidget = new QListWidget();
      listBurnDevicesWidget->setSelectionMode(QAbstractItemView::SingleSelection);
      listBurnDevicesWidget->setMinimumWidth(250);
      //connect(listBurnDevicesWidget,
@@ -471,7 +491,6 @@ MainWindow::MainWindow(QWidget *parent) :
      burnDeviceUpdateButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("General"), tr("Burn Device(s)"), burnDeviceUpdateButton,nullptr);
      connect(burnDeviceUpdateButton, SIGNAL(clicked()), this, SLOT(fillBurnDriveList()));
-
 
      /*
       *
@@ -578,8 +597,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 
 
-     QGridLayout *myFirstGridLayout = new QGridLayout(this);
-     QWidget * wdgGeneralFeatues = new QWidget(this);
+     QGridLayout *myFirstGridLayout = new QGridLayout();
+     QWidget * wdgGeneralFeatues = new QWidget();
 
      simulateBurnGeneralCheck = new QCheckBox(tr("Simulate Burning"));
      simulateBurnGeneralCheck->setToolTip(tr("Simulate the burn processs by hardware"));
@@ -650,7 +669,8 @@ MainWindow::MainWindow(QWidget *parent) :
      burnGeneralButton->setIcon(QIcon(":/icons/burn_32.png"));
      burnGeneralButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("General"), tr("Execute"), burnGeneralButton,nullptr);
-     connect(burnGeneralButton, SIGNAL(clicked()), this, SLOT(doBurn()));
+     //connect(burnGeneralButton, SIGNAL(clicked()), this, SLOT(doBurn()));
+     connect(burnGeneralButton, &QToolButton::clicked,  [=] { doBurn(); });
 
      eraseGeneralButton = new QToolButton;
      eraseGeneralButton->setText(tr("Erase"));
@@ -660,14 +680,21 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addButton(tr("General"), tr("Execute"), eraseGeneralButton,nullptr);
      //connect(dataUdfProjectButton, SIGNAL(clicked()), mapperNewFile, SLOT(map()));;
 
-     //View
+     //End General Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     //Start View Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
      viewBrowserButton = new QToolButton;
      viewBrowserButton->setText(tr("File Explorer"));
      viewBrowserButton->setToolTip(tr("Toggle disc explorer in project view"));
      viewBrowserButton->setIcon(QIcon(":/icons/filebrowser.png"));
      viewBrowserButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("View"), tr("Explorer"), viewBrowserButton,nullptr);
-     connect(viewBrowserButton, SIGNAL(clicked()), this, SLOT(toggleFileExplorer()));
+     //connect(viewBrowserButton, SIGNAL(clicked()), this, SLOT(toggleFileExplorer()));
+     connect(viewBrowserButton, &QToolButton::clicked,  [=] { toggleFileExplorer(); });
 
      viewTileButton = new QToolButton;
      viewTileButton->setText(tr("Tile"));
@@ -695,13 +722,282 @@ MainWindow::MainWindow(QWidget *parent) :
      ui->ribbonTabWidget->addButton(tr("View"), tr("Windows"), viewSwitchButton,nullptr);
      connect(m_windowMenu, SIGNAL(aboutToShow()), this, SLOT(updateWindowSwitchMenu()));
 
-     //File System
-     QGridLayout *myFSGridLayout = new QGridLayout(this);
-     QWidget * wdgFSFeatues = new QWidget(this);
+     //End View Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-     QHBoxLayout *isoFSLEvelFiller = new QHBoxLayout(this);
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     //Start 2Image Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-     QLabel *wdgISOLevelText = new QLabel(this);
+     //Format
+     QVBoxLayout *myImageFormat = new QVBoxLayout();
+     QWidget * wdgImageFeatues = new QWidget();
+     QSpacerItem *spaceItem = new QSpacerItem(1,1, QSizePolicy::Fixed, QSizePolicy::Expanding);
+
+     imageFormatCombo = new QComboBox();
+     imageFormatCombo->setToolTip(tr("Output Format for Image"));
+     imageFormatCombo->setMinimumWidth(120);
+     imageFormatCombo->setMaximumWidth(120);
+     connect(imageFormatCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(imageCreateMethod(int)));
+
+     myImageFormat->addWidget(imageFormatCombo);
+     myImageFormat->addSpacerItem(spaceItem);
+     myImageFormat->setSpacing(0);
+     myImageFormat->setMargin(0);
+     wdgImageFeatues->setLayout(myImageFormat);
+     wdgImageFeatues->setFixedHeight(80);
+     ui->ribbonTabWidget->addWidgetGroup(tr("Create Image"), tr("Format"), wdgImageFeatues);
+
+     //Read Error Correction
+     QGridLayout *myImageReadError = new QGridLayout();
+     QWidget * wdgImageReadError = new QWidget();
+     imageReadErrorSwitch = new QCheckBox(tr("Enable Correction"));
+     imageReadErrorSwitch->setToolTip(tr("Enable / Disable read erorr correction"));
+     imageReadErrorSwitch->setTristate(false); //Stupid Tristate will always throw 2 instead of 1
+     imageReadErrorSwitch->setCheckState(Qt::Unchecked);
+
+     connect(imageReadErrorSwitch, SIGNAL(stateChanged(int)), this, SLOT(errorCorrectionChanged(int)));
+
+
+
+     myImageReadError->addWidget(imageReadErrorSwitch,0,0,1,2);
+     QLabel *wdgReadErrorHard = new QLabel();
+     wdgReadErrorHard->setText(tr("Hardware Retry:"));
+     myImageReadError->addWidget(wdgReadErrorHard,1,0);
+     imageReadHardRetry = new QDoubleSpinBox;
+     imageReadHardRetry->setMinimumWidth(60);
+     imageReadHardRetry->setMaximumWidth(60);
+     imageReadHardRetry->setRange(0, 10.0);
+     imageReadHardRetry->setSingleStep(1.0);
+     imageReadHardRetry->setValue(0.0);
+     imageReadHardRetry->setDecimals(0); //No need to abstract int64 spinbox
+     myImageReadError->addWidget(imageReadHardRetry,1,1);
+     QLabel *wdgReadErrorSoft = new QLabel();
+     wdgReadErrorSoft->setText(tr("Software Retry:"));
+     myImageReadError->addWidget(wdgReadErrorSoft,2,0);
+     imageReadSoftRetry = new QDoubleSpinBox;
+     imageReadSoftRetry->setMinimumWidth(60);
+     imageReadSoftRetry->setMaximumWidth(60);
+     imageReadSoftRetry->setRange(0, 10.0);
+     imageReadSoftRetry->setSingleStep(1.0);
+     imageReadSoftRetry->setValue(0.0);
+     imageReadSoftRetry->setDecimals(0); //No need to abstract int64 spinbox
+     myImageReadError->addWidget(imageReadSoftRetry,2,1);
+     myImageReadError->setSpacing(0);
+     myImageReadError->setMargin(0);
+     wdgImageReadError->setLayout(myImageReadError);
+     wdgImageReadError->setFixedHeight(80);
+     ui->ribbonTabWidget->addWidgetGroup(tr("Create Image"), tr("Read Error"), wdgImageReadError);
+
+
+     //Job
+     QGridLayout *myImageJob = new QGridLayout();
+     QWidget * wdgImageJob = new QWidget();
+     QSpacerItem *spaceItem1 = new QSpacerItem(1,25, QSizePolicy::Fixed, QSizePolicy::Fixed); //Expanding
+
+     imageReadJobCreate = new QCheckBox(tr("Create"));
+     imageReadJobCreate->setToolTip(tr("Enable / Disable read erorr correction"));
+     imageReadJobCreate->setTristate(false);
+     imageReadJobCreate->setCheckState(Qt::Unchecked);
+
+     connect(imageReadJobCreate, SIGNAL(stateChanged(int)), this, SLOT(jobCreateChanged(int)));
+
+     imageReadJobVerify = new QCheckBox(tr("Verify"));
+     imageReadJobVerify->setToolTip(tr("Enable / Disable read erorr correction"));
+     imageReadJobVerify->setTristate(false);
+     imageReadJobVerify->setCheckState(Qt::Unchecked);
+
+     connect(imageReadJobVerify, SIGNAL(stateChanged(int)), this, SLOT(jobVerifyChanged(int)));
+
+     myImageJob->addWidget(imageReadJobCreate,0,0);
+     myImageJob->addWidget(imageReadJobVerify,1,0);
+     myImageJob->addItem(spaceItem1, 2, 0, -1, -1);
+
+     myImageJob->setSpacing(0);
+     myImageJob->setMargin(0);
+     wdgImageJob->setLayout(myImageJob);
+     wdgImageJob->setFixedHeight(80);
+     ui->ribbonTabWidget->addWidgetGroup(tr("Create Image"), tr("Job"), wdgImageJob);
+
+     startImageCreateJob = new QToolButton;
+     startImageCreateJob->setText(tr("Start"));
+     startImageCreateJob->setToolTip(tr("Start create disk image"));
+     startImageCreateJob->setIcon(QIcon(":/icons/create_image_start.png"));
+     startImageCreateJob->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Create Image"), tr("Job"), startImageCreateJob,nullptr);
+     connect(startImageCreateJob, SIGNAL(clicked()), this, SLOT(onCreateDiscImage()));
+
+     //End 2Image Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     //Start Hex Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+     QVBoxLayout *myHexSector = new QVBoxLayout();
+     QWidget * wdgHexSector= new QWidget();
+     QSpacerItem *spaceHexItem = new QSpacerItem(1,1, QSizePolicy::Fixed, QSizePolicy::Expanding);
+
+     hexSector = new QDoubleSpinBox;
+     hexSector->setMinimumWidth(100);
+     hexSector->setMaximumWidth(100);
+     hexSector->setRange(0, 10.0);
+     hexSector->setSingleStep(1.0);
+     hexSector->setValue(0.0);
+     hexSector->setDecimals(0); //No need to abstract int64 spinbox
+     myHexSector->addWidget(hexSector);
+     myHexSector->addSpacerItem(spaceHexItem);
+     myHexSector->setSpacing(0);
+     myHexSector->setMargin(0);
+     wdgHexSector->setLayout(myHexSector);
+     wdgHexSector->setFixedHeight(80);
+     ui->ribbonTabWidget->addWidgetGroup(tr("Hex Editor"), tr("Sector"), wdgHexSector);
+     connect(hexSector, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+         [=](double d){ hexReadSector(d);});
+
+     updateHexEditor = new QToolButton;
+     updateHexEditor->setText(tr("Update"));
+     updateHexEditor->setToolTip(tr("Re-read disk content"));
+     updateHexEditor->setIcon(QIcon(":/icons/refresh_32.png"));
+     updateHexEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Hex Editor"), tr("Actions"), updateHexEditor,nullptr);
+     connect(updateHexEditor, SIGNAL(clicked()), this, SLOT(actHexUpdate()));
+
+     saveHexEditor = new QToolButton;
+     saveHexEditor->setText(tr("Save"));
+     saveHexEditor->setToolTip(tr("Save sector content to text file"));
+     saveHexEditor->setIcon(QIcon(":/icons/saveas.png"));
+     saveHexEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Hex Editor"), tr("Actions"), saveHexEditor,nullptr);
+     connect(saveHexEditor, SIGNAL(clicked()), this, SLOT(actHexSaveLog()));
+
+     navFirstHexEditor = new QToolButton;
+     navFirstHexEditor->setText(tr("First"));
+     navFirstHexEditor->setToolTip(tr("Jump to the first sector"));
+     navFirstHexEditor->setIcon(QIcon(":/icons/backward.png"));
+     navFirstHexEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Hex Editor"), tr("Navigate"), navFirstHexEditor,nullptr);
+     connect(navFirstHexEditor, SIGNAL(clicked()), this, SLOT(actHexFirstSector()));
+
+     navStepBackHexEditor = new QToolButton;
+     navStepBackHexEditor->setText(tr("Back"));
+     navStepBackHexEditor->setToolTip(tr("One sector back"));
+     navStepBackHexEditor->setIcon(QIcon(":/icons/arrow_left.png"));
+     navStepBackHexEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Hex Editor"), tr("Navigate"), navStepBackHexEditor,nullptr);
+     connect(navStepBackHexEditor, SIGNAL(clicked()), this, SLOT(actHexPrevSector()));
+
+     navStepForwardHexEditor = new QToolButton;
+     navStepForwardHexEditor->setText(tr("Forward"));
+     navStepForwardHexEditor->setToolTip(tr("One sector forward"));
+     navStepForwardHexEditor->setIcon(QIcon(":/icons/arrow_right.png"));
+     navStepForwardHexEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Hex Editor"), tr("Navigate"), navStepForwardHexEditor,nullptr);
+     connect(navStepForwardHexEditor, SIGNAL(clicked()), this, SLOT(actHexNextSector()));
+
+     navLastHexEditor = new QToolButton;
+     navLastHexEditor->setText(tr("Last"));
+     navLastHexEditor->setToolTip(tr("Jump to the last sector"));
+     navLastHexEditor->setIcon(QIcon(":/icons/forward.png"));
+     navLastHexEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Hex Editor"), tr("Navigate"), navLastHexEditor,nullptr);
+     connect(navLastHexEditor, SIGNAL(clicked()), this, SLOT(actHexLastSector()));
+
+
+     //End Hex Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     //Start Scan Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+     QGridLayout *myScanSector = new QGridLayout();
+     QWidget * wdgScanSector= new QWidget();
+     QSpacerItem *spaceScanItem = new QSpacerItem(1,25, QSizePolicy::Fixed, QSizePolicy::Fixed); //Expanding
+
+     QLabel *wdgStartOffset = new QLabel();
+     wdgStartOffset->setText(tr("Start:"));
+     myScanSector->addWidget(wdgStartOffset,0,0);
+
+     scanStartOffset = new QDoubleSpinBox;
+     scanStartOffset->setMinimumWidth(100);
+     scanStartOffset->setMaximumWidth(100);
+     scanStartOffset->setRange(0, 10.0);
+     scanStartOffset->setSingleStep(1.0);
+     scanStartOffset->setValue(0.0);
+     scanStartOffset->setDecimals(0); //No need to abstract int64 spinbox
+     myScanSector->addWidget(scanStartOffset,0,1);
+     connect(scanStartOffset, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+         [=](double d){ scanStartOffsetValue(d);});
+
+     QLabel *wdgReadOffset = new QLabel();
+     wdgReadOffset->setText(tr("Read:"));
+     myScanSector->addWidget(wdgReadOffset,1,0);
+
+     scanReadOffset = new QDoubleSpinBox;
+     scanReadOffset->setMinimumWidth(100);
+     scanReadOffset->setMaximumWidth(100);
+     scanReadOffset->setRange(0, 10.0);
+     scanReadOffset->setSingleStep(1.0);
+     scanReadOffset->setValue(0.0);
+     scanReadOffset->setDecimals(0); //No need to abstract int64 spinbox
+     myScanSector->addWidget(scanReadOffset,1,1);
+     connect(scanReadOffset, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+         [=](double d){ scanReadOffsetValue(d);});
+
+     myScanSector->addItem(spaceScanItem, 2, 0, -1, -1);
+
+     myScanSector->setSpacing(0);
+     myScanSector->setMargin(0);
+     wdgScanSector->setLayout(myScanSector);
+     wdgScanSector->setFixedHeight(80);
+     ui->ribbonTabWidget->addWidgetGroup(tr("Scan Editor"), tr("Offset"), wdgScanSector);
+
+     updateScanEditor = new QToolButton;
+     updateScanEditor->setText(tr("Update"));
+     updateScanEditor->setToolTip(tr("Update reading device"));
+     updateScanEditor->setIcon(QIcon(":/icons/refresh_32.png"));
+     updateScanEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Scan Editor"), tr("Actions"), updateScanEditor,nullptr);
+     connect(updateScanEditor, SIGNAL(clicked()), this, SLOT(scanUpdateDiskInfo()));
+
+     startScanEditor = new QToolButton;
+     startScanEditor->setText(tr("Start"));
+     startScanEditor->setToolTip(tr("Start scanning the disc"));
+     startScanEditor->setIcon(QIcon(":/icons/diskscan_start.png"));
+     startScanEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Scan Editor"), tr("Actions"), startScanEditor,nullptr);
+     connect(startScanEditor, SIGNAL(clicked()), this, SLOT(scanStartScan()));
+
+     stopScanEditor = new QToolButton;
+     stopScanEditor->setText(tr("Stop"));
+     stopScanEditor->setToolTip(tr("Stop scanning the disc"));
+     stopScanEditor->setIcon(QIcon(":/icons/diskscan_stop.png"));
+     stopScanEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Scan Editor"), tr("Actions"), stopScanEditor,nullptr);
+     connect(stopScanEditor, SIGNAL(clicked()), this, SLOT(scanStopScan()));
+
+     saveScanEditor = new QToolButton;
+     saveScanEditor->setText(tr("Save"));
+     saveScanEditor->setToolTip(tr("Save current scan log to file"));
+     saveScanEditor->setIcon(QIcon(":/icons/saveas.png"));
+     saveScanEditor->setEnabled(true);
+     ui->ribbonTabWidget->addButton(tr("Scan Editor"), tr("Actions"), saveScanEditor,nullptr);
+     connect(saveScanEditor, SIGNAL(clicked()), this, SLOT(scanSaveLog()));
+
+     //End Scan Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     //Start File System Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+     QGridLayout *myFSGridLayout = new QGridLayout();
+     QWidget * wdgFSFeatues = new QWidget();
+
+     QHBoxLayout *isoFSLEvelFiller = new QHBoxLayout();
+
+     QLabel *wdgISOLevelText = new QLabel();
      wdgISOLevelText->setText(tr("ISO Level:"));
      isoFSLEvelFiller->addWidget(wdgISOLevelText);
      //myFSGridLayout->addWidget(wdgISOLevelText,0,0);
@@ -756,16 +1052,16 @@ MainWindow::MainWindow(QWidget *parent) :
      myFSGridLayout->setRowMinimumHeight(0,25);
      myFSGridLayout->setRowMinimumHeight(1,25);
      myFSGridLayout->setRowMinimumHeight(2,25);
-     myFirstGridLayout->setContentsMargins(3,0,0,0);
+     myFSGridLayout->setContentsMargins(3,0,0,0);
      wdgFSFeatues->setLayout(myFSGridLayout);
      wdgFSFeatues->setFixedHeight(80);
      ui->ribbonTabWidget->addWidgetGroup(tr("File System"), tr("ISO9660"), wdgFSFeatues);
 
-     QGridLayout *myFSUDFGridLayout = new QGridLayout(this);
-     QWidget * wdgFSUDFFeatues = new QWidget(this);
+     QGridLayout *myFSUDFGridLayout = new QGridLayout();
+     QWidget * wdgFSUDFFeatues = new QWidget();
 
-     QHBoxLayout *udfFSVersionFiller = new QHBoxLayout(this);
-     QLabel *wdgUDFVersonText = new QLabel(this);
+     QHBoxLayout *udfFSVersionFiller = new QHBoxLayout();
+     QLabel *wdgUDFVersonText = new QLabel();
      wdgUDFVersonText->setText(tr("Version:"));
      udfFSVersionFiller->addWidget(wdgUDFVersonText);
      udfVersionFSCombo = new QComboBox();
@@ -776,8 +1072,8 @@ MainWindow::MainWindow(QWidget *parent) :
      udfFSVersionFiller->addWidget(udfVersionFSCombo);
      myFSUDFGridLayout->addLayout(udfFSVersionFiller,0,0);
 
-     QHBoxLayout *udfFSPartitionFiller = new QHBoxLayout(this);
-     QLabel *wdgUDFPartitionText = new QLabel(this);
+     QHBoxLayout *udfFSPartitionFiller = new QHBoxLayout();
+     QLabel *wdgUDFPartitionText = new QLabel();
      wdgUDFPartitionText->setText(tr("Partition:"));
      udfFSPartitionFiller->addWidget(wdgUDFPartitionText);
      udfPartitionFSCombo = new QComboBox();
@@ -798,11 +1094,17 @@ MainWindow::MainWindow(QWidget *parent) :
      wdgFSUDFFeatues->setFixedHeight(80);
      ui->ribbonTabWidget->addWidgetGroup(tr("File System"), tr("UDF"), wdgFSUDFFeatues);
 
+     //End File System Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-     QGridLayout *myISOExGridLayout = new QGridLayout(this);
-     QWidget * wdgSOExFeatues = new QWidget(this);
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     //Start ISOEx Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-     QLabel *wdgIsoExSystemIdText = new QLabel(this);
+     QGridLayout *myISOExGridLayout = new QGridLayout();
+     QWidget * wdgSOExFeatues = new QWidget();
+
+     QLabel *wdgIsoExSystemIdText = new QLabel();
      wdgIsoExSystemIdText->setText(tr("System ID:"));
      myISOExGridLayout->addWidget(wdgIsoExSystemIdText,0,0);
      edIsoExSystemIdValue = new QLineEdit(this);
@@ -811,7 +1113,7 @@ MainWindow::MainWindow(QWidget *parent) :
      connect(edIsoExSystemIdValue,SIGNAL(textChanged(QString)),this,SLOT(isoExSystemIdchanged(QString)));
      myISOExGridLayout->addWidget(edIsoExSystemIdValue,0,1);
 
-     QLabel *wdgIsoExVolumeSetText = new QLabel(this);
+     QLabel *wdgIsoExVolumeSetText = new QLabel();
      wdgIsoExVolumeSetText->setText(tr("Volume Set:"));
      myISOExGridLayout->addWidget(wdgIsoExVolumeSetText,0,2);
      edIsoExVolumeSetValue = new QLineEdit(this);
@@ -820,7 +1122,7 @@ MainWindow::MainWindow(QWidget *parent) :
      connect(edIsoExVolumeSetValue,SIGNAL(textChanged(QString)),this,SLOT(isoExVolumechanged(QString)));
      myISOExGridLayout->addWidget(edIsoExVolumeSetValue,0,3);
 
-     QLabel *wdgIsoExPublisherText = new QLabel(this);
+     QLabel *wdgIsoExPublisherText = new QLabel();
      wdgIsoExPublisherText->setText(tr("Publisher:"));
      myISOExGridLayout->addWidget(wdgIsoExPublisherText,0,4);
      edIsoExPublisherValue = new QLineEdit(this);
@@ -829,7 +1131,7 @@ MainWindow::MainWindow(QWidget *parent) :
      connect(edIsoExPublisherValue,SIGNAL(textChanged(QString)),this,SLOT(isoExPublisherchanged(QString)));
      myISOExGridLayout->addWidget(edIsoExPublisherValue,0,5);
 
-     QLabel *wdgIsoExDataPreparerText = new QLabel(this);
+     QLabel *wdgIsoExDataPreparerText = new QLabel();
      wdgIsoExDataPreparerText->setText(tr("Data Preparer:"));
      myISOExGridLayout->addWidget(wdgIsoExDataPreparerText,1,0);
      edIsoExDataPreparerValue = new QLineEdit(this);
@@ -838,7 +1140,7 @@ MainWindow::MainWindow(QWidget *parent) :
      connect(edIsoExDataPreparerValue,SIGNAL(textChanged(QString)),this,SLOT(isoExDataPreparerchanged(QString)));
      myISOExGridLayout->addWidget(edIsoExDataPreparerValue,1,1);
 
-     QLabel *wdgIsoExApplicationText = new QLabel(this);
+     QLabel *wdgIsoExApplicationText = new QLabel();
      wdgIsoExApplicationText->setText(tr("Application:"));
      myISOExGridLayout->addWidget(wdgIsoExApplicationText,1,2);
      edIsoExApplicationValue = new QLineEdit(this);
@@ -847,7 +1149,7 @@ MainWindow::MainWindow(QWidget *parent) :
      connect(edIsoExApplicationValue,SIGNAL(textChanged(QString)),this,SLOT(isoExApplicationchanged(QString)));
      myISOExGridLayout->addWidget(edIsoExApplicationValue,1,3);
 
-     QLabel *wdgIsoExCopyrightFileText = new QLabel(this);
+     QLabel *wdgIsoExCopyrightFileText = new QLabel();
      wdgIsoExCopyrightFileText->setText(tr("Copyright File:"));
      myISOExGridLayout->addWidget(wdgIsoExCopyrightFileText,1,4);
      edIsoExCopyrightFileValue = new QLineEdit(this);
@@ -856,7 +1158,7 @@ MainWindow::MainWindow(QWidget *parent) :
      connect(edIsoExCopyrightFileValue,SIGNAL(textChanged(QString)),this,SLOT(isoExCopyrightFilechanged(QString)));
      myISOExGridLayout->addWidget(edIsoExCopyrightFileValue,1,5);
 
-     QLabel *wdgIsoExAbstractFileText = new QLabel(this);
+     QLabel *wdgIsoExAbstractFileText = new QLabel();
      wdgIsoExAbstractFileText->setText(tr("Abstract File:"));
      myISOExGridLayout->addWidget(wdgIsoExAbstractFileText,2,0);
      edIsoExAbstractFileValue = new QLineEdit(this);
@@ -865,7 +1167,7 @@ MainWindow::MainWindow(QWidget *parent) :
      connect(edIsoExAbstractFileValue,SIGNAL(textChanged(QString)),this,SLOT(isoExAbstractFilechanged(QString)));
      myISOExGridLayout->addWidget(edIsoExAbstractFileValue,2,1);
 
-     QLabel *wdgIsoExBibliographicFileText = new QLabel(this);
+     QLabel *wdgIsoExBibliographicFileText = new QLabel();
      wdgIsoExBibliographicFileText->setText(tr("Bibliographic File:"));
      myISOExGridLayout->addWidget(wdgIsoExBibliographicFileText,2,2);
      edIsoExBibliographicFileValue = new QLineEdit(this);
@@ -888,7 +1190,8 @@ MainWindow::MainWindow(QWidget *parent) :
      importIsoExButton->setIcon(QIcon(":/icons/extiso_import.png"));
      importIsoExButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("ISO Extended"), tr("Data"), importIsoExButton,nullptr);
-     connect(importIsoExButton, SIGNAL(clicked()), this, SLOT(isoExImportClicked()));
+     //connect(importIsoExButton, SIGNAL(clicked()), this, SLOT(isoExImportClicked()));
+     connect(importIsoExButton, &QToolButton::clicked,  [=] { isoExImportClicked(); });
 
      resetIsoExButton = new QToolButton;
      resetIsoExButton->setText(tr("Reset"));
@@ -896,8 +1199,15 @@ MainWindow::MainWindow(QWidget *parent) :
      resetIsoExButton->setIcon(QIcon(":/icons/extiso_reset.png"));
      resetIsoExButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("ISO Extended"), tr("Data"), resetIsoExButton,nullptr);
-     connect(resetIsoExButton, SIGNAL(clicked()), this, SLOT(isoExReset()));
+     //connect(resetIsoExButton, SIGNAL(clicked()), this, SLOT(isoExReset()));
+     connect(resetIsoExButton, &QToolButton::clicked,  [=] { isoExReset(); });
 
+     //End ISOEx Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     //Start BootImage Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
      selBootImageButton = new QToolButton;
      selBootImageButton->setText(tr("Set"));
@@ -905,9 +1215,10 @@ MainWindow::MainWindow(QWidget *parent) :
      selBootImageButton->setIcon(QIcon(":/icons/bootimage.png"));
      selBootImageButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("Boot Disc"), tr("Boot Image"), selBootImageButton,nullptr);
-     connect(selBootImageButton, SIGNAL(clicked()),this, SLOT(clickedSelBootImagePath()));
+     //connect(selBootImageButton, SIGNAL(clicked()),this, SLOT(clickedSelBootImagePath()));
+     connect(selBootImageButton, &QToolButton::clicked,  [=] { clickedSelBootImagePath(); });
 
-     QVBoxLayout *bootVerticalLayout = new QVBoxLayout;
+     QVBoxLayout *bootVerticalLayout = new QVBoxLayout();
      ui->ribbonTabWidget->addVerticalLayout(tr("Boot Disc"), tr("Boot Image"), bootVerticalLayout);
 
      delBootImageButton = new QToolButton;
@@ -916,7 +1227,8 @@ MainWindow::MainWindow(QWidget *parent) :
      delBootImageButton->setIcon(QIcon(":/icons/delete.png"));
      delBootImageButton->setEnabled(true);
      ui->ribbonTabWidget->addButton(tr("Boot Disc"), tr("Boot Image"), delBootImageButton, bootVerticalLayout);
-     connect(delBootImageButton, SIGNAL(clicked()), this, SLOT(deleteBootImage()));
+     //connect(delBootImageButton, SIGNAL(clicked()), this, SLOT(deleteBootImage()));
+     connect(delBootImageButton, &QToolButton::clicked,  [=] { deleteBootImage(); });
      bootVerticalLayout->addStretch();
      //Test, erst die widgets erstellen dann ins Grid packen.
 
@@ -1020,35 +1332,40 @@ MainWindow::MainWindow(QWidget *parent) :
 
      ui->ribbonTabWidget->addWidgetGroup(tr("Boot Disc"), tr("El-Torito"), wdgBootFeatues);
 
-     //ISO Extended
-     //Group Selection
-     //Track & Session
-
-     //SubWindowActivated ist die MEssage aus der MDI Area. Das hessit wenn ein SubWindow den focus bekommt.
-
+     //End BootImage Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
      connect(mdiArea, SIGNAL(subWindowActivated(QMdiSubWindow*)),
              this, SLOT(updateProjectRibbon()));
 
 
      connect(mdiArea, SIGNAL(subWindowActivated(QMdiSubWindow*)),
-             this, SLOT(on_active_child_changed()));
+            this, SLOT(onActiveChildChanged()));
 
 
 
      createOwnMenuBar();
-
-     createStatusBar();
-     updateProjectRibbon();
-     insertCustomRibbonTabs();
 
      //temporary fix for initilaize Tabs
      ui->ribbonTabWidget->hideTab(tr("File System"));
      ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
      ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
      ui->ribbonTabWidget->hideTab(tr("General"));
+     ui->ribbonTabWidget->hideTab(tr("Create Image"));
+     ui->ribbonTabWidget->hideTab(tr("Hex Editor"));
+     ui->ribbonTabWidget->hideTab(tr("Scan Editor"));
      ui->ribbonTabWidget->setTabIndex(0);
 
+     createStatusBar();
+     updateProjectRibbon();
+     insertCustomRibbonTabs(false);
+
+}
+
+MainWindow::~MainWindow()
+{
+    mBlockSpinner->deleteLater();
+    delete ui;
 }
 
 
@@ -1056,17 +1373,8 @@ MainWindow::MainWindow(QWidget *parent) :
 void MainWindow::createStatusBar()
 {
 
-  /*
-   * Ich möchte gerne links Info Text und recht Status text, dzwischen einen Spacer
-   * Horizontal Layout
-   * Label
-   * Spacer
-   * Label
-   * Und los
-   */
-
-  QHBoxLayout *statusbarLayout = new QHBoxLayout(this);
-  QWidget * statusWidget = new QWidget(this);
+  QHBoxLayout *statusbarLayout = new QHBoxLayout();
+  QWidget * statusWidget = new QWidget();
 
   mStatusInfoLabel = new QLabel;
   mStatusInfoLabel->setText(tr("..."));
@@ -1098,22 +1406,19 @@ void MainWindow::createStatusBar()
 
 void MainWindow::statusbar_changed(const QString &text)
 {
-
     QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow();
     if ("" == text && activeSubWindow != nullptr) {
-        MdiChildBase * child = qobject_cast<MdiChildBase *>(activeSubWindow->widget());
+        MdiChildBase * child = qobject_cast<MdiChildBase *>(activeSubWindow);
         //statusBar()->showMessage(child->updateStatus());
-        updateStatusBarText(child->updateStatus());
+        updateStatusBarText(child->updateStatus(),true);
     }
 }
 
-MainWindow::~MainWindow()
-{
-    delete ui;
-}
+
 
 MdiChildDialog *MainWindow::createMdiChild(const RuleManager::ProjectType project_type)
 {
+
     MdiChildDialog *child = new MdiChildDialog(project_type);
     mdiArea->addSubWindow(child);
 
@@ -1131,6 +1436,7 @@ MdiChildDialog *MainWindow::createMdiChild(const RuleManager::ProjectType projec
 
 MdiChildDialog *MainWindow::createMdiChild()
 {
+
     MdiChildDialog *child = new MdiChildDialog();
     mdiArea->addSubWindow(child);
 
@@ -1146,144 +1452,21 @@ MdiChildDialog *MainWindow::createMdiChild()
   return child;
 }
 
-void MainWindow::newProject(int type)
+
+
+void MainWindow::updateStatusBarText(const QString &text, bool isInfo)
 {
-
-
-
-    RuleManager::ProjectType projectType = static_cast<RuleManager::ProjectType>(type);
-    QString str = tr("Project Type: ");
-    MdiChildDialog *child = createMdiChild(projectType);
-    //child->SetProjectType(projectType);
-    child->newFile();
-    //child->show();
-    //child->showMaximized();
-    //child->showNormal();
-
-    if(isCascaded()==false){
-        child->showMaximized();
+    if(isInfo == true){
+        mStatusTextLabel->setText(text);
     }else{
-        child->showNormal();
+        mStatusInfoLabel->setText(text);
     }
 
-    str += RuleManager::GetProjectTypeStr(projectType);
-
-    //str += "  Support: ";
-    //str += RuleManager::GetOptionsStr(projectType);
-    //statusBar()->showMessage(str);
-    //updateStatusBarText(str);
-    updateStatusBarText(child->updateStatus());
-
-    //Switch to Tab Edit to start direktly with editing projekt.
-    //Maybe we will do this editable.
-    ui->ribbonTabWidget->currentTab(tr("Edit"));
-    setDefaults();
-
-    /*
-    QMessageBox::information(this, tr("Information"),
-                             tr("Button click!"));
-                             */
 }
 
-void MainWindow::updateStatusBarText(const QString &text)
-{
-    mStatusTextLabel->setText(text);
-}
-
-QMdiSubWindow *MainWindow::findMdiChild(const QString &fileName, bool isFile)
-{
-    QString canonicalFilePath;
-    if (isFile)
-        canonicalFilePath = QFileInfo(fileName).canonicalFilePath();
-    else
-        canonicalFilePath = fileName;
-
-    foreach (QMdiSubWindow *window, mdiArea->subWindowList()) {
-        MdiChildDialog *mdiChild = qobject_cast<MdiChildDialog *>(window->widget());
-        if (nullptr != mdiChild){
-            if (mdiChild->currentFile() == canonicalFilePath)
-                return window;
-        }
-    }
-    return nullptr;
-}
-
-MdiChildDialog *MainWindow::activeMdiChild()
-{
-    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
-        return qobject_cast<MdiChildDialog *>(activeSubWindow->widget());
-    }
-    return nullptr;
-}
-
-MdiChildDiskInfo *MainWindow::activeMdiInfoChild()
-{
-    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
-        return qobject_cast<MdiChildDiskInfo *>(activeSubWindow->widget());
-    }
-    return nullptr;
-}
-
-MdiChildDeviceInfo *MainWindow::activeMdiDeviceChild()
-{
-    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
-        return qobject_cast<MdiChildDeviceInfo *>(activeSubWindow->widget());
-    }
-    return nullptr;
-}
-
-
-MdiChildHex *MainWindow::activeMdiHexChild()
-{
-    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
-        return qobject_cast<MdiChildHex *>(activeSubWindow->widget());
-    }
-    return nullptr;
-}
-
-MdiChildScan *MainWindow::activeMdiScanChild()
-{
-    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
-        return qobject_cast<MdiChildScan *>(activeSubWindow->widget());
-    }
-    return nullptr;
-}
-
-void MainWindow::setActiveSubWindow(QWidget *window)
-{
-    if (!window)
-        return;
-    mdiArea->setActiveSubWindow(qobject_cast<QMdiSubWindow *>(window));
-}
-
-void MainWindow::on_active_child_changed()
-{
-    //First we check if there is a window available.
-    QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow();
-    if (activeSubWindow != nullptr) {
-        //A Subwindow is available
-        if(currentSubWindow!=activeSubWindow){
-            //The window is not the the same as before. When this will happen ever inside this event?
-            currentSubWindow = activeSubWindow;
-
-            //Now we need to check the type of window.
-            MdiChildBase * child = qobject_cast<MdiChildBase *>(activeSubWindow->widget());
-            //We need to update the statusbar with DiskInfo and DeviceInfo
-            updateStatusBarText(child->updateStatus());
-            RuleManager::ProjectType childType = child->GetProjectType();
-
-            if(childType == RuleManager::TYPE_PROJECT_DISKINFO || childType == RuleManager::TYPE_PROJECT_DEVICEINFO){
-                getListWidgetInfo();
-            }else{
-                getListWidget();
-            }
-        }
-    }
-
-    insertCustomRibbonTabs();
-    updateProjectRibbon();
-
-}
+//##############################################################################################################
+//Window Display Functions
+//##############################################################################################################
 
 void MainWindow::toggleFileExplorer()
 {
@@ -1302,10 +1485,6 @@ void MainWindow::mdiNextWindow()
     mdiArea->activateNextSubWindow();
 }
 
-
-
-
-
 void MainWindow::updateWindowSwitchMenu()
 {
     m_windowMenu->clear();
@@ -1313,7 +1492,7 @@ void MainWindow::updateWindowSwitchMenu()
 
     for (int i = 0; i < windows.size(); ++i)
     {
-        QWidget* child = windows.at(i)->widget();
+        QWidget* child = windows.at(i);
         if(!child)
             continue;
 
@@ -1331,14 +1510,39 @@ void MainWindow::updateWindowSwitchMenu()
 
 }
 
-void MainWindow::selectAll()
-{
-    activeMdiChild()->selectAll();
-}
+//##############################################################################################################
+//End Window Display Functions
+//##############################################################################################################
 
-void MainWindow::reverseSelection()
+//##############################################################################################################
+//Disk Content Functions
+//##############################################################################################################
+
+void MainWindow::newProject(int type)
 {
-    activeMdiChild()->reverseSelection();
+    RuleManager::ProjectType projectType = static_cast<RuleManager::ProjectType>(type);
+    QString str = tr("Project Type: ");
+    MdiChildDialog *child = createMdiChild(projectType);
+    //child->SetProjectType(projectType);
+    child->newFile();
+    //child->show();
+    //child->showMaximized();
+    //child->showNormal();
+
+    if(isCascaded()==false){
+        child->showMaximized();
+    }else{
+        child->showNormal();
+    }
+
+    str += RuleManager::GetProjectTypeStr(projectType);
+    updateStatusBarText(child->updateStatus(),true);
+
+    //Switch to Tab Edit to start direktly with editing projekt.
+    //Maybe we will do this editable.
+    ui->ribbonTabWidget->currentTab(tr("Edit"));
+    setDefaults();
+
 }
 
 void MainWindow::addNode()
@@ -1382,7 +1586,6 @@ void MainWindow::insertItem()
 void MainWindow::resetFiles()
 {
     activeMdiChild()->triggerReset();
-    //);
 }
 
 void MainWindow::updateProject()
@@ -1433,6 +1636,20 @@ void MainWindow::addAudioTrack()
 {
     activeMdiChild()->addAudioTrack();
 }
+
+void MainWindow::selectAll()
+{
+    activeMdiChild()->selectAll();
+}
+
+void MainWindow::reverseSelection()
+{
+    activeMdiChild()->reverseSelection();
+}
+
+//##############################################################################################################
+//End Disk Content Functions
+//##############################################################################################################
 
 void MainWindow::fillSourceDriveList()
 {
@@ -1625,7 +1842,7 @@ void MainWindow::getListWidgetInfo()
     //WEnn diese Funktion auftrauch, ist klar das es info ist.
     //Dann müssen wir eiegntlich nur das child window emulieren.
     QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow();
-    MdiChildBase * child = qobject_cast<MdiChildBase *>(activeSubWindow->widget());
+    MdiChildBase * child = qobject_cast<MdiChildBase *>(activeSubWindow);
 
     QString readDevices = child->getBurnDrive();
 
@@ -1743,11 +1960,82 @@ bool MainWindow::isCascaded()
     return true;
 }
 
+//##############################################################################################################
+//Helper Functions
+//##############################################################################################################
+
+QMdiSubWindow *MainWindow::findMdiChild(const QString &fileName, bool isFile)
+{
+    QString canonicalFilePath;
+    if (isFile)
+        canonicalFilePath = QFileInfo(fileName).canonicalFilePath();
+    else
+        canonicalFilePath = fileName;
+
+    foreach (QMdiSubWindow *window, mdiArea->subWindowList()) {
+        MdiChildDialog *mdiChild = qobject_cast<MdiChildDialog *>(window);
+        if (nullptr != mdiChild){
+            if (mdiChild->currentFile() == canonicalFilePath)
+                return window;
+        }
+    }
+    return nullptr;
+}
+
+MdiChildDialog *MainWindow::activeMdiChild()
+{
+    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
+        return qobject_cast<MdiChildDialog *>(activeSubWindow);
+    }
+    return nullptr;
+}
+
+MdiChildDiskInfo *MainWindow::activeMdiInfoChild()
+{
+    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
+        return qobject_cast<MdiChildDiskInfo *>(activeSubWindow);
+    }
+    return nullptr;
+}
+
+MdiChildDeviceInfo *MainWindow::activeMdiDeviceChild()
+{
+    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
+        return qobject_cast<MdiChildDeviceInfo *>(activeSubWindow);
+    }
+    return nullptr;
+}
+
+
+MdiChildHex *MainWindow::activeMdiHexChild()
+{
+    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
+        return qobject_cast<MdiChildHex *>(activeSubWindow);
+    }
+    return nullptr;
+}
+
+MdiChildScan *MainWindow::activeMdiScanChild()
+{
+    if (QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow()){
+        return qobject_cast<MdiChildScan *>(activeSubWindow);
+    }
+    return nullptr;
+}
+
+void MainWindow::setActiveSubWindow(QWidget *window)
+{
+    if (!window)
+        return;
+
+    mdiArea->setActiveSubWindow(qobject_cast<QMdiSubWindow *>(window));
+}
+
 bool MainWindow::hasProjectWindow()
 {
 
     foreach (QMdiSubWindow *window, mdiArea->subWindowList()) {
-        MdiChildDialog *mdiChild = qobject_cast<MdiChildDialog *>(window->widget());
+        MdiChildDialog *mdiChild = qobject_cast<MdiChildDialog *>(window);
         if (nullptr != mdiChild){
             RuleManager::ProjectType tProject = mdiChild->GetProjectType();
             if(tProject == RuleManager::TYPE_PROJECT_AUDIOCD || tProject == RuleManager::TYPE_PROJECT_MIXEDMODE || tProject == RuleManager::TYPE_PROJECT_OPEN
@@ -1762,7 +2050,188 @@ bool MainWindow::hasProjectWindow()
 
 }
 
-void MainWindow::insertCustomRibbonTabs()
+//##############################################################################################################
+//End Helper Functions
+//##############################################################################################################
+
+//##############################################################################################################
+//UI Management Functions
+//##############################################################################################################
+
+void MainWindow::onActiveChildChanged()
+{
+
+    //First we check if there is a window available.
+    QMdiSubWindow *activeSubWindow = mdiArea->activeSubWindow();
+    if (activeSubWindow != nullptr) {
+        //A Subwindow is available
+        if(currentSubWindow!=activeSubWindow){
+            //The window is not the the same as before. When this will happen ever inside this event?
+
+            //Enumerate the projectTpye of the currentWindow
+            RuleManager::ProjectType childTypeCurrent = RuleManager::TYPE_PROJECT_ISO;
+            if(currentSubWindow){
+                MdiChildBase * childCurrent = qobject_cast<MdiChildBase *>(currentSubWindow);
+                if(childCurrent){
+                    childTypeCurrent = childCurrent->GetProjectType();
+                }
+            }
+
+            //Work Done, now save for next time
+            currentSubWindow = activeSubWindow;
+            MdiChildBase * childCurrent = qobject_cast<MdiChildBase *>(activeSubWindow);
+            actProject = childCurrent->GetProjectType();
+
+            //Eigentlich müssten wir hier den FensterTypus speichern.
+
+            //Now we need to check the type of window.
+            MdiChildBase * child = qobject_cast<MdiChildBase *>(activeSubWindow);
+            //We need to update the statusbar with DiskInfo and DeviceInfo
+            updateStatusBarText(child->updateStatus(),true);
+            RuleManager::ProjectType childType = child->GetProjectType();
+
+            if(childType == RuleManager::TYPE_PROJECT_DISKINFO || childType == RuleManager::TYPE_PROJECT_DEVICEINFO){
+                getListWidgetInfo();
+            }else{
+                getListWidget();
+            }
+
+            //Es muss noch weiter augedröselt werden.
+            //Also sprich welche Projekte haben die gleichen Tabs. Die dann auh gleich lassen.
+            //Beispiel: ISO und UDF, oder ISO und ISOUDF. Aber ISO und AudioCD ist unterschieldich.
+            //Überlegung:
+            //Audio und MixedMode sind unterschiedlich
+            //VideoCD ist ein sondefall
+            //Bluray und VideoDVD?
+
+            bool isSameProject = false;
+
+            switch(childTypeCurrent){
+                case RuleManager::TYPE_PROJECT_UDF:
+                    if( childType == RuleManager::TYPE_PROJECT_ISO || childType == RuleManager::TYPE_PROJECT_ISOUDF ) {
+                        isSameProject = true; }
+                    break;
+                case RuleManager::TYPE_PROJECT_ISO:
+                    if( childType == RuleManager::TYPE_PROJECT_UDF || childType == RuleManager::TYPE_PROJECT_ISOUDF ) {
+                        isSameProject = true; }
+                    break;
+                case RuleManager::TYPE_PROJECT_ISOUDF:
+                    if( childType == RuleManager::TYPE_PROJECT_ISO || childType == RuleManager::TYPE_PROJECT_UDF ) {
+                        isSameProject = true; }
+                    break;
+                default:
+                    isSameProject = false;
+            }
+
+            //ternary operator,
+            //(childTypeCurrent==childType) ? true : false
+
+            //Man sollte hier auch das aktuelle Tab mitsenden. Und dann in den Projekttypen gucken ob das Tab erlaubt ist und dann ggf. kein Default Tab setzen.
+            insertCustomRibbonTabs(isSameProject);
+            updateProjectRibbon();
+            return;
+        }
+
+    }else{
+       currentSubWindow = nullptr;
+    }
+
+
+
+    insertCustomRibbonTabs(false);
+    updateProjectRibbon();
+
+}
+
+void MainWindow::onSubWindowChanged(RuleManager::ProjectType thisProject)
+{
+
+    //Ok jetzt haben wir ein Signal vom Fenster selber aber nicht von der MDI Area.
+    if(thisProject == RuleManager::TYPE_PROJECT_HEX){
+        //Alles aus bis auf Hex
+        ui->ribbonTabWidget->hideTab(tr("File System"));
+        ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
+        ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
+        ui->ribbonTabWidget->hideTab(tr("General"));
+        ui->ribbonTabWidget->hideTab(tr("Scan Editor"));
+        ui->ribbonTabWidget->hideTab(tr("Create Image"));
+
+        if(!ui->ribbonTabWidget->isTabVisible(tr("Hex Editor"))){
+            ui->ribbonTabWidget->showTab(":/icons/hexedit.png",tr("Hex Editor"));
+        }
+
+        ui->ribbonTabWidget->currentTab(tr("Hex Editor"));
+    }
+
+    if(thisProject == RuleManager::TYPE_PROJECT_SCAN){
+        //Alles aus bis auf Hex
+        ui->ribbonTabWidget->hideTab(tr("File System"));
+        ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
+        ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
+        ui->ribbonTabWidget->hideTab(tr("General"));
+        ui->ribbonTabWidget->hideTab(tr("Hex Editor"));
+        ui->ribbonTabWidget->hideTab(tr("Create Image"));
+
+
+        if(!ui->ribbonTabWidget->isTabVisible(tr("Scan Editor"))){
+            ui->ribbonTabWidget->showTab(":/icons/diskscan.png",tr("Scan Editor"));
+        }
+
+        ui->ribbonTabWidget->currentTab(tr("Scan Editor"));
+    }
+
+    if(thisProject == RuleManager::TYPE_PROJECT_DISKINFO){
+        //Alles aus bis auf Hex
+        ui->ribbonTabWidget->hideTab(tr("File System"));
+        ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
+        ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
+        ui->ribbonTabWidget->hideTab(tr("General"));
+        ui->ribbonTabWidget->hideTab(tr("Hex Editor"));
+
+        ui->ribbonTabWidget->hideTab(tr("Create Image"));
+
+
+        ui->ribbonTabWidget->hideTab(tr("Scan Editor"));
+
+        ui->ribbonTabWidget->currentTab(tr("Device"));
+    }
+
+    if(thisProject == RuleManager::TYPE_PROJECT_DEVICEINFO){
+        //Alles aus bis auf Hex
+        ui->ribbonTabWidget->hideTab(tr("File System"));
+        ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
+        ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
+        ui->ribbonTabWidget->hideTab(tr("General"));
+        ui->ribbonTabWidget->hideTab(tr("Hex Editor"));
+        ui->ribbonTabWidget->hideTab(tr("Create Image"));
+        ui->ribbonTabWidget->hideTab(tr("Scan Editor"));
+
+        ui->ribbonTabWidget->currentTab(tr("Device"));
+    }
+
+    if(thisProject == RuleManager::TYPE_PROJECT_ISO){
+        //Alles aus bis auf Hex
+        ui->ribbonTabWidget->hideTab(tr("File System"));
+        ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
+        ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
+        ui->ribbonTabWidget->hideTab(tr("General"));
+        ui->ribbonTabWidget->hideTab(tr("Hex Editor"));
+        ui->ribbonTabWidget->hideTab(tr("Create Image"));
+        ui->ribbonTabWidget->hideTab(tr("Scan Editor"));
+
+        if(!ui->ribbonTabWidget->isTabVisible(tr("General"))){
+            ui->ribbonTabWidget->showTab(":/icons/open-disk.png",tr("General"));
+            ui->ribbonTabWidget->showTab(":/icons/filesystem.png",tr("File System"));
+            ui->ribbonTabWidget->showTab(":/icons/extiso.png",tr("ISO Extended"));
+            ui->ribbonTabWidget->showTab(":/icons/boot.png",tr("Boot Disc"));
+        }
+
+        ui->ribbonTabWidget->currentTab(tr("General"));
+    }
+
+}
+
+void MainWindow::insertCustomRibbonTabs(bool isDifferentProject)
 {
     bool hasMdiChild = (activeMdiChild() != nullptr);
     bool hasMdiInfoChild = (activeMdiInfoChild() != nullptr);
@@ -1770,57 +2239,78 @@ void MainWindow::insertCustomRibbonTabs()
     bool hasMdiHexChild = (activeMdiHexChild() != nullptr);
     bool hasMdiScanChild = (activeMdiScanChild() != nullptr);
 
+
     //This call hinder us to hide all initilaized Tabs, because on statrup this dialog is not finished.
     if(QWidget::isActiveWindow()){
 
-        if(hasMdiChild) // Secure check that a child is selected
-        {
-            ui->ribbonTabWidget->showTab(":/icons/open-disk.png","General");
-            RuleManager::ProjectType tProject = activeMdiChild()->GetProjectType();
 
-            if(RuleManager::TYPE_PROJECT_AUDIOCD==tProject || RuleManager::TYPE_PROJECT_MIXEDMODE==tProject || RuleManager::TYPE_PROJECT_OPEN==tProject){
-                //pageAudioCD->setVisible(true);
-                //ribbonBar()->setCurrentPage(getPageIndex(pageAudioCD));
-                if(RuleManager::TYPE_PROJECT_AUDIOCD==tProject){
-                   ui->ribbonTabWidget->hideTab(tr("File System"));
-                }
-                if(RuleManager::TYPE_PROJECT_MIXEDMODE==tProject || RuleManager::TYPE_PROJECT_OPEN==tProject){
-                    ui->ribbonTabWidget->showTab(":/icons/filesystem.png","File System");
-                    //insertFileSystemRibbonPage(tProject);
-                    //insertDiskRibbonPage(tProject);
-                }
+
+        //Wir müssen ja erstmal gucken. Was ist der letzte Projekttyp.
+        //Wenn kein Projekt mehr da ist, nicht den Tab wechseln.
+        //Wann wechseln wir den Tab:
+        //General // File System // ISO Extended // Boot Disc // Create Image
+        // Wenn es Device ist, dann auf Device bleiben.
+
+        //child count
+        //Wenn kein Subwindow aktiv ist.
+        if(mdiArea->subWindowList().count()==0){
+            //Wenn das actuelle TAB Device ist?
+            if(actProject==RuleManager::TYPE_PROJECT_SCAN || actProject==RuleManager::TYPE_PROJECT_HEX || actProject==RuleManager::TYPE_PROJECT_DISKINFO || actProject==RuleManager::TYPE_PROJECT_DEVICEINFO){
+                //Also setzen wir den Tab auf Device
+                ui->ribbonTabWidget->currentTab(tr("Device"));
             }else{
-                ui->ribbonTabWidget->showTab(":/icons/filesystem.png","File System");
-                ui->ribbonTabWidget->currentTab(tr("Edit"));
-                //insertFileSystemRibbonPage(tProject);
-                //insertDiskRibbonPage(tProject);
-                updateDiskPage(tProject);
-                //ribbonBar()->setCurrentPage(getPageIndex(pageProject));
-            }
-            if(RuleManager::IsOptionAllowed(tProject, RuleManager::OPTION_SPECIALS_ISOEXTINFO)){
-                ui->ribbonTabWidget->showTab(":/icons/extiso.png","ISO Extended");
-            }else{
-                ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
-            }
-            if(RuleManager::IsOptionAllowed(tProject, RuleManager::OPTION_SPECIALS_BootCD_DVD_BD)){
-                ui->ribbonTabWidget->showTab(":/icons/boot.png","Boot Disc");
-            }else{
-                ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
-            }
-        }else if(hasMdiInfoChild || hasMdiDeviceChild || hasMdiHexChild || hasMdiScanChild){
-            ui->ribbonTabWidget->currentTab(tr("Device"));
-            if(hasProjectWindow()==false){
+                //Der alte Projekttyp war ein Diskprojekt
                 ui->ribbonTabWidget->hideTab(tr("File System"));
                 ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
                 ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
                 ui->ribbonTabWidget->hideTab(tr("General"));
+                ui->ribbonTabWidget->setTabIndex(0);
             }
         }else{
-            ui->ribbonTabWidget->hideTab(tr("File System"));
-            ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
-            ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
-            ui->ribbonTabWidget->hideTab(tr("General"));
-            ui->ribbonTabWidget->setTabIndex(0);
+            //Es sind Fenster offen
+            if(!isDifferentProject){
+
+                if(hasMdiChild) // Secure check that a child is selected
+                {
+                    ui->ribbonTabWidget->showTab(":/icons/open-disk.png",tr("General"));
+                    RuleManager::ProjectType tProject = activeMdiChild()->GetProjectType();
+
+                    if(RuleManager::TYPE_PROJECT_AUDIOCD==tProject || RuleManager::TYPE_PROJECT_MIXEDMODE==tProject || RuleManager::TYPE_PROJECT_OPEN==tProject){
+                        //pageAudioCD->setVisible(true);
+                        //ribbonBar()->setCurrentPage(getPageIndex(pageAudioCD));
+                        ui->ribbonTabWidget->currentTab(tr("Edit"));
+                        if(RuleManager::TYPE_PROJECT_AUDIOCD==tProject){
+                           ui->ribbonTabWidget->hideTab(tr("File System"));
+                        }
+                        if(RuleManager::TYPE_PROJECT_MIXEDMODE==tProject || RuleManager::TYPE_PROJECT_OPEN==tProject){
+                            ui->ribbonTabWidget->showTab(":/icons/filesystem.png",tr("File System"));
+                            //insertFileSystemRibbonPage(tProject);
+                            //insertDiskRibbonPage(tProject);
+                        }
+                    }else{
+                        ui->ribbonTabWidget->showTab(":/icons/filesystem.png",tr("File System"));
+                        ui->ribbonTabWidget->currentTab(tr("Edit"));
+                        //insertFileSystemRibbonPage(tProject);
+                        //insertDiskRibbonPage(tProject);
+                        updateDiskPage(tProject);
+                        //ribbonBar()->setCurrentPage(getPageIndex(pageProject));
+                    }
+                    if(RuleManager::IsOptionAllowed(tProject, RuleManager::OPTION_SPECIALS_ISOEXTINFO)){
+                        ui->ribbonTabWidget->showTab(":/icons/extiso.png",tr("ISO Extended"));
+                    }else{
+                        ui->ribbonTabWidget->hideTab(tr("ISO Extended"));
+                    }
+                    if(RuleManager::IsOptionAllowed(tProject, RuleManager::OPTION_SPECIALS_BootCD_DVD_BD)){
+                        ui->ribbonTabWidget->showTab(":/icons/boot.png",tr("Boot Disc"));
+                    }else{
+                        ui->ribbonTabWidget->hideTab(tr("Boot Disc"));
+                    }
+                }
+                if(hasMdiInfoChild || hasMdiDeviceChild){
+                    ui->ribbonTabWidget->currentTab(tr("Device"));
+                }
+
+            }
         }
 
     }
@@ -1853,12 +2343,98 @@ void MainWindow::updateProjectRibbon()
     bool hasMdiHexChild = (activeMdiHexChild() != nullptr);
     bool hasMdiScanChild = (activeMdiScanChild() != nullptr);
 
-    //if(QWidget::isActiveWindow()){
 
+    //if(QWidget::isActiveWindow()){
 
         //scanMediaButton->setEnabled(hasMdiScanChild);
         //hexMediaButton->setEnabled(hasMdiHexChild);
-        imageMediaButton->setEnabled(hasMdiInfoChild);
+        if(hasMdiInfoChild){
+            //if(activeMdiInfoChild()->hasData==1){
+                imageMediaButton->setEnabled(true);
+            //}else{
+            //    imageMediaButton->setEnabled(false);
+           //}
+        }
+
+        if(hasMdiHexChild){
+            //HEx ist das Aktive Fentser.
+            //Emulate the burndrive.
+            TCHAR chBurnDevice[50];
+            int32 nLength = sizeof(chBurnDevice)/sizeof(chBurnDevice[0]);
+            ::GetBurnDevice(chBurnDevice, &nLength);
+            QString test = QString::fromUtf8(chBurnDevice);
+
+            //qDebug("CurrentBurnDrive: %s",test.toLatin1().constData());
+            //qDebug("ProjectBurnDrive: %s",activeMdiHexChild()->getBurnDrive().toLatin1().constData());
+
+            if(test.at(0)!=activeMdiHexChild()->getBurnDrive().at(0)){
+                //activeMdiHexChild()->updateHex(false);
+            }
+
+            hexSector->setRange(0, activeMdiHexChild()->getMaxSector());
+            hexSector->setValue(activeMdiHexChild()->getSector());
+            updateHexEditor->setEnabled(true);
+            if(activeMdiHexChild()->getDataState()==1){
+
+                //Is eneabled
+                saveHexEditor->setEnabled(true);
+                if(activeMdiHexChild()->getSector()==0){
+                    navFirstHexEditor->setEnabled(false);
+                    navStepBackHexEditor->setEnabled(false);
+                }else{
+                    navFirstHexEditor->setEnabled(true);
+                    navStepBackHexEditor->setEnabled(true);
+                }
+                if(activeMdiHexChild()->getSector()==activeMdiHexChild()->getMaxSector()){
+                    navLastHexEditor->setEnabled(false);
+                    navStepForwardHexEditor->setEnabled(false);
+                }else{
+                    navLastHexEditor->setEnabled(true);
+                    navStepForwardHexEditor->setEnabled(true);
+                }
+                hexSector->setEnabled(true);
+            }else{//Is disabled
+                hexSector->setValue(activeMdiHexChild()->getSector());
+                saveHexEditor->setEnabled(false);
+                navFirstHexEditor->setEnabled(false);
+                navLastHexEditor->setEnabled(false);
+                navStepBackHexEditor->setEnabled(false);
+                navStepForwardHexEditor->setEnabled(false);
+                hexSector->setEnabled(false);
+            }
+        }
+
+        if(hasMdiScanChild){
+            scanReadOffset->setRange(0, activeMdiScanChild()->getMaxSector());
+            scanStartOffset->setRange(0, activeMdiScanChild()->getMaxSector());
+            scanReadOffset->setValue(activeMdiScanChild()->getReadOffset());
+            scanStartOffset->setValue(activeMdiScanChild()->getSectorOffset());
+            //Scan ist das Aktive Fenster
+            updateScanEditor->setEnabled(true);
+            if(activeMdiScanChild()->getDataState()==1){
+                if(activeMdiScanChild()->getScanState()==false){
+                    startScanEditor->setEnabled(true);
+                    stopScanEditor->setEnabled(false);                  
+                    saveScanEditor->setEnabled(true);
+                    scanStartOffset->setEnabled(true);
+                    scanReadOffset->setEnabled(true);
+                }else{
+                    startScanEditor->setEnabled(false);
+                    stopScanEditor->setEnabled(true);
+                    saveScanEditor->setEnabled(false);
+                    scanStartOffset->setEnabled(false);
+                    scanReadOffset->setEnabled(false);
+                }
+            }else{
+                startScanEditor->setEnabled(false);
+                stopScanEditor->setEnabled(false);
+                saveScanEditor->setEnabled(false);
+                scanStartOffset->setEnabled(false);
+                scanReadOffset->setEnabled(false);
+            }
+
+        }
+
 
         viewTileButton->setEnabled(hasMdiChild);
         viewCascadeButton->setEnabled(hasMdiChild);
@@ -1935,6 +2511,7 @@ void MainWindow::updateProjectRibbon()
             if(activeMdiChild()->GetProjectType() != RuleManager::TYPE_PROJECT_DISKINFO
                     && activeMdiChild()->GetProjectType() != RuleManager::TYPE_PROJECT_DEVICEINFO)
             {
+
                 tempItem = activeMdiChild()->GetSelectedTreeItem();
                 if(tempItem){
                     if(tempItem->GetType()==QDataItem::Disk || tempItem->GetType()==QDataItem::Session || tempItem->GetType()==QDataItem::DataTrack){
@@ -2042,6 +2619,7 @@ void MainWindow::updateProjectRibbon()
 
             }
 
+
             QDiskItem *diskItem = (QDiskItem *)activeMdiChild()->getTreeWidget()->topLevelItem(0);
             //Wir fangen an die Sachen zu lesen.
             RuleManager::ProjectType tProject = activeMdiChild()->GetProjectType();
@@ -2066,6 +2644,7 @@ void MainWindow::updateProjectRibbon()
                 bootISOLevelCombo->setCurrentIndex(diskItem->getISOFsType());
                 loadSegmentBootEdit->setText(diskItem->getBootLoadSegment());
             }
+
 
             if(RuleManager::IsOptionAllowed(tProject, RuleManager::OPTION_SPECIALS_ISOEXTINFO)){
                 edIsoExSystemIdValue->setText(diskItem->getSystemId());
@@ -2218,7 +2797,7 @@ void MainWindow::updateProjectRibbon()
         }
 
         //Betrifft nur Aktive
-        if(hasMdiInfoChild==true || hasMdiDeviceChild==true || hasMdiHexChild==true){
+        if(hasMdiInfoChild==true || hasMdiDeviceChild==true || hasMdiHexChild==true || hasMdiScanChild==true){
             viewTileButton->setEnabled(true);
             viewCascadeButton->setEnabled(true);
             viewSwitchButton->setEnabled(true);
@@ -2232,8 +2811,17 @@ void MainWindow::updateProjectRibbon()
 
 }
 
+//##############################################################################################################
+//End UI Management Functions
+//##############################################################################################################
+
+//##############################################################################################################
+//Burn Functions
+//##############################################################################################################
+
 void MainWindow::doBurn()
 {
+    qDebug("DoBurn");
     //We will give now the job to the window.
     //Jobs
     //1: Burn
@@ -2243,85 +2831,13 @@ void MainWindow::doBurn()
     //Show non modal, exec is modal
 }
 
+//##############################################################################################################
+//End Burn Functions
+//##############################################################################################################
 
-//##########################################################################################################
-//TOPIC: Update DiskItem structure
-//Here we put now the change Events for DiskItem structure.
-//##########################################################################################################
-//ISOEx
-void MainWindow::isoExSystemIdchanged(QString strText)
-{
-    QDiskItem *diskItem = nullptr;
-    if(activeMdiChild() != nullptr){
-        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
-        diskItem->setSystemId(strText);
-    }
-}
-
-void MainWindow::isoExVolumechanged(QString strText)
-{
-    QDiskItem *diskItem = nullptr;
-    if(activeMdiChild() != nullptr){
-        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
-        diskItem->setVolumeSet(strText);
-    }
-}
-
-void MainWindow::isoExPublisherchanged(QString strText)
-{
-    QDiskItem *diskItem = nullptr;
-    if(activeMdiChild() != nullptr){
-        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
-        diskItem->setPublisher(strText);
-    }
-}
-
-void MainWindow::isoExDataPreparerchanged(QString strText)
-{
-    QDiskItem *diskItem = nullptr;
-    if(activeMdiChild() != nullptr){
-        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
-        diskItem->setDatapreparer(strText);
-    }
-}
-
-void MainWindow::isoExApplicationchanged(QString strText)
-{
-    QDiskItem *diskItem = nullptr;
-    if(activeMdiChild() != nullptr){
-        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
-        diskItem->setApplication(strText);
-    }
-}
-
-void MainWindow::isoExCopyrightFilechanged(QString strText)
-{
-    QDiskItem *diskItem = nullptr;
-    if(activeMdiChild() != nullptr){
-        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
-        diskItem->setCoprightFile(strText);
-    }
-}
-
-void MainWindow::isoExAbstractFilechanged(QString strText)
-{
-    QDiskItem *diskItem = nullptr;
-    if(activeMdiChild() != nullptr){
-        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
-        diskItem->setAbstractFile(strText);
-    }
-}
-
-void MainWindow::isoExBibliographicFilechanged(QString strText)
-{
-    QDiskItem *diskItem = nullptr;
-    if(activeMdiChild() != nullptr){
-        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
-        diskItem->setBibliographicFile(strText);
-    }
-}
-
-//FileSystem
+//##############################################################################################################
+//Disc FS Functions
+//##############################################################################################################
 void MainWindow::fsIsoTypeChanged(int nIndex)
 {
     QDiskItem *diskItem = nullptr;
@@ -2424,7 +2940,13 @@ void MainWindow::fsUDFWriteStreamChanged(int nState)
     }
 }
 
-//Projectoptions
+//##############################################################################################################
+//End Disc FS Functions
+//##############################################################################################################
+
+//##############################################################################################################
+//Burn Feature Functions
+//##############################################################################################################
 void MainWindow::projectSimulateBurnChanged(int nState)
 {
     QDiskItem *diskItem = nullptr;
@@ -2506,6 +3028,14 @@ void MainWindow::projectAVCHDChanged(int nState)
         diskItem->setFeatureAVCHD(nState?1:0);
     }
 }
+
+//##############################################################################################################
+//End Burn Feature Functions
+//##############################################################################################################
+
+//##############################################################################################################
+//Boot Functions
+//##############################################################################################################
 
 void MainWindow::updateBootDisk(bool bState)
 {
@@ -2613,7 +3143,11 @@ void MainWindow::clickedSelBootImagePath()
 }
 
 //##############################################################################################################
-//File Open & Save
+//End Boot Functions
+//##############################################################################################################
+
+//##############################################################################################################
+//Default Software Functions
 //##############################################################################################################
 
 void MainWindow::open()
@@ -2632,7 +3166,7 @@ void MainWindow::open()
     }
     MdiChildDialog *child = createMdiChild();
     if (child->loadFile(fileName)) {
-        updateStatusBarText(tr("File loaded"));
+        (tr("File loaded"),false);
         child->show();
         child->showMaximized();
     } else {
@@ -2644,7 +3178,7 @@ void MainWindow::save()
 {
     if (activeMdiChild() && activeMdiChild()->save()){
         //statusBar()->showMessage(tr("File saved"), 2000);
-        updateStatusBarText(tr("File saved"));
+        updateStatusBarText(tr("File saved"),false);
     }
 }
 
@@ -2652,11 +3186,28 @@ void MainWindow::saveAs()
 {
     if (activeMdiChild() && activeMdiChild()->saveAs()){
         //statusBar()->showMessage(tr("File saved"), 2000);
-        updateStatusBarText(tr("File saved"));
+        updateStatusBarText(tr("File saved"),false);
     }
 }
 
-//ISOEx Data
+void MainWindow::openSettings()
+{
+    ConfigDialog *dialog = new ConfigDialog;
+    dialog->show();
+}
+
+void MainWindow::closeDiskbutler()
+{
+    QApplication::quit();
+}
+
+//##############################################################################################################
+//End Default Software Functions
+//##############################################################################################################
+
+//##############################################################################################################
+//ISO Ex Settings Functions
+//##############################################################################################################
 void MainWindow::isoExImportClicked()
 {
     edIsoExSystemIdValue->setText(ConfigurationPage::mSettings.value("systemId","").toString());
@@ -2681,16 +3232,81 @@ void MainWindow::isoExReset()
     edIsoExBibliographicFileValue->setText("");
 }
 
-void MainWindow::openSettings()
+void MainWindow::isoExSystemIdchanged(QString strText)
 {
-    ConfigDialog *dialog = new ConfigDialog;
-    dialog->show();
+    QDiskItem *diskItem = nullptr;
+    if(activeMdiChild() != nullptr){
+        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
+        diskItem->setSystemId(strText);
+    }
 }
 
-void MainWindow::closeDiskbutler()
+void MainWindow::isoExVolumechanged(QString strText)
 {
-    QApplication::quit();
+    QDiskItem *diskItem = nullptr;
+    if(activeMdiChild() != nullptr){
+        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
+        diskItem->setVolumeSet(strText);
+    }
 }
+
+void MainWindow::isoExPublisherchanged(QString strText)
+{
+    QDiskItem *diskItem = nullptr;
+    if(activeMdiChild() != nullptr){
+        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
+        diskItem->setPublisher(strText);
+    }
+}
+
+void MainWindow::isoExDataPreparerchanged(QString strText)
+{
+    QDiskItem *diskItem = nullptr;
+    if(activeMdiChild() != nullptr){
+        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
+        diskItem->setDatapreparer(strText);
+    }
+}
+
+void MainWindow::isoExApplicationchanged(QString strText)
+{
+    QDiskItem *diskItem = nullptr;
+    if(activeMdiChild() != nullptr){
+        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
+        diskItem->setApplication(strText);
+    }
+}
+
+void MainWindow::isoExCopyrightFilechanged(QString strText)
+{
+    QDiskItem *diskItem = nullptr;
+    if(activeMdiChild() != nullptr){
+        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
+        diskItem->setCoprightFile(strText);
+    }
+}
+
+void MainWindow::isoExAbstractFilechanged(QString strText)
+{
+    QDiskItem *diskItem = nullptr;
+    if(activeMdiChild() != nullptr){
+        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
+        diskItem->setAbstractFile(strText);
+    }
+}
+
+void MainWindow::isoExBibliographicFilechanged(QString strText)
+{
+    QDiskItem *diskItem = nullptr;
+    if(activeMdiChild() != nullptr){
+        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
+        diskItem->setBibliographicFile(strText);
+    }
+}
+
+//##############################################################################################################
+//End ISO Ex Settings
+//##############################################################################################################
 
 //##############################################################################################################
 //Create a QmenuBAr in the Top. Check what Windows and Linxu will say according to this.
@@ -2698,6 +3314,7 @@ void MainWindow::closeDiskbutler()
 
 void MainWindow::createOwnMenuBar()
 {
+
     //It is needed to add actions to the menu, else it will not visible.
     //IF: Move to own function, not leave here
 
@@ -2930,8 +3547,90 @@ void MainWindow::onNewVersionAvail(QString newVersion)
 }
 
 //##############################################################################################################
-//Additional Disk & Media Functions
+//Disk Viewer (Hex) Functions
 //##############################################################################################################
+void MainWindow::hexReadSector(double nValue)
+{
+    qDebug("ausgelöst");
+    if(activeMdiHexChild() != nullptr){
+        activeMdiHexChild()->readSectorEx(nValue);
+        activeMdiHexChild()->setSector(nValue);
+
+        if(nValue == 0){
+            navFirstHexEditor->setEnabled(false);
+            navStepBackHexEditor->setEnabled(false);
+        }else{
+            navFirstHexEditor->setEnabled(true);
+            navStepBackHexEditor->setEnabled(true);
+        }
+        if(nValue == activeMdiHexChild()->getMaxSector()){
+            navLastHexEditor->setEnabled(false);
+            navStepForwardHexEditor->setEnabled(false);
+        }else{
+            navLastHexEditor->setEnabled(true);
+            navStepForwardHexEditor->setEnabled(true);
+        }
+    }
+}
+
+void MainWindow::actHexNextSector()
+{
+    if(activeMdiHexChild() != nullptr){
+        double cSector = hexSector->value();
+        cSector++;
+        hexSector->setValue(cSector);
+    }
+}
+
+void MainWindow::actHexFirstSector()
+{
+    if(activeMdiHexChild() != nullptr){
+        hexSector->setValue(0);
+    }
+}
+
+void MainWindow::actHexLastSector()
+{
+    if(activeMdiHexChild() != nullptr){
+        hexSector->setValue(activeMdiHexChild()->getMaxSector());
+    }
+}
+
+void MainWindow::actHexPrevSector()
+{
+    if(activeMdiHexChild() != nullptr){
+        double cSector = hexSector->value();
+        cSector--;
+        hexSector->setValue(cSector);
+    }
+}
+
+void MainWindow::actHexUpdate()
+{
+    if(activeMdiHexChild() != nullptr){
+        hexSector->blockSignals(true); //Shush, block your signals
+        hexSector->setValue(0);
+
+
+        activeMdiHexChild()->startHexThread();
+        hexSector->blockSignals(false); //OK, emit from now on
+    }
+}
+
+void MainWindow::actHexSaveLog()
+{
+    if(activeMdiHexChild() != nullptr){
+        activeMdiHexChild()->saveBlock();
+    }
+}
+
+void MainWindow::updatedHexData()
+{
+    if(activeMdiHexChild() != nullptr){
+        hexSector->setRange(0, activeMdiHexChild()->getMaxSector());
+        hexSector->setValue(0);
+    }
+}
 void MainWindow::openHexEditor()
 {
     if(listReadDevicesWidget->count()==0) return;
@@ -2943,7 +3642,7 @@ void MainWindow::openHexEditor()
     QString strDriveName = itemFromList->text();
 
     foreach (QMdiSubWindow *window, mdiArea->subWindowList()) {
-      MdiChildHex *mdiChild = qobject_cast<MdiChildHex *>(window->widget());
+      MdiChildHex *mdiChild = qobject_cast<MdiChildHex *>(window);
       if (nullptr != mdiChild){
           //We have now a DeviceInfo child.
           //We will check now the drive. If the drive is the same, we pop up the mdichild to top.
@@ -2959,7 +3658,15 @@ void MainWindow::openHexEditor()
     }
 
     MdiChildHex *child = new MdiChildHex(this,strDriveName);
+
+    connect(child, SIGNAL(startSpinner()), this, SLOT(startWaitSpinner()));
+    connect(child, SIGNAL(stopSpinner()), this, SLOT(stopWaitSpinner()));
+    connect(child, SIGNAL(datatrack_changed()), this, SLOT(updateProjectRibbon()));
+    connect(child, SIGNAL(subwindowchanged(RuleManager::ProjectType)),
+            this, SLOT(onSubWindowChanged(RuleManager::ProjectType)));
+
     mdiArea->addSubWindow(child);
+
 
     if(isCascaded()==false){
         child->showMaximized();
@@ -2969,6 +3676,96 @@ void MainWindow::openHexEditor()
     
     //active child changed an der Position. Daher springt er im Tab. 
     //Müssen wir dasa active subfenster definieren des Hex Editors.
+}
+
+//##############################################################################################################
+//End Disk Viewer (Hex) Functions
+//##############################################################################################################
+
+//##############################################################################################################
+//Disk Scan Functions
+//##############################################################################################################
+
+void MainWindow::enableScanTabControls()
+{
+    startScanEditor->setEnabled(true);
+    stopScanEditor->setEnabled(false);
+    saveScanEditor->setEnabled(true);
+    updateScanEditor->setEnabled(true);
+    scanStartOffset->setEnabled(true);
+    scanReadOffset->setEnabled(true);
+
+    //Wir müssen der UI das mitteilen
+}
+
+void MainWindow::disableScanTabControls()
+{
+    startScanEditor->setEnabled(false);
+    stopScanEditor->setEnabled(true);
+    saveScanEditor->setEnabled(false);
+    updateScanEditor->setEnabled(false);
+    scanStartOffset->setEnabled(false);
+    scanReadOffset->setEnabled(false);
+
+    //Wir müssen der UI den status mitteilen
+    /*
+     * Also, wenn der scan läuft, dann müssen wir das Fenster WEchsel abfangen und ggf. verindern.
+     * Wenn das Fenster gewechselt wird stoppen wir den Scan.
+     *
+     * Wie geben wir den Status an die UI:
+     * Also wir sollten den Analyse auf jedenfall mit dem SPinner blockieren.
+     * Also während des Analyze VOrgangs müssen wir die Elemente nicht steuern nur den Satus setzen.
+     *
+     */
+}
+
+void MainWindow::scanStartOffsetValue(double nValue)
+{
+    if(activeMdiScanChild() != nullptr){
+        activeMdiScanChild()->setSectorOffset(nValue);
+    }
+}
+
+void MainWindow::scanReadOffsetValue(double nValue)
+{
+    if(activeMdiScanChild() != nullptr){
+        activeMdiScanChild()->setReadOffset(nValue);
+    }
+}
+
+void MainWindow::scanStartScan()
+{
+    if(activeMdiScanChild() != nullptr){
+
+        activeMdiScanChild()->onStartScan(scanStartOffset->value(),scanReadOffset->value());
+        disableScanTabControls();
+    }
+}
+
+void MainWindow::scanStopScan()
+{
+    if(activeMdiScanChild() != nullptr){
+
+        activeMdiScanChild()->onStop();
+        enableScanTabControls();
+
+    }
+}
+
+void MainWindow::scanSaveLog()
+{
+    if(activeMdiScanChild() != nullptr){
+
+        activeMdiScanChild()->onWriteReport();
+    }
+}
+
+void MainWindow::scanUpdateDiskInfo()
+{
+    if(activeMdiScanChild() != nullptr){
+
+        activeMdiScanChild()->onUpdateSectors();
+    }
 }
 
 void MainWindow::openScanDialog()
@@ -2982,7 +3779,7 @@ void MainWindow::openScanDialog()
     QString strDriveName = itemFromList->text();
 
     foreach (QMdiSubWindow *window, mdiArea->subWindowList()) {
-      MdiChildScan *mdiChild = qobject_cast<MdiChildScan *>(window->widget());
+      MdiChildScan *mdiChild = qobject_cast<MdiChildScan *>(window);
       if (nullptr != mdiChild){
           //We have now a DeviceInfo child.
           //We will check now the drive. If the drive is the same, we pop up the mdichild to top.
@@ -2998,6 +3795,13 @@ void MainWindow::openScanDialog()
     }
 
     MdiChildScan *child = new MdiChildScan(this,strDriveName);
+
+    connect(child, SIGNAL(startSpinner()), this, SLOT(startWaitSpinner()));
+    connect(child, SIGNAL(stopSpinner()), this, SLOT(stopWaitSpinner()));
+    connect(child, SIGNAL(enableControls()), this, SLOT(enableScanTabControls()));
+    connect(child, SIGNAL(datatrack_changed()), this, SLOT(updateProjectRibbon()));
+    connect(child, SIGNAL(subwindowchanged(RuleManager::ProjectType)), this, SLOT(onSubWindowChanged(RuleManager::ProjectType)));
+
     mdiArea->addSubWindow(child);
 
     if(isCascaded()==false){
@@ -3007,11 +3811,137 @@ void MainWindow::openScanDialog()
     }
 }
 
+//##############################################################################################################
+//End Disk Scan Functions
+//##############################################################################################################
 
+//##############################################################################################################
+//Disk Info Functions / DiscImage
+//##############################################################################################################
+void MainWindow::updateDiskInfo()
+{
+
+    if(activeMdiInfoChild()){
+        activeMdiInfoChild()->updateDiskInfo();
+    }
+}
+
+void MainWindow::updateDiskInfoMenu()
+{
+    m_diskInfoMenu->clear();
+
+    if(activeMdiInfoChild()){
+        QAction* action  = m_diskInfoMenu->addAction(tr("Update"));
+        action->setCheckable(false);
+        connect(action, &QAction::triggered, [=] { updateDiskInfo(); });
+    }
+
+}
+
+void MainWindow::release2ImageTab()
+{
+    ui->ribbonTabWidget->showTab(":/icons/create_image.png","Create Image");
+    ui->ribbonTabWidget->currentTab(tr("Create Image"));
+
+    //Build the Tab well.
+    //Dieses Tab wird im Vergleich zu den anderen nur hier gebaut und nicht beim Wechsel.
+    //Beim wechsel wird das Tab versteckt.
+    if(activeMdiInfoChild()){
+        imageReadHardRetry->setValue(activeMdiInfoChild()->getImageCreateHardRetry());
+        imageReadSoftRetry->setValue(activeMdiInfoChild()->getImageCreateSoftRetry());
+
+        imageReadErrorSwitch->setCheckState(activeMdiInfoChild()->getImageCorrSwitch()? Qt::Checked : Qt::Unchecked);
+        if(activeMdiInfoChild()->getImageCorrSwitch() == 0){
+            imageReadHardRetry->setEnabled(false);
+            imageReadSoftRetry->setEnabled(false);
+        }else{
+            imageReadHardRetry->setEnabled(true);
+            imageReadSoftRetry->setEnabled(true);
+        }
+
+        imageReadJobVerify->setCheckState(activeMdiInfoChild()->getImageJobVerify()? Qt::Checked : Qt::Unchecked);
+        imageReadJobCreate->setCheckState(activeMdiInfoChild()->getImageJobCreate()? Qt::Checked : Qt::Unchecked);
+
+        imageFormatCombo->clear();
+        if(activeMdiInfoChild()->getIsIsoDisk()==true){
+            imageFormatCombo->addItem("ISO Image",BS_IMG_ISO);
+        }
+        if(activeMdiInfoChild()->getIsBinDisk()==true){
+            imageFormatCombo->addItem("Bin Image",BS_IMG_BIN);
+        }
+
+    }
+}
+
+void MainWindow::jobVerifyChanged(int nState)
+{
+    if(activeMdiInfoChild()){
+        activeMdiInfoChild()->setImageJobVerify(nState);
+    }
+}
+
+void MainWindow::jobCreateChanged(int nState)
+{
+    if(activeMdiInfoChild()){
+        activeMdiInfoChild()->setImageJobCreate(nState);
+    }
+}
+
+void MainWindow::errorCorrectionChanged(int nState)
+{
+    if(activeMdiInfoChild()){
+        activeMdiInfoChild()->setImageCorrSwitch(nState);
+        if(activeMdiInfoChild()->getImageCorrSwitch() == 0){
+            imageReadHardRetry->setEnabled(false);
+            imageReadSoftRetry->setEnabled(false);
+        }else{
+            imageReadHardRetry->setEnabled(true);
+            imageReadSoftRetry->setEnabled(true);
+        }
+    }
+}
+
+void MainWindow::imageCreateMethod(int iIndex)
+{
+    if(activeMdiInfoChild()){
+        qDebug("Combo: %d",iIndex);
+        activeMdiInfoChild()->setImageCreateMethod(imageFormatCombo->itemData(iIndex).toInt());
+    }
+}
+
+void MainWindow::onCreateDiscImage()
+{
+    if(activeMdiInfoChild()){
+        QString mFilter;
+        if(activeMdiInfoChild()->getImageCreateMethod()==1){
+            mFilter = tr("ISO file (*.iso)");
+        }
+        if(activeMdiInfoChild()->getImageCreateMethod()==2){
+            mFilter = tr("BIN file (*.bin)");
+        }
+        //Collect Data and start.
+
+        QString fileName =  QFileDialog::getSaveFileName(
+                        this,
+                        tr("Disc Image"),
+                        QDir::currentPath(),
+                        mFilter,&mFilter );
+
+        if (fileName.isEmpty())
+          return;
+
+        //Ok, the filedialog is good, if another suffic is added, it tel the user not this way.
+        //So we need only handle the issue that the default suffix is set
+        activeMdiInfoChild()->setImagePath(fileName);
+
+        //activeMdiInfoChild()->setImageCreateMethod(imageFormatCombo->itemData(imageFormatCombo->currentIndex()).toInt());
+        burnDialog *dialog = new burnDialog(2,nullptr,activeMdiInfoChild(),tr(""),nullptr,this);
+        dialog->exec(); //show();
+    }
+}
 
 void MainWindow::newDiskInfo()
 {
-
     //First we check if there is something to view
     if(listReadDevicesWidget->count()==0) return;
 
@@ -3021,8 +3951,9 @@ void MainWindow::newDiskInfo()
 
     QString strDriveName = itemFromList->text();
 
+
     foreach (QMdiSubWindow *window, mdiArea->subWindowList()) {
-      MdiChildDiskInfo *mdiChild = qobject_cast<MdiChildDiskInfo *>(window->widget());
+      MdiChildDiskInfo *mdiChild = qobject_cast<MdiChildDiskInfo *>(window);
       if (nullptr != mdiChild){
           //We have now a DeviceInfo child.
           //We will check now the drive. If the drive is the same, we pop up the mdichild to top.
@@ -3038,19 +3969,25 @@ void MainWindow::newDiskInfo()
     }
 
     MdiChildDiskInfo *child = new MdiChildDiskInfo(this,strDriveName);
+
+    //OK wor müssen aufpassen, die Fenster sind noch nicht erstellt, also kann das Fenster auch nicht auslösen.
+    connect(child, SIGNAL(startSpinner()), this, SLOT(startWaitSpinner()));
+    connect(child, SIGNAL(stopSpinner()), this, SLOT(stopWaitSpinner()));
+    connect(child, SIGNAL(subwindowchanged(RuleManager::ProjectType)),
+            this, SLOT(onSubWindowChanged(RuleManager::ProjectType)));
+
+
     //We will create the child and set the errorhandle inside the class.
     //If success, we call addSubWindow, if not we will delete it.
-    if(child->thisSuccessfullCreated==true){
-        mdiArea->addSubWindow(child);
+    mdiArea->addSubWindow(child);
 
-        if(isCascaded()==false){
-            child->showMaximized();
-        }else{
-            child->showNormal();
-        }
-    }else{
-        child->close();
-    }
+    if(isCascaded()==false){
+        child->showMaximized();
+     }else{
+        child->showNormal();
+     }
+
+    //child->activateWindow();
 
 
     //insertCustomRibbonPages();
@@ -3060,8 +3997,17 @@ void MainWindow::newDiskInfo()
 
 }
 
+//##############################################################################################################
+//End Disk Info Functions / DiscImage
+//##############################################################################################################
+
+//##############################################################################################################
+//Device Info Functions
+//##############################################################################################################
+
 void MainWindow::newDeviceInfo()
 {
+
     //First we check if there is something to view
     if(listReadDevicesWidget->count()==0) return;
 
@@ -3072,7 +4018,7 @@ void MainWindow::newDeviceInfo()
     QString strDriveName = itemFromList->text();
 
         foreach (QMdiSubWindow *window, mdiArea->subWindowList()) {
-          MdiChildDeviceInfo *mdiChild = qobject_cast<MdiChildDeviceInfo *>(window->widget());
+          MdiChildDeviceInfo *mdiChild = qobject_cast<MdiChildDeviceInfo *>(window);
           if (nullptr != mdiChild){
               //We have now a DeviceInfo child.
               //We will check now the drive. If the drive is the same, we pop up the mdichild to top.
@@ -3101,3 +4047,25 @@ void MainWindow::newDeviceInfo()
 
 
 }
+
+//##############################################################################################################
+//End Device Info Functions
+//##############################################################################################################
+
+//##############################################################################################################
+//Additional UI Assets
+//##############################################################################################################
+
+void MainWindow::startWaitSpinner()
+{
+    mBlockSpinner->start();
+}
+
+void MainWindow::stopWaitSpinner()
+{
+    mBlockSpinner->stop();
+}
+
+//##############################################################################################################
+//End Additional UI Assets
+//##############################################################################################################

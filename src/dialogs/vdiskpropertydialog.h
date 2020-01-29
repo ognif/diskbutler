@@ -49,6 +49,7 @@ public:
   bool getByDate() {return ui->checkByDate->isChecked();}
   QString getDateFrom() {return ui->dateFrom->date().toString();}
   QString getDateTo() {return ui->dateTo->date().toString();}
+  int getDateUsage() {return ui->dateUsage->checkState();}
 
   QDateTime getDateTimeCreation() {return ui->dateTimeCreation->dateTime();}
   QDateTime getDateTimeMdification() {return ui->dateTimeMdification->dateTime();}
@@ -65,6 +66,7 @@ private slots:
   void on_buttonImportSystemFilter_clicked();
 
   void on_buttonResetFilter_clicked();
+  void on_dateUsage_stateChanged(int arg1);
 
 private:
   Ui::VDiskPropertyDialog *ui;

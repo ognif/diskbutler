@@ -354,4 +354,18 @@ void Ribbon::disableButtonGroup(const QString &tabName, const QString &groupName
   }
 }
 
+bool Ribbon::isTabVisible(const QString &tabName)
+{
+    QWidget *tab = nullptr;
+    for (int i = 0; i < count(); i++)
+    {
+      if (tabText(i).toLower() == tabName.toLower())
+      {
+        return true;
+      }
+    }
+
+    return false;
+}
+
 

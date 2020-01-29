@@ -39,6 +39,7 @@ public:
         gridLayout->setContentsMargins(0, 0, 0, 0);
         ribbonTabScrollArea = new QScrollArea(RibbonTabContent);
         ribbonTabScrollArea->setObjectName(QString::fromUtf8("ribbonTabScrollArea"));
+        ribbonTabScrollArea->setFocusPolicy(Qt::NoFocus);
         ribbonTabScrollArea->setFrameShape(QFrame::NoFrame);
         ribbonTabScrollArea->setFrameShadow(QFrame::Plain);
         ribbonTabScrollArea->setLineWidth(0);

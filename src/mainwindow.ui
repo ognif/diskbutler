@@ -33,9 +33,6 @@
     <property name="spacing">
      <number>0</number>
     </property>
-    <item row="0" column="0">
-     <widget class="QTextEdit" name="textEdit"/>
-    </item>
    </layout>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>

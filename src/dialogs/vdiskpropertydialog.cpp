@@ -56,6 +56,13 @@ VDiskPropertyDialog::VDiskPropertyDialog(QWidget *parent, QDiskItem *item, bool 
   ui->editTitle->setText(item->getTitle());
   ui->editUPCEAN->setText(item->getUPCEAN());
 
+
+  ui->dateUsage->setCheckState(item->getIsoExUseDates()==true?Qt::Checked:Qt::Unchecked);
+  ui->dateTimeCreation->setEnabled(item->getIsoExUseDates());
+  ui->dateTimeMdification->setEnabled(item->getIsoExUseDates());
+  ui->dateTimeExpiration->setEnabled(item->getIsoExUseDates());
+  ui->dateTimeEffective->setEnabled(item->getIsoExUseDates());
+
   on_buttonResetFilter_clicked();
 
   if (!existAudioTrack) {
@@ -136,4 +143,12 @@ void VDiskPropertyDialog::on_buttonResetFilter_clicked()
   }
 
   on_checkByDate_clicked(ui->checkByDate->isChecked());
+}
+
+void VDiskPropertyDialog::on_dateUsage_stateChanged(int arg1)
+{
+    ui->dateTimeCreation->setEnabled(arg1==2?true:false);
+    ui->dateTimeMdification->setEnabled(arg1==2?true:false);
+    ui->dateTimeExpiration->setEnabled(arg1==2?true:false);
+    ui->dateTimeEffective->setEnabled(arg1==2?true:false);
 }

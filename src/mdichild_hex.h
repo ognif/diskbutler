@@ -24,6 +24,7 @@
 #include <QtWidgets>
 #include <QListView>
 #include <QSplitter>
+#include <QThread>
 #include <QLabel>
 #include "mdichild_base.h"
 #include "FoxSDKBurningLib.h"
@@ -31,26 +32,35 @@
 #include "QHexView.h"
 
 typedef std::vector<char> SectorData_t;
+class MdiChildHex;
+
+class ThreadHex : public QThread
+{
+    Q_OBJECT
+public:
+    ThreadHex(MdiChildHex *mSubWindow)
+    {
+        myChild = mSubWindow;
+    }
+protected:
+    void run();
+    MdiChildHex *myChild;
+};
 
 class MdiChildHex : public MdiChildBase
 {
     Q_OBJECT
 
-private:
-    QDoubleSpinBox *editSectors;
-    QPushButton *firstButton;
-    QPushButton *nextButton;
-    QPushButton *backButton;
-    QPushButton *lastButton;
-    QPushButton *updateButton;
-    QPushButton *saveButton;
-
-    void setControls(bool isFull);
+    struct pData {
+      int mSector;
+      int mHasData;
+      double maxSectors;
+      int bufferSize;
+    };
 
 public:
     MdiChildHex(QWidget* parent, const QString &device);
     RuleManager::ProjectType GetProjectType() {return mProjectType;}
-    bool thisSuccessfullCreated;
 
 
     QString getBurnDrive() {return strBurnDrive;}
@@ -63,27 +73,48 @@ public:
       setWindowTitle(wTitle);
     }
 
-private slots:
-    void setFirstSector();
-    void setLastSector();
-    void nextSector();
-    void prevSector();
+    //I prefer to work with sturctures.
+    int getSector() {return thisData.mSector;}
+    void setSector(int newSector) {thisData.mSector = newSector;}
+    int getDataState() {return thisData.mHasData;}
+    void setDataState(int newData) {thisData.mHasData = newData;}
+
+    int getMaxSector() {return thisData.maxSectors;}
+    void setMaxSector(int newSector) {thisData.maxSectors = newSector;}
+
+    int getBufferSize() {return thisData.bufferSize;}
+    void setBufferSize(int newBuffer) {thisData.bufferSize = newBuffer;}
+    void readSectorEx(int32 sectorIndex) {readSector(sectorIndex,getBufferSize());}
+
 
     void saveBlock();
-
-protected:
-    QHexView *hexView;
-    RuleManager::ProjectType mProjectType;
-
-    QString strBurnDrive;
-    void readDeviceInfo();
     void updateHex();
+    void startHexThread();
+    //Const, so the buffer will keep the same
 
-    int32 ReadSector(int32 sectorIndex) const;
 
-    double maxSectors;
-    double currentSector;
-    int bufferSize;
+Q_SIGNALS:
+    void datatrack_changed();
+    void updatedHexFinished(int mMaxSize, int bufferSize);
+    void startSpinner();
+    void stopSpinner();
+private:
+    void qDebugAusgabeSDK(int32 errCode, const QString &customMessage);
+
+
+protected Q_SLOTS:
+    void on_hex_completed(int mMaxSize, int bufferSize);
+    void startUpdate();
+
+private:
+    QHexView *hexView;
+    ThreadHex *mWorkThread;
+protected:
+    RuleManager::ProjectType mProjectType;
+    QString strBurnDrive;
+    int32 readSector(int sectorIndex, int buffersize);
+
+    pData thisData;
 
 };
 

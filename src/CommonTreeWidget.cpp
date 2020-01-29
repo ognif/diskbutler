@@ -108,7 +108,6 @@ CommonTreeWidget::CommonTreeWidget(RuleManager::ProjectType projectType, bool is
   diskItem->SetName(diskName);
 
 
-
   //What are the default values we read in?
   //mSystemId = ConfigurationPage::mSettings.value("systemId","").toString();
   //(QDiskItem *)diskItem->setSystemId("ttest");
@@ -116,6 +115,8 @@ CommonTreeWidget::CommonTreeWidget(RuleManager::ProjectType projectType, bool is
 
   diskItem->setFlags(diskItem->flags() | Qt::ItemIsEditable);
   diskItem->setExpanded(true);
+
+
   mHeadItem = diskItem;
 
   QDataItem *childItem;
@@ -215,6 +216,7 @@ CommonTreeWidget::CommonTreeWidget(RuleManager::ProjectType projectType, bool is
   //connect(this, SIGNAL(currentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)), this, SLOT(slot_handle_currentItemChanged(QTreeWidgetItem *, QTreeWidgetItem *)));
   connect(this, SIGNAL(itemSelectionChanged()), this, SLOT(slot_handle_itemSelectChanged()));
   connect(this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*, int)), this, SLOT(slot_handle_itemDoubleClicked(QTreeWidgetItem*,int)));
+  connect(this, SIGNAL(testMessage(const QString, bool*)), this, SLOT(on_add_tree(const QString, bool*)));
 }
 
 //void CommonTreeWidget::slot_handle_collapse(QTreeWidgetItem *item)
@@ -413,44 +415,55 @@ QDataItem* CommonTreeWidget::InsertPlaylistItem(const QString &path)
 
 QDataItem* CommonTreeWidget::InsertDataItem(const QString &path)
 {
-  GetSelectedItem();
+    QDataItem* delParent = nullptr;
+
+    //Workaround for GetSelectedItem because it willbecome overwritten if MainWindow will lost focus.
+    QList<QTreeWidgetItem*> selected = selectedItems();
+    if (selected.size() > 0) {
+      delParent = (QDataItem *)selected[0];
+    } else {
+      delParent = nullptr;
+    }
+
   QDataItem *childItem = nullptr;
 
-
-  if (QDataItem::Session == mSelectedItem->GetType()) {
+  if (QDataItem::Session == delParent->GetType()) {
     if (ConfigurationPage::mSettings.value("CreateDataTrackAuto", false).toBool()) {
-      mSelectedItem = getDataTrackItem();
+      delParent = getDataTrackItem();
     } else if (mDataTrackItem == nullptr) { //general DataTrackItem in tree
       QMessageBox::information(this, tr("Information"),
                                tr("Sorry you need to add a data track first!"));
       return nullptr;
     } else {
-      mSelectedItem = mDataTrackItem; // parent set to datatrack
+      delParent = mDataTrackItem; // parent set to datatrack
     }
-  } else if (QDataItem::DataTrack == mSelectedItem->GetType()) {
+  } else if (QDataItem::DataTrack == delParent->GetType()) {
     // do nothing here
-  } else if (QDataItem::Folder == mSelectedItem->GetType()) {
+  } else if (QDataItem::Folder == delParent->GetType()) {
     // do nothing here
-  }else if (QDataItem::File == mSelectedItem->GetType()) { //Temporary added. If File, it will select the parent node and add the file.
+  }else if (QDataItem::File == delParent->GetType()) { //Temporary added. If File, it will select the parent node and add the file.
       SetSelectedParent();
-  } else if (QDataItem::AudioTrack == mSelectedItem->GetType()) {
+      delParent = (QDataItem*)delParent->parent();
+  } else if (QDataItem::AudioTrack == delParent->GetType()) {
     QMessageBox::information(this, tr("Information"),
                              tr("Only audio file can be added in audio track!"));
     return nullptr;
   }
-  // check whether there is already file with the same name in this level
-  int index = findSameNameInLevel(mSelectedItem, path);
+
+  int index = findSameNameInLevel(delParent, path);
+
   if (index != -1) {
     if ((mNeedQueryReplaceFile && queryReplaceFile(path)) || mDoReplaceFile) {
-      // update parents and whole tree
-      updateDataSize(mSelectedItem, -1*((QDataItem*)(mSelectedItem->child(index)))->GetDataSize(), -1, 0);
-      mSelectedItem->removeChild(mSelectedItem->child(index));
-      childItem = InsertItemOperation(mSelectedItem, path);
+
+      updateDataSize(delParent, -1*((QDataItem*)(delParent->child(index)))->GetDataSize(), -1, 0);
+      delParent->removeChild(delParent->child(index));
+
+      childItem = InsertItemOperation(delParent, path);
     } else {
       childItem = nullptr; // not replace
     }
   } else {
-    childItem = InsertItemOperation(mSelectedItem, path);
+    childItem = InsertItemOperation(delParent, path);
   }
   return childItem;
 }
@@ -531,7 +544,7 @@ QDataItem* CommonTreeWidget::InsertItemOperation(QDataItem *parent, const QStrin
 {
   //if (QDataItem::Session == type) return 0;
   //GetSelectedItem();
-  QDataItem *childItem = 0;
+  QDataItem *childItem = nullptr;
 
   childItem = InsertItem(parent, path);
   if (nullptr == childItem)
@@ -553,10 +566,13 @@ QDataItem* CommonTreeWidget::InsertItemOperation(QDataItem *parent, const QStrin
 
 QDataItem* CommonTreeWidget::InsertItem(QDataItem *parent, const QString &path, bool silent)
 {
-  if (ZImportStrategy::ERROR_NO != importCheck2(parent->GetName(), path, silent)) {
-    return nullptr;
-  }
-  QDataItem *childItem = 0;
+   // if(parent){
+        if (ZImportStrategy::ERROR_NO != importCheck2(parent->GetName(), path, silent)) {
+          return nullptr;
+        }
+   // }
+
+  QDataItem *childItem = nullptr;
   if (parent) {
     childItem = new QDataItem(parent);
     //parent->setExpanded(true);
@@ -576,7 +592,7 @@ void CommonTreeWidget::InsertNode(const QString &path)
 {
   GetSelectedItem();
   QDataItem *parent;
-
+  disconnect(this, SIGNAL(testMessage(const QString, bool*)), nullptr, nullptr);
 
 
   if (mSelectedItem == nullptr || QDataItem::Disk == mSelectedItem->GetType()) {
@@ -618,6 +634,8 @@ void CommonTreeWidget::InsertNode(const QString &path)
 
   mThreadAddTree = new ThreadAddTree(this, parent, path);
   connect(mThreadAddTree, SIGNAL(completed(QDataItem*, QDataItem*)), this, SLOT(on_add_tree_completed(QDataItem*, QDataItem*)));
+  connect(this, SIGNAL(testMessage(const QString, bool*)), this, SLOT(on_add_tree(const QString, bool*)), Qt::BlockingQueuedConnection);
+
   mThreadAddTree->start();
   QWidget *w = qobject_cast<QWidget*>(QApplication::activeWindow());
   mBlockSpinner = new QtWaitingSpinner(Qt::ApplicationModal, w, true);
@@ -700,6 +718,8 @@ QDataItem* CommonTreeWidget::AddNewFolder()
     parent = mSelectedItem;
   }
 
+
+
   if (getIsFSSyncAvailable() && (QDataItem::Session == mSelectedItem->GetType()
                                  || QDataItem::DataTrack == mSelectedItem->GetType())) {
       QMessageBox::information(this, tr("Information"),
@@ -718,6 +738,7 @@ QDataItem* CommonTreeWidget::AddNewFolder()
   QString folder_name = tr("New Folder");
   if (sequenceNumber > 0) {
     folder_name += tr("(%1)").arg(sequenceNumber);
+    //folder_name += tr("_%1").arg(sequenceNumber);
   }
   sequenceNumber++;
 
@@ -725,7 +746,28 @@ QDataItem* CommonTreeWidget::AddNewFolder()
     return nullptr;
   }
 
+  //IstDiskTrack, Session oder Disk
+  //Ist ISO9660
+  //Ist OPtion Level an
+
+
+  //If ISO9960 and not many Directories allowed, then no new folder.
+  /*
+  QDiskItem *tDiskItem = nullptr;
+  tDiskItem = static_cast<QDiskItem *>(mHeadItem);
+  RuleManager::ProjectType tProject = tDiskItem->getProjectType();
+  if(RuleManager::IsOptionAllowed(tProject, RuleManager::OPTION_FILESYSTEMS_ISO9660)){
+      if(QDataItem::DataTrack != mSelectedItem->GetType()){
+        QStringList firstList = mSelectedItem->GetDiskFilePath().split("//");
+        if(firstList.length()>8 && tDiskItem->getAllowManyDirectories()==0)
+            return nullptr;
+      }
+  }
+  */
+
   QDataItem *item = addTree(parent, folder_name, size, item_count, node_count);
+
+
   if (nullptr != item) {
     if (QDataItem::FixedFolder == parent->GetType()) {
       changeFolderPos(parent, item);
@@ -739,6 +781,9 @@ QDataItem* CommonTreeWidget::AddNewFolder()
     setSelected(item);
     mQueryResetBeforeImport = true;
     mModified = true;
+
+
+
     emit contentsChanged(true);
   }
   return item;
@@ -816,6 +861,7 @@ QDataItem *CommonTreeWidget::GetSelectedItem()
     //if selected is more than 0 then just take the first one as reference.
     //are we able to select more than one?
   QList<QTreeWidgetItem*> selected = selectedItems();
+  //qDebug("Selected Size: %d",selected.size());
   if (selected.size() > 0) {
     mSelectedItem = (QDataItem *)selected[0];
   } else {
@@ -1796,6 +1842,7 @@ void CommonTreeWidget::showProperty_Disk() {
         item->setDiskDateEffective(dialog.getDateTimeEffective());
         item->setDiskDateCreation(dialog.getDateTimeCreation());
         item->setDateMdification(dialog.getDateTimeMdification());
+        item->setIsoExUseDates(dialog.getDateUsage()==Qt::Checked?true:false);
     }
 
     if (mDataTrackItem!=nullptr) {
@@ -1803,6 +1850,7 @@ void CommonTreeWidget::showProperty_Disk() {
       item->setDiskDateEffective(dialog.getDateTimeEffective());
       item->setDiskDateCreation(dialog.getDateTimeCreation());
       item->setDateMdification(dialog.getDateTimeMdification());
+      item->setIsoExUseDates(dialog.getDateUsage()==Qt::Checked?true:false);
 
 
     }
@@ -1872,6 +1920,10 @@ void CommonTreeWidget::on_add_tree_completed(QDataItem *parent, QDataItem *item)
     parent->setExpanded(true);
     item->setExpanded(true);
   }
+
+  disconnect(this, SIGNAL(testMessage(const QString, bool*)), nullptr, nullptr);
+  connect(this, SIGNAL(testMessage(const QString, bool*)), this, SLOT(on_add_tree(const QString, bool*)));
+
   resetQueryAddAudioTrack();
   resetQueryReplaceFile();
   mQueryResetBeforeImport = true;
@@ -1924,10 +1976,39 @@ int CommonTreeWidget::findSameNameInLevel(QDataItem *parent, const QString &path
   return -1;
 }
 
+bool CommonTreeWidget::on_add_tree(const QString &path, bool* newData)
+{
+    //QMessageBox::information(this, tr("Information"), tr("Button click!"));
+
+    ZReplaceFileDialog dialog(this, path);
+    if (dialog.exec() == QDialog::Accepted) {
+        mDoReplaceFile = true;
+    }else {
+        mDoReplaceFile = false;
+    }
+    if (dialog.DoReplaceActionForAll()) {
+      mNeedQueryReplaceFile = false;
+    } else {
+      mNeedQueryReplaceFile = true;
+    }
+
+    *newData = mDoReplaceFile;
+}
+
 bool CommonTreeWidget::queryReplaceFile(const QString &path)
 {
+
   QFileInfo fileinfo(path);
   QString filename = fileinfo.fileName();
+  bool bAnswer = false;
+  emit testMessage(filename,&bAnswer);
+
+  return bAnswer;
+
+  /*
+  QFileInfo fileinfo(path);
+  QString filename = fileinfo.fileName();
+
   ZReplaceFileDialog dialog(this, filename);
   if (dialog.exec() == QDialog::Accepted) {
     mDoReplaceFile = true;
@@ -1939,7 +2020,9 @@ bool CommonTreeWidget::queryReplaceFile(const QString &path)
   } else {
     mNeedQueryReplaceFile = true;
   }
+
   return mDoReplaceFile;
+  */
 }
 
 void CommonTreeWidget::resetQueryReplaceFile()

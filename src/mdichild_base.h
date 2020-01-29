@@ -21,9 +21,11 @@
 #define MDICHILD_BASE_H
 
 #include <QMainWindow>
+#include <QMdiSubWindow>
+#include <QPointer>
 #include "vrulemanager.h"
 
-class MdiChildBase : public QMainWindow
+class MdiChildBase : public QMdiSubWindow
 {
   Q_OBJECT
 
@@ -35,6 +37,15 @@ public:
   virtual RuleManager::ProjectType GetProjectType() {return RuleManager::TYPE_PROJECT_OPEN;}
   virtual QString getBurnDrive() {return "";}
   virtual void setBurnDrive(QString strValue) {}
+Q_SIGNALS:
+    void subwindowchanged(RuleManager::ProjectType thisProject);
+protected:
+  QSize minimumSizeHint() const {
+      return QSize(555, 370);
+  }
+private:
+    virtual void changeEvent(QEvent * e);
+    virtual void windowStateChanged(Qt::WindowStates oldState, Qt::WindowStates newState);
 };
 
 #endif

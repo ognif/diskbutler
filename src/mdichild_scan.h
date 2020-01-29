@@ -32,16 +32,33 @@
 
 class QScrollArea;
 class QScrollBar;
+class MdiChildScan;
+
+class ThreadAnalyze : public QThread
+{
+  Q_OBJECT
+public:
+    ThreadAnalyze(MdiChildScan *mSubWindow)
+    {
+        myChild = mSubWindow;
+    }
+protected:
+  void run();
+  MdiChildScan *myChild;
+};
+
 
 class readDiskSectors : public QThread
 {
   Q_OBJECT
+
 public:
   //CheckVersionThread();
     int maxSectors;
     int readSectors;
     int startSectors;
     bool threadStop;
+    int bufferSize;
 signals:
   void tCurrentSector(int, bool);
   void tStopScan();
@@ -53,10 +70,39 @@ class MdiChildScan : public MdiChildBase
 {
     Q_OBJECT
 
+    struct pData {
+      int mSectorOffset;
+      int mReadOffset;
+      int mHasData;
+      int mBufferSize;
+      bool mScanIsRunning;
+      int mMaxSectors;
+    };
+
 public:
     MdiChildScan(QWidget* parent, const QString &device);
     RuleManager::ProjectType GetProjectType() {return mProjectType;}
-    bool thisSuccessfullCreated;
+
+    //I prefer to work with sturctures.
+    bool getScanState() {return thisData.mScanIsRunning;}
+    void setScanState(bool newState) {thisData.mScanIsRunning = newState;}
+    int getSectorOffset() {return thisData.mSectorOffset;}
+    void setSectorOffset(int newOffset) {thisData.mSectorOffset = newOffset;}
+    int getReadOffset() {return thisData.mReadOffset;}
+    void setReadOffset(int newOffset) {thisData.mReadOffset = newOffset;}
+    int getDataState() {return thisData.mHasData;}
+    void setDataState(int newData) {thisData.mHasData = newData;}
+    int getBufferSize() {return thisData.mBufferSize;}
+    void setBufferSize(int newBufferSize) {thisData.mBufferSize = newBufferSize;}
+    int getMaxSector() {return thisData.mMaxSectors;}
+    void setMaxSector(int newMaxSector) {thisData.mMaxSectors = newMaxSector;}
+
+    void analyzeDisc();
+    void onStop();
+    void onUpdateSectors();
+    void onStartScan(int offsetSectors, int readSectors);
+    void onWriteReport();
+
 
     QString getBurnDrive() {return strBurnDrive;}
     void setBurnDrive(QString strValue) {
@@ -74,34 +120,37 @@ protected:
     QString strBurnDrive;
     double maxSectors;
     double currentSector;
-    int bufferSize;
 
     void ScanJob();
+    pData thisData;
 
 private:
     QScanBoard* scanBoard;
     QScrollArea *scrollArea;
-    QPushButton *stopButton;
-    QPushButton *startButton;
-    QPushButton *rescanButton;
-    QPushButton *reportButton;
-    QDoubleSpinBox *offsetSectors;
-    QDoubleSpinBox *readSectors;
+
 
     readDiskSectors *mreadDiskSectors;
+    ThreadAnalyze * manalyzeDisk;
 
-    void analyzeDisc();
-    void startScanThread();
-    void setDisabled();
 
+    void startScanThread(int offsetSectors, int readSectors);
+    void qDebugAusgabeSDK(int32 errCode, const QString &customMessage);
+
+Q_SIGNALS:
+    void datatrack_changed();
+    void thread_finished(int mMaxSize, int bufferSize, int dataState);
+    void enableControls();
+    void disableControls();
+    void startSpinner();
+    void stopSpinner();
 
 private slots:
     void onCurrentSector(int newSector, bool isBad);
+    void startUpdateInfo();
+
+protected Q_SLOTS:
+    void on_thread_completed(int mMaxSize, int bufferSize, int dataState);
     void onStopScan();
-    void onStop();
-    void onUpdateSectors();
-    void onStartScan();
-    void onWriteReport();
 
 };
 

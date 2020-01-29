@@ -24,58 +24,89 @@
 #include "settingspages.h"
 #include "messanger.h"
 
+void ThreadInfo::run()
+{
+
+    myChild->readDiskInfo();
+}
+
+
 MdiChildDiskInfo::MdiChildDiskInfo(QWidget* parent, const QString &device)
-    :strBurnDrive(device){
+{
       setAttribute(Qt::WA_DeleteOnClose);
       mProjectType = RuleManager::TYPE_PROJECT_DISKINFO;
-      isEraseable = false;
-      isOpen = false;
-      hideEmptyFields = false;
-      bCopyVerify = false;
-      bImageVerify = false;
-      bCopyEject = false;
-      bUseErrorCorrection = ConfigurationPage::mSettings.value("ErrorCorrection", true).toBool();
-      bBlankBadSectors = false;
-      bIsEmptyDisk = false;
-      bIsISO = true;
-      nReadMethod = 0; //0=ISO;1=RAW;2=RAW+SUB
-      nWriteMethod = 0; //0=DAO;1=DAO96
-      nHardwareRetry = ConfigurationPage::mSettings.value("HardwareRetryCount", 7).toInt();
-      nSoftwareRetry = ConfigurationPage::mSettings.value("HardwareRetryCount", 1).toInt();
-      bEraseEject = ConfigurationPage::mSettings.value("EjectAfterErase", true).toBool();
-      bEraseFast = true;
-      strImagePath = tr("");
-      nImageCreateMethode = 0;
-      thisSuccessfullCreated = true;
+      setBurnDrive(device);
+      setEraseable(false);
+      setOpenDisk(false);
+      setHideEmptyFields(false);
+      setCopyVerify(0);
+      setImageVerify(0);
+      setImageJobVerify(0);
+      setImageJobCreate(0);
+      setCopyEject(false);
+      setUseErrorCorrection(ConfigurationPage::mSettings.value("ErrorCorrection", true).toBool());
+      setBlankBadSectors(false);
+      setEmptyDisk(false);
+      setIsIsoDisk(true);
+      setCopyReadMethod(0); //0=ISO;1=RAW;2=RAW+SUB
+      setCopyWriteMethod(0); //0=DAO;1=DAO96
+      setErrorHarwareRetry(ConfigurationPage::mSettings.value("HardwareRetryCount", 7).toInt());
+      setErrorSoftwareRetry(ConfigurationPage::mSettings.value("HardwareRetryCount", 1).toInt());
+      setEjectAfterErase(ConfigurationPage::mSettings.value("EjectAfterErase", true).toBool());
+      setFastErase(true);
+      setImagePath("");
+      setImageCreateMethod(0);
+      setImageCorrSwitch(2);
+      mWorkThread = nullptr;
 
       QString wTitle = tr("Disk Info");
       wTitle += " (";
-      wTitle += strBurnDrive;
+      wTitle += getBurnDrive();
       wTitle += ")";
 
       setWindowTitle(wTitle);
 
       diskInfoTable = new QTableWidget();
-      treeWidget = new QTreeWidget();
+      treeWidget = new  QDummyTextTree();
+
+      QString style(
+          "QTableView:disabled {"
+              "gridline-color: #32414B;"
+                  "border: 1px solid #32414B;"
+                    "color: #32414B;"
+          "}"
+      );
+      diskInfoTable->setStyleSheet(style);
 
       splitter = new QSplitter;
       splitter->addWidget(diskInfoTable);
       splitter->addWidget(treeWidget);
-      setCentralWidget(splitter);
+      //setCentralWidget(splitter);
+      setWidget(splitter);
 
-      //myUpdateMenus = new QAction(this);
-      //connect(myUpdateMenus, SIGNAL(triggered()), parent, SLOT(updateMenus()));
-      //myRefreshMenus = new QAction(this);
-      //connect(myRefreshMenus, SIGNAL(triggered()), parent, SLOT(specialActionDiskInfo()));
+      diskInfoTable->setRowCount(50);
+      diskInfoTable->setColumnCount(2);
+      diskInfoTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
+      diskInfoTable->horizontalHeader()->setStretchLastSection(true);
+      diskInfoTable->horizontalHeader()->hide();
+      diskInfoTable->verticalHeader()->hide();
+      diskInfoTable->verticalHeader()->setDefaultSectionSize(21);
 
+      splitter->setStretchFactor(0, 1);
+      splitter->setStretchFactor(1, 2);
 
-      readDiskInfo();
+      qRegisterMetaType<QVector<int> >("QVector<int>");
+      qRegisterMetaType<QVector<int> >("QList<QTreeWidgetItem*>");
+      qRegisterMetaType<QVector<int> >("QVector<pTableItem*>");
+
+      //emit StartWaitingSpinner still not works here.
+      QTimer::singleShot( 500, this, SLOT(startUpdateInfo()));
+
 }
 
 void MdiChildDiskInfo::updateDiskInfo()
 {
-  readDiskInfo();
-  myRefreshMenus->trigger(); //We call it here, because at another place the windows is not existsing.
+  QTimer::singleShot( 500, this, SLOT(startUpdateInfo()));
 
 }
 
@@ -90,10 +121,11 @@ int32 MdiChildDiskInfo::ExtractTextFromHandle(int32 handle,int32 nCDTCI, QString
     int32 res;
 
     res = ::GetCDTextDiskTagString(handle, nCDTCI, nullptr, &nLen);
-    if(res != BS_SDK_ERROR_NO)
-    {
+    if (res != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(res, "GetCDTextTrackTagString");
         return res;
     }
+
 
     if(!nLen || nLen == 1)
     {
@@ -103,11 +135,12 @@ int32 MdiChildDiskInfo::ExtractTextFromHandle(int32 handle,int32 nCDTCI, QString
 
     TCHAR *pBuf = new TCHAR[nLen];
     res = ::GetCDTextDiskTagString(handle, nCDTCI, pBuf, &nLen);
-    if(res != BS_SDK_ERROR_NO)
-    {
+    if (res != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(res, "GetCDTextDiskTagString");
         delete[] pBuf;
         return res;
     }
+    //LOOK HERE. Null termination, problem occour a couple of time from SDK.
 
     pBuf[nLen-1] = _T('\0');
 #if defined (WIN32)
@@ -126,7 +159,8 @@ int32 MdiChildDiskInfo::ExtractTrackTextFromHandle(int32 handle, int32 nTrack, i
     int32 res;
 
     res = ::GetCDTextTrackTagString(handle, nTrack, nCDTCI, nullptr, &nLen);
-    if(showDiskbutlerMessage(res, this)==false) {
+    if (res != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(res, "GetCDTextTrackTagString");
         return res;
     }
 
@@ -138,7 +172,8 @@ int32 MdiChildDiskInfo::ExtractTrackTextFromHandle(int32 handle, int32 nTrack, i
 
     TCHAR *pBuf = new TCHAR[nLen];
     res = ::GetCDTextTrackTagString(handle, nTrack, nCDTCI, pBuf, &nLen);
-    if(showDiskbutlerMessage(res, this)==false) {
+    if (res != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(res, "GetCDTextTrackTagString");
         delete[] pBuf;
         return res;
     }
@@ -155,46 +190,50 @@ int32 MdiChildDiskInfo::ExtractTrackTextFromHandle(int32 handle, int32 nTrack, i
     return BS_SDK_ERROR_NO;
 }
 
+void MdiChildDiskInfo::qDebugAusgabeSDK(int32 errCode, const QString &customMessage)
+{
+    TCHAR chError[2048];
+    int32 nLength = 2048;
+
+    emit stopSpinner();
+
+    ::GetText(errCode,chError, &nLength);
+    QString errDesc;
+    errDesc= QString::fromUtf8(chError);
+    qDebug("SDKError %s: %s", customMessage.toLatin1().constData(), errDesc.toLatin1().constData());
+}
+
 void MdiChildDiskInfo::readDiskInfo()
 {
-    //QListWidget *listWidget = new QListWidget();
-    //for (int i = 0; i < 12; i++) {
-    //  QListWidgetItem *item = new QListWidgetItem(tr("feature ")+QString::number(i));
-    //  listWidget->addItem(item);
-    //}
-    diskInfoTable->clear();
-    treeWidget->clear();
 
-    diskInfoTable->setRowCount(50);
-    diskInfoTable->setColumnCount(2);
-    diskInfoTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
-    diskInfoTable->horizontalHeader()->setStretchLastSection(true);
-    diskInfoTable->horizontalHeader()->hide();
-    diskInfoTable->verticalHeader()->hide();
-    //diskInfoTable->setContentsMargins(0, 0, 0, 0);
-    diskInfoTable->verticalHeader()->setDefaultSectionSize(21);
+    emit startSpinner();
 
+    QList<QTreeWidgetItem *> items;
+    QVector<pTableItem *> myTable;
 
+    pTableItem *tableItem0 = new pTableItem();
+    tableItem0->columnText = tr("Physical Information");
+    tableItem0->itemColumn = 0;
+    tableItem0->itemRow = 0;
+    tableItem0->rowSpan = true;
+    tableItem0->rowBold = true;
+    myTable.append(tableItem0);
 
-    //Group
-    QTableWidgetItem* item1 = new QTableWidgetItem(tr("Physical Information"));
-    item1->setFlags(Qt::NoItemFlags);
-    QFont originalFont = (item1)->font();
-    originalFont.setBold(true);
-    item1->setFont(originalFont);
-    QTableWidgetItem* item2 = new QTableWidgetItem("");
-    item2->setFlags(Qt::NoItemFlags);
-    diskInfoTable->setItem(0,0,item1);
-    diskInfoTable->setItem(0,1,item2);
-    diskInfoTable->setSpan(0,0,1,2);
+    pTableItem *tableItem1 = new pTableItem();
+    tableItem1->columnText = tr("");
+    tableItem1->itemColumn = 1;
+    tableItem1->itemRow = 0;
+    tableItem1->rowSpan = true;
+    tableItem1->rowBold = true;
+    myTable.append(tableItem1);
+
+    //QVEctor is faster than QList
 
 
-
-    treeWidget->header() ->close ();
-
-    QTreeWidgetItem *treeItem = new QTreeWidgetItem(treeWidget);
+    //We create now the items in a QList and then move to the main Thread.
+    QTreeWidgetItem *treeItem = new QTreeWidgetItem();
     treeItem->setText(0, tr("Disk"));
-    treeItem->setIcon(0,QIcon(":/res/disk_main.png"));
+    treeItem->setIcon(0,QIcon(":/icons/disk_main.png"));
     treeItem->setExpanded(true);
 
     double nSectorSize = 0.0;
@@ -209,7 +248,12 @@ void MdiChildDiskInfo::readDiskInfo()
     pAudio stAudioInfo;
     stAudioInfo.isAudio = 0;
 
-    ::SetBurnDevice(strBurnDrive.at(0).toLatin1());
+    int32 nError = ::SetBurnDevice(getBurnDrive().at(0).toLatin1());
+    nError = ::SetReadDevice(getBurnDrive().at(0).toLatin1());
+    if (nError != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(nError, "SetDevice");
+        return;
+    }
 
 
     QString tmp;
@@ -230,18 +274,29 @@ void MdiChildDiskInfo::readDiskInfo()
 
 
     BS_BOOL	bReady = BS_FALSE;
-    int32 nError = ::IsDeviceReady(BS_CURRENT_DEVICE, &bReady);
+    nError = ::IsDeviceReady(BS_CURRENT_DEVICE, &bReady);
+    if (nError != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(nError, "IsDeviceReady");
+    }
 
 
     SMediumInfo mi;
     nError = ::GetMediumInformation(BS_CURRENT_DEVICE, &mi);
-    if(showDiskbutlerMessage(nError, this)==false) {
-        thisSuccessfullCreated=false;
+    if (nError != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(nError, "GetMediumInfo");
         return;
     }
 
 
-    isEraseable = false;
+
+    int16 nImageFormats;
+    nError =  ::GetPossibleImageFormats(&nImageFormats);
+    if (nError != BS_SDK_ERROR_NO){
+        qDebugAusgabeSDK(nError, "Possible Imageformats");
+    }
+    setImageFormats(nImageFormats);
+
+    setEraseable(false);
 
     if(mi.wMediumTypeCode == BS_DVD_PLUSRW ||
             mi.wMediumTypeCode == BS_DVD_RW_RO ||
@@ -250,10 +305,8 @@ void MdiChildDiskInfo::readDiskInfo()
             mi.wMediumTypeCode == BS_DVD_RW_SR ||
             mi.wMediumTypeCode == BS_CD_RW ||
             mi.wMediumTypeCode == BS_DVD_RWDL_PLUS){
-        isEraseable = true;
+        setEraseable(true);
     }
-
-
 
     //for (int32 i = mi.nFirstSession; i <= mi.nLastSession; i++)
     //nLastSession = 0 is invalid. But the block before is valid for virtual disc from Image Writer.
@@ -262,17 +315,18 @@ void MdiChildDiskInfo::readDiskInfo()
     {
         SSessionInfo si;
         nError = ::GetSessionInformation(BS_CURRENT_DEVICE, i, &si);
-        if(showDiskbutlerMessage(nError, this)==false) {
-            thisSuccessfullCreated=false;
+        if (nError != BS_SDK_ERROR_NO){
+            qDebugAusgabeSDK(nError, "GetSessionInfo");
             return;
         }
 
         //SessionSize are sectors? What to do with CD and AudioCD?
 
+
+
         QTreeWidgetItem *treechildItem = new QTreeWidgetItem();
         treechildItem->setText(0, tr("unknown"));
-        treechildItem->setIcon(0,QIcon(":/res/disk_session.png"));
-
+        treechildItem->setIcon(0,QIcon(":/icons/disk_session.png"));
         treeItem->addChild(treechildItem);
 
         double nDiskSize = 0.0;
@@ -283,8 +337,8 @@ void MdiChildDiskInfo::readDiskInfo()
         {
             STrackInfo ti;
             nError = ::GetTrackInformation(BS_CURRENT_DEVICE, j, &ti);
-            if(showDiskbutlerMessage(nError, this)==false) {
-                thisSuccessfullCreated=false;
+            if (nError != BS_SDK_ERROR_NO){
+                qDebugAusgabeSDK(nError, "GetTrackInfo");
                 return;
             }
 
@@ -325,8 +379,8 @@ void MdiChildDiskInfo::readDiskInfo()
                     //iso
                     HSESSION hSession = nullptr;
                     nError = ::OpenDiskSession(BS_CURRENT_DEVICE, j, &hSession, BS_FS_ISO9660);
-                    if(showDiskbutlerMessage(nError, this)==false) {
-                        thisSuccessfullCreated=false;
+                    if (nError != BS_SDK_ERROR_NO){
+                        qDebugAusgabeSDK(nError, "OpenDiskSession");
                         return;
                     }
 
@@ -334,8 +388,8 @@ void MdiChildDiskInfo::readDiskInfo()
                         stISOInfo.isISO = 1;
                         SISOVolumeInfo pISOVolumeInfo;
                         nError = ::GetISOVolumeInformation(hSession, &pISOVolumeInfo);
-                        if(showDiskbutlerMessage(nError, this)==false) {
-                            thisSuccessfullCreated=false;
+                        if (nError != BS_SDK_ERROR_NO){
+                            qDebugAusgabeSDK(nError, "GetISOVolumeInformation");
                             return;
                         }
 
@@ -385,33 +439,40 @@ void MdiChildDiskInfo::readDiskInfo()
 
                         stISOInfo.strRootAddress = QString::number(pISOVolumeInfo.nRootAddress);
 
-                        stISOInfo.strCreationTime = QString("%1.%2.%3 %4:%5:%6").arg(QString::number(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nDay),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nMonth),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nYear+1900),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nHour),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nMinute),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nSecond));
+                        stISOInfo.strCreationTime = QString("%1.%2.%3 %4:%5:%6").arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nDay), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nMonth), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nYear+1900), 4, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nHour), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nMinute), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOCreationDateTime.nSecond), 2, 10, QLatin1Char('0'));
 
-                        stISOInfo.strModificationTime = QString("%1.%2.%3 %4:%5:%6").arg(QString::number(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nDay),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nMonth),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nYear+1900),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nHour),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nMinute),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nSecond));
 
-                        stISOInfo.strExpirationTime = QString("%1.%2.%3 %4:%5:%6").arg(QString::number(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nDay),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nMonth),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nYear+1900),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nHour),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nMinute),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nSecond));
 
-                        stISOInfo.strEffectiveTime = QString("%1.%2.%3 %4:%5:%6").arg(QString::number(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nDay),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nMonth),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nYear+1900),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nHour),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nMinute),
-                                                                          QString::number(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nSecond));
+
+                        stISOInfo.strModificationTime = QString("%1.%2.%3 %4:%5:%6").arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nDay), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nMonth), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nYear+1900), 4, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nHour), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nMinute), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOModificationDateTime.nSecond), 2, 10, QLatin1Char('0'));
+
+
+
+                        stISOInfo.strExpirationTime = QString("%1.%2.%3 %4:%5:%6").arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nDay), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nMonth), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nYear+1900), 4, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nHour), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nMinute), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOExpirationDateTime.nSecond), 2, 10, QLatin1Char('0'));
+
+
+                        stISOInfo.strEffectiveTime = QString("%1.%2.%3 %4:%5:%6").arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nDay), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nMonth), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nYear+1900), 4, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nHour), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nMinute), 2, 10, QLatin1Char('0'))
+                                .arg(static_cast<int>(pISOVolumeInfo.sInfoEx.ISOEffectiveDateTime.nSecond), 2, 10, QLatin1Char('0'));
+
 
                     }
 
@@ -425,8 +486,8 @@ void MdiChildDiskInfo::readDiskInfo()
                     //UDF Version will be fine
                     HSESSION hSession = nullptr;
                     nError = ::OpenDiskSession(BS_CURRENT_DEVICE, j, &hSession, BS_FS_UDF);
-                    if(showDiskbutlerMessage(nError, this)==false) {
-                        thisSuccessfullCreated=false;
+                    if (nError != BS_SDK_ERROR_NO){
+                        qDebugAusgabeSDK(nError, "OpenDiskSession");
                         return;
                     }
 
@@ -498,11 +559,6 @@ void MdiChildDiskInfo::readDiskInfo()
                 }
             }
 
-
-
-
-
-
             QString trackInformation;
             if(ti.nSize>0){
               nDiskSize += (ti.nSize*nSectorSize)/MEGABYTE;
@@ -511,10 +567,11 @@ void MdiChildDiskInfo::readDiskInfo()
               trackInformation = QString("Track %1 LBA:%2 %3").arg(QString::number(j),QString::number(ti.nStartLBA),strInformation);
             }
 
+            //Hier müssen wir noch unterscheiden zwischen AudioTrack, VideoTrack oder Datatrack. Zur Zeit nur Datatrack.
 
             QTreeWidgetItem *treeTrackItem = new QTreeWidgetItem(treechildItem);
             treeTrackItem->setText(0, trackInformation);
-            treeTrackItem->setIcon(0,QIcon(":/res/disk_data_table.png"));
+            treeTrackItem->setIcon(0,QIcon(":/icons/disk_data_table.png"));
             treechildItem->setExpanded(true);
 
             //Now we add the Audio Infos. We have: CDTExt and Indexes
@@ -522,6 +579,7 @@ void MdiChildDiskInfo::readDiskInfo()
             int32 res = ::ReadCDText(BS_CURRENT_DEVICE, &hCdText);
             if(res == BS_SDK_ERROR_NO)
             {
+
 
                 QTreeWidgetItem *treeCDTextMain = new QTreeWidgetItem(treeTrackItem);
                 treeCDTextMain->setText(0, tr("CDText Information"));
@@ -531,31 +589,37 @@ void MdiChildDiskInfo::readDiskInfo()
                     cdTextString = tr("CDText Performer: ")+cdTextString;
                     QTreeWidgetItem *treeCDTextItem1 = new QTreeWidgetItem(treeCDTextMain);
                     treeCDTextItem1->setText(0, cdTextString);
+
                 }
                 if(!ExtractTrackTextFromHandle(hCdText, j, BS_CDTCI_TITLE , cdTextString)){
                     cdTextString = tr("CDText Title: ")+cdTextString;
                     QTreeWidgetItem *treeCDTextItem2 = new QTreeWidgetItem(treeCDTextMain);
                     treeCDTextItem2->setText(0, cdTextString);
+
                 }
                 if(!ExtractTrackTextFromHandle(hCdText, j, BS_CDTCI_SONG_WRITER, cdTextString)){
                     cdTextString = tr("CDText Song Writer: ")+cdTextString;
                     QTreeWidgetItem *treeCDTextItem3 = new QTreeWidgetItem(treeCDTextMain);
                     treeCDTextItem3->setText(0, cdTextString);
+
                 }
                 if(!ExtractTrackTextFromHandle(hCdText, j, BS_CDTCI_COMPOSER, cdTextString)){
                     cdTextString = tr("CDText Composer: ")+cdTextString;
                     QTreeWidgetItem *treeCDTextItem4 = new QTreeWidgetItem(treeCDTextMain);
                     treeCDTextItem4->setText(0, cdTextString);
+
                 }
                 if(!ExtractTrackTextFromHandle(hCdText, j, BS_CDTCI_ARRANGER, cdTextString)){
                   cdTextString = tr("CDText Arranger: ")+cdTextString;
                   QTreeWidgetItem *treeCDTextItem5 = new QTreeWidgetItem(treeCDTextMain);
                   treeCDTextItem5->setText(0, cdTextString);
+
                 }
                 if(!ExtractTrackTextFromHandle(hCdText, j, BS_CDTCI_MESSAGE, cdTextString)){
                     cdTextString = tr("CDText Message: ")+cdTextString;
                     QTreeWidgetItem *treeCDTextItem6 = new QTreeWidgetItem(treeCDTextMain);
                     treeCDTextItem6->setText(0, cdTextString);
+
                 }
 
             }
@@ -601,16 +665,16 @@ void MdiChildDiskInfo::readDiskInfo()
     stDiskInfo.strMediaSize = QString("%1 MB").arg(mi.dMediumSize/MEGABYTE);
     stDiskInfo.strMediaUsedSpace = QString("%1 MB").arg(mi.dMediumUsedSize/MEGABYTE);
     stDiskInfo.strMediaFreeSpace = QString("%1 MB").arg(mi.dMediumFreeSize/MEGABYTE);
-    bIsEmptyDisk = false;
-    isOpen = false;
+    setEmptyDisk(false);
+    setOpenDisk(false);
 
     switch (mi.nMediumStatus) {
           case BS_MS_EMPTY_DISK:
-              bIsEmptyDisk = true;
+              setEmptyDisk(true);
               stDiskInfo.strMediaStatus = tr("Empty Disk");
           break;
           case BS_MS_INCOMPLETE_DISK:
-              isOpen = true;
+              setOpenDisk(true);
               stDiskInfo.strMediaStatus = tr("Incomplete Disk");
           break;
           case BS_MS_COMPLETE_DISK:
@@ -622,48 +686,48 @@ void MdiChildDiskInfo::readDiskInfo()
 
     switch(mi.nExtendedMediumType){
         case BS_EMT_CD_ROM:
-          bIsISO = true; //We can read a CD with ISO and RAW
-          bIsBIN = true;
+          setIsIsoDisk(true); //We can read a CD with ISO and RAW
+          setIsBinDisk(true);
           stDiskInfo.strMediaExType = tr("CD-ROM");
           break;
         case BS_EMT_CD_ROM_XA:
-          bIsISO = false;
-          bIsBIN = true;
+          setIsIsoDisk(false);
+          setIsBinDisk(true);
           stDiskInfo.strMediaExType = tr("CD-ROM XA");
           break;
         case BS_EMT_CD_AUDIO:
-          bIsISO = false;
-          bIsBIN = true;
+          setIsIsoDisk(false);
+          setIsBinDisk(true);
           stDiskInfo.strMediaExType = tr("Audio CD");
           break;
         case BS_EMT_CD_MIXED_MODE:
-          bIsISO = false;
-          bIsBIN = true;
+          setIsIsoDisk(false);
+          setIsBinDisk(true);
           stDiskInfo.strMediaExType = tr("Mixed Mode CD");
           break;
         case BS_EMT_CD_ENHANCED:
-          bIsISO = false;
-          bIsBIN = true;
+          setIsIsoDisk(false);
+          setIsBinDisk(true);
           stDiskInfo.strMediaExType = tr("Enhanced CD");
           break;
         case BS_EMT_CD_MULTISESSION:
-          bIsISO = true;
-          bIsBIN = false;
+          setIsIsoDisk(true);
+          setIsBinDisk(false);
           stDiskInfo.strMediaExType = tr("Multisession CD");
           break;
         case BS_EMT_DVD:
-          bIsISO = true;
-          bIsBIN = false;
+          setIsIsoDisk(true);
+          setIsBinDisk(false);
           stDiskInfo.strMediaExType = tr("DVD");
           break;
         case BS_EMT_BD:
-          bIsISO = true;
-          bIsBIN = false;
+          setIsIsoDisk(true);
+          setIsBinDisk(false);
           stDiskInfo.strMediaExType = tr("BD");
           break;
         case BS_EMT_HDDVD:
-          bIsISO = true;
-          bIsBIN = false;
+          setIsIsoDisk(true);
+          setIsBinDisk(false);
           stDiskInfo.strMediaExType = tr("HDDVD");
           break;
         default: break;
@@ -726,296 +790,557 @@ void MdiChildDiskInfo::readDiskInfo()
 
     int nRowCount = 0;
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaType.length()>0 ){
+    if(stDiskInfo.strMediaType.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaTypeFix = new QTableWidgetItem(tr("Media Type:"));
-        itemMediaTypeFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaType = new QTableWidgetItem(stDiskInfo.strMediaType);
-        itemMediaType->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaTypeFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaType);
+        pTableItem *tableItem2 = new pTableItem();
+        tableItem2->columnText = tr("Media Type:");
+        tableItem2->itemColumn = 0;
+        tableItem2->itemRow = nRowCount;
+        tableItem2->rowSpan = false;
+        tableItem2->rowBold = false;
+        myTable.append(tableItem2);
+
+        pTableItem *tableItem3 = new pTableItem();
+        tableItem3->columnText = stDiskInfo.strMediaType;
+        tableItem3->itemColumn = 1;
+        tableItem3->itemRow = nRowCount;
+        tableItem3->rowSpan = false;
+        tableItem3->rowBold = false;
+        myTable.append(tableItem3);
+
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaExType.length()>0 ){
+    if(stDiskInfo.strMediaExType.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaExTypeFix = new QTableWidgetItem(tr("Media Type Ex:"));
-        itemMediaExTypeFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaExType = new QTableWidgetItem(stDiskInfo.strMediaExType);
-        itemMediaExType->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaExTypeFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaExType);
+        pTableItem *tableItem4 = new pTableItem();
+        tableItem4->columnText = tr("Media Type Ex:");
+        tableItem4->itemColumn = 0;
+        tableItem4->itemRow = nRowCount;
+        tableItem4->rowSpan = false;
+        tableItem4->rowBold = false;
+        myTable.append(tableItem4);
+
+        pTableItem *tableItem5 = new pTableItem();
+        tableItem5->columnText = stDiskInfo.strMediaExType;
+        tableItem5->itemColumn = 1;
+        tableItem5->itemRow = nRowCount;
+        tableItem5->rowSpan = false;
+        tableItem5->rowBold = false;
+        myTable.append(tableItem5);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaID.length()>0 ){
+    if(stDiskInfo.strMediaID.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaIDFix = new QTableWidgetItem(tr("Media ID:"));
-        itemMediaIDFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaID = new QTableWidgetItem(stDiskInfo.strMediaID);
-        itemMediaID->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaIDFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaID);
+        pTableItem *tableItem6 = new pTableItem();
+        tableItem6->columnText = tr("Media ID:");
+        tableItem6->itemColumn = 0;
+        tableItem6->itemRow = nRowCount;
+        tableItem6->rowSpan = false;
+        tableItem6->rowBold = false;
+        myTable.append(tableItem6);
+
+        pTableItem *tableItem7 = new pTableItem();
+        tableItem7->columnText = stDiskInfo.strMediaID;
+        tableItem7->itemColumn = 1;
+        tableItem7->itemRow = nRowCount;
+        tableItem7->rowSpan = false;
+        tableItem7->rowBold = false;
+        myTable.append(tableItem7);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strBridgeFileSystem.length()>0 ){
+    if(stDiskInfo.strBridgeFileSystem.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemBridgeFileSystemFix = new QTableWidgetItem(tr("Bridge:"));
-        itemBridgeFileSystemFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemBridgeFileSystem = new QTableWidgetItem(stDiskInfo.strBridgeFileSystem);
-        itemBridgeFileSystem->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemBridgeFileSystemFix);
-        diskInfoTable->setItem(nRowCount,1,itemBridgeFileSystem);
+        pTableItem *tableItem8 = new pTableItem();
+        tableItem8->columnText = tr("Bridge:");
+        tableItem8->itemColumn = 0;
+        tableItem8->itemRow = nRowCount;
+        tableItem8->rowSpan = false;
+        tableItem8->rowBold = false;
+        myTable.append(tableItem8);
+
+        pTableItem *tableItem9 = new pTableItem();
+        tableItem9->columnText = stDiskInfo.strBridgeFileSystem;
+        tableItem9->itemColumn = 1;
+        tableItem9->itemRow = nRowCount;
+        tableItem9->rowSpan = false;
+        tableItem9->rowBold = false;
+        myTable.append(tableItem9);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaUPC.length()>0 ){
+    if(stDiskInfo.strMediaUPC.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaUPCFix = new QTableWidgetItem(tr("UPC/EAN Code:"));
-        itemMediaUPCFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaUPC = new QTableWidgetItem(stDiskInfo.strMediaUPC);
-        itemMediaUPC->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaUPCFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaUPC);
+        pTableItem *tableItem10 = new pTableItem();
+        tableItem10->columnText = tr("UPC/EAN Code:");
+        tableItem10->itemColumn = 0;
+        tableItem10->itemRow = nRowCount;
+        tableItem10->rowSpan = false;
+        tableItem10->rowBold = false;
+        myTable.append(tableItem10);
+
+        pTableItem *tableItem11 = new pTableItem();
+        tableItem11->columnText = stDiskInfo.strMediaUPC;
+        tableItem11->itemColumn = 1;
+        tableItem11->itemRow = nRowCount;
+        tableItem11->rowSpan = false;
+        tableItem11->rowBold = false;
+        myTable.append(tableItem11);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaSpeeds.length()>0 ){
+    if(stDiskInfo.strMediaSpeeds.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaSpeedsFix = new QTableWidgetItem(tr("Speeds (kb/s):"));
-        itemMediaSpeedsFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaSpeeds = new QTableWidgetItem(stDiskInfo.strMediaSpeeds);
-        itemMediaSpeeds->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaSpeedsFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaSpeeds);
+        pTableItem *tableItem12 = new pTableItem();
+        tableItem12->columnText = tr("Speeds (kb/s):");
+        tableItem12->itemColumn = 0;
+        tableItem12->itemRow = nRowCount;
+        tableItem12->rowSpan = false;
+        tableItem12->rowBold = false;
+        myTable.append(tableItem12);
+
+        pTableItem *tableItem13 = new pTableItem();
+        tableItem13->columnText = stDiskInfo.strMediaSpeeds;
+        tableItem13->itemColumn = 1;
+        tableItem13->itemRow = nRowCount;
+        tableItem13->rowSpan = false;
+        tableItem13->rowBold = false;
+        myTable.append(tableItem13);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaMaxWSpeed.length()>0 ){
+    if(stDiskInfo.strMediaMaxWSpeed.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaMaxWSpeedFix = new QTableWidgetItem(tr("Max. Write Speed:"));
-        itemMediaMaxWSpeedFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaMaxWSpeed = new QTableWidgetItem(stDiskInfo.strMediaMaxWSpeed);
-        itemMediaMaxWSpeed->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaMaxWSpeedFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaMaxWSpeed);
+        pTableItem *tableItem14 = new pTableItem();
+        tableItem14->columnText = tr("Max. Write Speed:");
+        tableItem14->itemColumn = 0;
+        tableItem14->itemRow = nRowCount;
+        tableItem14->rowSpan = false;
+        tableItem14->rowBold = false;
+        myTable.append(tableItem14);
+
+        pTableItem *tableItem15 = new pTableItem();
+        tableItem15->columnText = stDiskInfo.strMediaMaxWSpeed;
+        tableItem15->itemColumn = 1;
+        tableItem15->itemRow = nRowCount;
+        tableItem15->rowSpan = false;
+        tableItem15->rowBold = false;
+        myTable.append(tableItem15);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaStatus.length()>0 ){
+    if(stDiskInfo.strMediaStatus.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaStatusFix = new QTableWidgetItem(tr("Status:"));
-        itemMediaStatusFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaStatus = new QTableWidgetItem(stDiskInfo.strMediaStatus);
-        itemMediaStatus->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaStatusFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaStatus);
+        pTableItem *tableItem16 = new pTableItem();
+        tableItem16->columnText = tr("Status:");
+        tableItem16->itemColumn = 0;
+        tableItem16->itemRow = nRowCount;
+        tableItem16->rowSpan = false;
+        tableItem16->rowBold = false;
+        myTable.append(tableItem16);
+
+        pTableItem *tableItem17 = new pTableItem();
+        tableItem17->columnText = stDiskInfo.strMediaStatus;
+        tableItem17->itemColumn = 1;
+        tableItem17->itemRow = nRowCount;
+        tableItem17->rowSpan = false;
+        tableItem17->rowBold = false;
+        myTable.append(tableItem17);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strBootable.length()>0 ){
+    if(stDiskInfo.strBootable.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaBootableFix = new QTableWidgetItem(tr("Bootable Disk:"));
-        itemMediaBootableFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaBootable = new QTableWidgetItem(stDiskInfo.strBootable);
-        itemMediaBootable->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaBootableFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaBootable);
+        pTableItem *tableItem18 = new pTableItem();
+        tableItem18->columnText = tr("Bootable Disk:");
+        tableItem18->itemColumn = 0;
+        tableItem18->itemRow = nRowCount;
+        tableItem18->rowSpan = false;
+        tableItem18->rowBold = false;
+        myTable.append(tableItem18);
+
+        pTableItem *tableItem19 = new pTableItem();
+        tableItem19->columnText = stDiskInfo.strBootable;
+        tableItem19->itemColumn = 1;
+        tableItem19->itemRow = nRowCount;
+        tableItem19->rowSpan = false;
+        tableItem19->rowBold = false;
+        myTable.append(tableItem19);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaSize.length()>0 ){
+    if(stDiskInfo.strMediaSize.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaSizeFix = new QTableWidgetItem(tr("Size:"));
-        itemMediaSizeFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaSize = new QTableWidgetItem(stDiskInfo.strMediaSize);
-        itemMediaSize->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaSizeFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaSize);
+        pTableItem *tableItem20 = new pTableItem();
+        tableItem20->columnText = tr("Size:");
+        tableItem20->itemColumn = 0;
+        tableItem20->itemRow = nRowCount;
+        tableItem20->rowSpan = false;
+        tableItem20->rowBold = false;
+        myTable.append(tableItem20);
+
+        pTableItem *tableItem21 = new pTableItem();
+        tableItem21->columnText = stDiskInfo.strMediaSize;
+        tableItem21->itemColumn = 1;
+        tableItem21->itemRow = nRowCount;
+        tableItem21->rowSpan = false;
+        tableItem21->rowBold = false;
+        myTable.append(tableItem21);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaUsedSpace.length()>0 ){
+    if(stDiskInfo.strMediaUsedSpace.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaUsedSpaceFix = new QTableWidgetItem(tr("Used Space:"));
-        itemMediaUsedSpaceFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaUsedSpace = new QTableWidgetItem(stDiskInfo.strMediaUsedSpace);
-        itemMediaUsedSpace->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaUsedSpaceFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaUsedSpace);
+        pTableItem *tableItem22 = new pTableItem();
+        tableItem22->columnText = tr("Used Space:");
+        tableItem22->itemColumn = 0;
+        tableItem22->itemRow = nRowCount;
+        tableItem22->rowSpan = false;
+        tableItem22->rowBold = false;
+        myTable.append(tableItem22);
+
+        pTableItem *tableItem23 = new pTableItem();
+        tableItem23->columnText = stDiskInfo.strMediaUsedSpace;
+        tableItem23->itemColumn = 1;
+        tableItem23->itemRow = nRowCount;
+        tableItem23->rowSpan = false;
+        tableItem23->rowBold = false;
+        myTable.append(tableItem23);
     }
 
-    if(hideEmptyFields==false || stDiskInfo.strMediaFreeSpace.length()>0 ){
+    if(stDiskInfo.strMediaFreeSpace.length()>0 ){
         nRowCount++;
-        QTableWidgetItem* itemMediaFreeSpaceFix = new QTableWidgetItem(tr("Free Space:"));
-        itemMediaFreeSpaceFix->setFlags(Qt::NoItemFlags);
-        QTableWidgetItem* itemMediaFreeSpace = new QTableWidgetItem(stDiskInfo.strMediaFreeSpace);
-        itemMediaFreeSpace->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,itemMediaFreeSpaceFix);
-        diskInfoTable->setItem(nRowCount,1,itemMediaFreeSpace);
+        pTableItem *tableItem24 = new pTableItem();
+        tableItem24->columnText = tr("Free Space:");
+        tableItem24->itemColumn = 0;
+        tableItem24->itemRow = nRowCount;
+        tableItem24->rowSpan = false;
+        tableItem24->rowBold = false;
+        myTable.append(tableItem24);
+
+        pTableItem *tableItem25 = new pTableItem();
+        tableItem25->columnText = stDiskInfo.strMediaFreeSpace;
+        tableItem25->itemColumn = 1;
+        tableItem25->itemRow = nRowCount;
+        tableItem25->rowSpan = false;
+        tableItem25->rowBold = false;
+        myTable.append(tableItem25);
     }
 
     if(stISOInfo.isISO == 1){
         nRowCount++;
 
-        QTableWidgetItem* header2a = new QTableWidgetItem(tr("Contents ISO"));
-        header2a->setFlags(Qt::NoItemFlags);
-        header2a->setFont(originalFont);
-        QTableWidgetItem* header2b = new QTableWidgetItem("");
-        header2b->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,header2a);
-        diskInfoTable->setItem(nRowCount,1,header2b);
-        diskInfoTable->setSpan(nRowCount,0,1,2);
+        pTableItem *tableItem26 = new pTableItem();
+        tableItem26->columnText = tr("Contents ISO");
+        tableItem26->itemColumn = 0;
+        tableItem26->itemRow = nRowCount;
+        tableItem26->rowSpan = true;
+        tableItem26->rowBold = true;
+        myTable.append(tableItem26);
 
-        if(hideEmptyFields==false || stISOInfo.strVolumeLabel.length()>0 ){
+        pTableItem *tableItem27 = new pTableItem();
+        tableItem27->columnText = "";
+        tableItem27->itemColumn = 1;
+        tableItem27->itemRow = nRowCount;
+        tableItem27->rowSpan = true;
+        tableItem27->rowBold = false;
+        myTable.append(tableItem27);
+
+
+        if(stISOInfo.strVolumeLabel.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOVolumeLabelFix = new QTableWidgetItem(tr("Label:"));
-            itemISOVolumeLabelFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOVolumeLabel = new QTableWidgetItem(stISOInfo.strVolumeLabel);
-            itemISOVolumeLabel->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOVolumeLabelFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOVolumeLabel);
+            pTableItem *tableItem28 = new pTableItem();
+            tableItem28->columnText = tr("Label:");
+            tableItem28->itemColumn = 0;
+            tableItem28->itemRow = nRowCount;
+            tableItem28->rowSpan = false;
+            tableItem28->rowBold = false;
+            myTable.append(tableItem28);
+
+            pTableItem *tableItem29 = new pTableItem();
+            tableItem29->columnText = stISOInfo.strVolumeLabel;
+            tableItem29->itemColumn = 1;
+            tableItem29->itemRow = nRowCount;
+            tableItem29->rowSpan = false;
+            tableItem29->rowBold = false;
+            myTable.append(tableItem29);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strISOLevel.length()>0 ){
+        if(stISOInfo.strISOLevel.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOLevelFix = new QTableWidgetItem(tr("Level:"));
-            itemISOLevelFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOLevel = new QTableWidgetItem(stISOInfo.strISOLevel);
-            itemISOLevel->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOLevelFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOLevel);
+            pTableItem *tableItem30 = new pTableItem();
+            tableItem30->columnText = tr("Level:");
+            tableItem30->itemColumn = 0;
+            tableItem30->itemRow = nRowCount;
+            tableItem30->rowSpan = false;
+            tableItem30->rowBold = false;
+            myTable.append(tableItem30);
+
+            pTableItem *tableItem31 = new pTableItem();
+            tableItem31->columnText = stISOInfo.strISOLevel;
+            tableItem31->itemColumn = 1;
+            tableItem31->itemRow = nRowCount;
+            tableItem31->rowSpan = false;
+            tableItem31->rowBold = false;
+            myTable.append(tableItem31);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strRootAddress.length()>0 ){
+        if(stISOInfo.strRootAddress.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISORootAddressFix = new QTableWidgetItem(tr("Root Address:"));
-            itemISORootAddressFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISORootAddress = new QTableWidgetItem(stISOInfo.strRootAddress);
-            itemISORootAddress->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISORootAddressFix);
-            diskInfoTable->setItem(nRowCount,1,itemISORootAddress);
+            pTableItem *tableItem32 = new pTableItem();
+            tableItem32->columnText = tr("Root Address:");
+            tableItem32->itemColumn = 0;
+            tableItem32->itemRow = nRowCount;
+            tableItem32->rowSpan = false;
+            tableItem32->rowBold = false;
+            myTable.append(tableItem32);
+
+            pTableItem *tableItem33 = new pTableItem();
+            tableItem33->columnText = stISOInfo.strRootAddress;
+            tableItem33->itemColumn = 1;
+            tableItem33->itemRow = nRowCount;
+            tableItem33->rowSpan = false;
+            tableItem33->rowBold = false;
+            myTable.append(tableItem33);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strISOExtension.length()>0 ){
+        if(stISOInfo.strISOExtension.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOExtensionFix = new QTableWidgetItem(tr("Extension Type:"));
-            itemISOExtensionFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOExtension = new QTableWidgetItem(stISOInfo.strISOExtension);
-            itemISOExtension->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOExtensionFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOExtension);
+            pTableItem *tableItem34 = new pTableItem();
+            tableItem34->columnText = tr("Extension Type:");
+            tableItem34->itemColumn = 0;
+            tableItem34->itemRow = nRowCount;
+            tableItem34->rowSpan = false;
+            tableItem34->rowBold = false;
+            myTable.append(tableItem34);
+
+            pTableItem *tableItem35 = new pTableItem();
+            tableItem35->columnText = stISOInfo.strISOExtension;
+            tableItem35->itemColumn = 1;
+            tableItem35->itemRow = nRowCount;
+            tableItem35->rowSpan = false;
+            tableItem35->rowBold = false;
+            myTable.append(tableItem35);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strCreationTime.length()>0 ){
+        if(stISOInfo.strCreationTime.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOCreationTimeFix = new QTableWidgetItem(tr("Creation Time:"));
-            itemISOCreationTimeFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOCreationTime = new QTableWidgetItem(stISOInfo.strCreationTime);
-            itemISOCreationTime->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOCreationTimeFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOCreationTime);
+            pTableItem *tableItem36 = new pTableItem();
+            tableItem36->columnText = tr("Creation Time:");
+            tableItem36->itemColumn = 0;
+            tableItem36->itemRow = nRowCount;
+            tableItem36->rowSpan = false;
+            tableItem36->rowBold = false;
+            myTable.append(tableItem36);
+
+            pTableItem *tableItem37 = new pTableItem();
+            tableItem37->columnText = stISOInfo.strCreationTime;
+            tableItem37->itemColumn = 1;
+            tableItem37->itemRow = nRowCount;
+            tableItem37->rowSpan = false;
+            tableItem37->rowBold = false;
+            myTable.append(tableItem37);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strModificationTime.length()>0 ){
+        if(stISOInfo.strModificationTime.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOModificationTimeFix = new QTableWidgetItem(tr("Creation Time:"));
-            itemISOModificationTimeFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOModificationTime = new QTableWidgetItem(stISOInfo.strModificationTime);
-            itemISOModificationTime->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOModificationTimeFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOModificationTime);
+            pTableItem *tableItem38 = new pTableItem();
+            tableItem38->columnText = tr("Modification Time:");
+            tableItem38->itemColumn = 0;
+            tableItem38->itemRow = nRowCount;
+            tableItem38->rowSpan = false;
+            tableItem38->rowBold = false;
+            myTable.append(tableItem38);
+
+            pTableItem *tableItem39 = new pTableItem();
+            tableItem39->columnText = stISOInfo.strModificationTime;
+            tableItem39->itemColumn = 1;
+            tableItem39->itemRow = nRowCount;
+            tableItem39->rowSpan = false;
+            tableItem39->rowBold = false;
+            myTable.append(tableItem39);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strExpirationTime.length()>0 ){
+        if(stISOInfo.strExpirationTime.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOExpirationTimeFix = new QTableWidgetItem(tr("Expiration Time:"));
-            itemISOExpirationTimeFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOExpirationTime = new QTableWidgetItem(stISOInfo.strExpirationTime);
-            itemISOExpirationTime->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOExpirationTimeFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOExpirationTime);
+            pTableItem *tableItem40 = new pTableItem();
+            tableItem40->columnText = tr("Expiration Time:");
+            tableItem40->itemColumn = 0;
+            tableItem40->itemRow = nRowCount;
+            tableItem40->rowSpan = false;
+            tableItem40->rowBold = false;
+            myTable.append(tableItem40);
+
+            pTableItem *tableItem41 = new pTableItem();
+            tableItem41->columnText = stISOInfo.strExpirationTime;
+            tableItem41->itemColumn = 1;
+            tableItem41->itemRow = nRowCount;
+            tableItem41->rowSpan = false;
+            tableItem41->rowBold = false;
+            myTable.append(tableItem41);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strEffectiveTime.length()>0 ){
+        if(stISOInfo.strEffectiveTime.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOEffectiveTimeFix = new QTableWidgetItem(tr("Effective Time:"));
-            itemISOEffectiveTimeFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOEffectiveTime = new QTableWidgetItem(stISOInfo.strEffectiveTime);
-            itemISOEffectiveTime->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOEffectiveTimeFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOEffectiveTime);
+            pTableItem *tableItem42 = new pTableItem();
+            tableItem42->columnText = tr("Effective Time:");
+            tableItem42->itemColumn = 0;
+            tableItem42->itemRow = nRowCount;
+            tableItem42->rowSpan = false;
+            tableItem42->rowBold = false;
+            myTable.append(tableItem42);
+
+            pTableItem *tableItem43 = new pTableItem();
+            tableItem43->columnText = stISOInfo.strEffectiveTime;
+            tableItem43->itemColumn = 1;
+            tableItem43->itemRow = nRowCount;
+            tableItem43->rowSpan = false;
+            tableItem43->rowBold = false;
+            myTable.append(tableItem43);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strAbstract.length()>0 ){
+        if(stISOInfo.strAbstract.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOAbstractFix = new QTableWidgetItem(tr("Abstract Identifier:"));
-            itemISOAbstractFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOAbstract = new QTableWidgetItem(stISOInfo.strAbstract);
-            itemISOAbstract->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOAbstractFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOAbstract);
+            pTableItem *tableItem44 = new pTableItem();
+            tableItem44->columnText = tr("Abstract Identifier:");
+            tableItem44->itemColumn = 0;
+            tableItem44->itemRow = nRowCount;
+            tableItem44->rowSpan = false;
+            tableItem44->rowBold = false;
+            myTable.append(tableItem44);
+
+            pTableItem *tableItem45 = new pTableItem();
+            tableItem45->columnText = stISOInfo.strAbstract;
+            tableItem45->itemColumn = 1;
+            tableItem45->itemRow = nRowCount;
+            tableItem45->rowSpan = false;
+            tableItem45->rowBold = false;
+            myTable.append(tableItem45);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strApplication.length()>0 ){
+        if(stISOInfo.strApplication.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOApplicationFix = new QTableWidgetItem(tr("Application Identifier:"));
-            itemISOApplicationFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOApplication = new QTableWidgetItem(stISOInfo.strApplication);
-            itemISOApplication->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOApplicationFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOApplication);
+            pTableItem *tableItem46 = new pTableItem();
+            tableItem46->columnText = tr("Application Identifier:");
+            tableItem46->itemColumn = 0;
+            tableItem46->itemRow = nRowCount;
+            tableItem46->rowSpan = false;
+            tableItem46->rowBold = false;
+            myTable.append(tableItem46);
+
+            pTableItem *tableItem47 = new pTableItem();
+            tableItem47->columnText = stISOInfo.strApplication;
+            tableItem47->itemColumn = 1;
+            tableItem47->itemRow = nRowCount;
+            tableItem47->rowSpan = false;
+            tableItem47->rowBold = false;
+            myTable.append(tableItem47);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strBiblio.length()>0 ){
+        if(stISOInfo.strBiblio.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOBiblioFix = new QTableWidgetItem(tr("Biblio Identifier:"));
-            itemISOBiblioFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOBiblio = new QTableWidgetItem(stISOInfo.strBiblio);
-            itemISOBiblio->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOBiblioFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOBiblio);
+            pTableItem *tableItem48 = new pTableItem();
+            tableItem48->columnText = tr("Biblio Identifier:");
+            tableItem48->itemColumn = 0;
+            tableItem48->itemRow = nRowCount;
+            tableItem48->rowSpan = false;
+            tableItem48->rowBold = false;
+            myTable.append(tableItem48);
+
+            pTableItem *tableItem49 = new pTableItem();
+            tableItem49->columnText = stISOInfo.strBiblio;
+            tableItem49->itemColumn = 1;
+            tableItem49->itemRow = nRowCount;
+            tableItem49->rowSpan = false;
+            tableItem49->rowBold = false;
+            myTable.append(tableItem49);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strCopyright.length()>0 ){
+        if(stISOInfo.strCopyright.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOCopyrightFix = new QTableWidgetItem(tr("Copyright Identifier:"));
-            itemISOCopyrightFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOCopyright = new QTableWidgetItem(stISOInfo.strCopyright);
-            itemISOCopyright->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOCopyrightFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOCopyright);
+            pTableItem *tableItem50 = new pTableItem();
+            tableItem50->columnText = tr("Copyright Identifier:");
+            tableItem50->itemColumn = 0;
+            tableItem50->itemRow = nRowCount;
+            tableItem50->rowSpan = false;
+            tableItem50->rowBold = false;
+            myTable.append(tableItem50);
+
+            pTableItem *tableItem51 = new pTableItem();
+            tableItem51->columnText = stISOInfo.strCopyright;
+            tableItem51->itemColumn = 1;
+            tableItem51->itemRow = nRowCount;
+            tableItem51->rowSpan = false;
+            tableItem51->rowBold = false;
+            myTable.append(tableItem51);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strDataPreparer.length()>0 ){
+        if(stISOInfo.strDataPreparer.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISODataPreparerFix = new QTableWidgetItem(tr("Data Preparer Identifier:"));
-            itemISODataPreparerFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISODataPreparer = new QTableWidgetItem(stISOInfo.strDataPreparer);
-            itemISODataPreparer->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISODataPreparerFix);
-            diskInfoTable->setItem(nRowCount,1,itemISODataPreparer);
+            pTableItem *tableItem52 = new pTableItem();
+            tableItem52->columnText = tr("Data Preparer Identifier:");
+            tableItem52->itemColumn = 0;
+            tableItem52->itemRow = nRowCount;
+            tableItem52->rowSpan = false;
+            tableItem52->rowBold = false;
+            myTable.append(tableItem52);
+
+            pTableItem *tableItem53 = new pTableItem();
+            tableItem53->columnText = stISOInfo.strDataPreparer;
+            tableItem53->itemColumn = 1;
+            tableItem53->itemRow = nRowCount;
+            tableItem53->rowSpan = false;
+            tableItem53->rowBold = false;
+            myTable.append(tableItem53);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strPublisher.length()>0 ){
+        if(stISOInfo.strPublisher.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOPublisherFix = new QTableWidgetItem(tr("Publisher Identifier:"));
-            itemISOPublisherFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOPublisher = new QTableWidgetItem(stISOInfo.strPublisher);
-            itemISOPublisher->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOPublisherFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOPublisher);
+            pTableItem *tableItem54 = new pTableItem();
+            tableItem54->columnText = tr("Publisher Identifier:");
+            tableItem54->itemColumn = 0;
+            tableItem54->itemRow = nRowCount;
+            tableItem54->rowSpan = false;
+            tableItem54->rowBold = false;
+            myTable.append(tableItem54);
+
+            pTableItem *tableItem55 = new pTableItem();
+            tableItem55->columnText = stISOInfo.strPublisher;
+            tableItem55->itemColumn = 1;
+            tableItem55->itemRow = nRowCount;
+            tableItem55->rowSpan = false;
+            tableItem55->rowBold = false;
+            myTable.append(tableItem55);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strSet.length()>0 ){
+        if(stISOInfo.strSet.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOSetFix = new QTableWidgetItem(tr("Set Identifier:"));
-            itemISOSetFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOSet = new QTableWidgetItem(stISOInfo.strSet);
-            itemISOSet->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOSetFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOSet);
+            pTableItem *tableItem56 = new pTableItem();
+            tableItem56->columnText = tr("Set Identifier:");
+            tableItem56->itemColumn = 0;
+            tableItem56->itemRow = nRowCount;
+            tableItem56->rowSpan = false;
+            tableItem56->rowBold = false;
+            myTable.append(tableItem56);
+
+            pTableItem *tableItem57 = new pTableItem();
+            tableItem57->columnText = stISOInfo.strSet;
+            tableItem57->itemColumn = 1;
+            tableItem57->itemRow = nRowCount;
+            tableItem57->rowSpan = false;
+            tableItem57->rowBold = false;
+            myTable.append(tableItem57);
         }
 
-        if(hideEmptyFields==false || stISOInfo.strSystem.length()>0 ){
+        if(stISOInfo.strSystem.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemISOSystemFix = new QTableWidgetItem(tr("System Identifier:"));
-            itemISOSystemFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemISOSystem = new QTableWidgetItem(stISOInfo.strSystem);
-            itemISOSystem->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemISOSystemFix);
-            diskInfoTable->setItem(nRowCount,1,itemISOSystem);
+            pTableItem *tableItem58 = new pTableItem();
+            tableItem58->columnText = tr("System Identifier:");
+            tableItem58->itemColumn = 0;
+            tableItem58->itemRow = nRowCount;
+            tableItem58->rowSpan = false;
+            tableItem58->rowBold = false;
+            myTable.append(tableItem58);
+
+            pTableItem *tableItem59 = new pTableItem();
+            tableItem59->columnText = stISOInfo.strSystem;
+            tableItem59->itemColumn = 1;
+            tableItem59->itemRow = nRowCount;
+            tableItem59->rowSpan = false;
+            tableItem59->rowBold = false;
+            myTable.append(tableItem59);
         }
 
 
@@ -1023,185 +1348,365 @@ void MdiChildDiskInfo::readDiskInfo()
 
     if(stUDFInfo.isUDF == 1){
         nRowCount++;
-        QTableWidgetItem* header2c = new QTableWidgetItem(tr("Contents UDF"));
-        header2c->setFlags(Qt::NoItemFlags);
-        header2c->setFont(originalFont);
-        QTableWidgetItem* header2d = new QTableWidgetItem("");
-        header2d->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,header2c);
-        diskInfoTable->setItem(nRowCount,1,header2d);
-        diskInfoTable->setSpan(nRowCount,0,1,2);
+        pTableItem *tableItem60 = new pTableItem();
+        tableItem60->columnText = tr("Contents UDF");
+        tableItem60->itemColumn = 0;
+        tableItem60->itemRow = nRowCount;
+        tableItem60->rowSpan = true;
+        tableItem60->rowBold = true;
+        myTable.append(tableItem60);
 
-        if(hideEmptyFields==false || stUDFInfo.strVolumeLabel.length()>0 ){
+        pTableItem *tableItem61 = new pTableItem();
+        tableItem61->columnText = "";
+        tableItem61->itemColumn = 1;
+        tableItem61->itemRow = nRowCount;
+        tableItem61->rowSpan = true;
+        tableItem61->rowBold = false;
+        myTable.append(tableItem61);
+
+        if(stUDFInfo.strVolumeLabel.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemUDFVolumeLabelFix = new QTableWidgetItem(tr("Label:"));
-            itemUDFVolumeLabelFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemUDFVolumeLabel = new QTableWidgetItem(stUDFInfo.strVolumeLabel);
-            itemUDFVolumeLabel->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemUDFVolumeLabelFix);
-            diskInfoTable->setItem(nRowCount,1,itemUDFVolumeLabel);
+            pTableItem *tableItem62 = new pTableItem();
+            tableItem62->columnText = tr("Label:");
+            tableItem62->itemColumn = 0;
+            tableItem62->itemRow = nRowCount;
+            tableItem62->rowSpan = false;
+            tableItem62->rowBold = false;
+            myTable.append(tableItem62);
+
+            pTableItem *tableItem63 = new pTableItem();
+            tableItem63->columnText = stUDFInfo.strVolumeLabel;
+            tableItem63->itemColumn = 1;
+            tableItem63->itemRow = nRowCount;
+            tableItem63->rowSpan = false;
+            tableItem63->rowBold = false;
+            myTable.append(tableItem63);
         }
 
-        if(hideEmptyFields==false || stUDFInfo.strUDFVersion.length()>0 ){
+        if(stUDFInfo.strUDFVersion.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemUDFVersionFix = new QTableWidgetItem(tr("Version:"));
-            itemUDFVersionFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemUDFVersion = new QTableWidgetItem(stUDFInfo.strUDFVersion);
-            itemUDFVersion->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemUDFVersionFix);
-            diskInfoTable->setItem(nRowCount,1,itemUDFVersion);
+            pTableItem *tableItem64 = new pTableItem();
+            tableItem64->columnText = tr("Version:");
+            tableItem64->itemColumn = 0;
+            tableItem64->itemRow = nRowCount;
+            tableItem64->rowSpan = false;
+            tableItem64->rowBold = false;
+            myTable.append(tableItem64);
+
+            pTableItem *tableItem65 = new pTableItem();
+            tableItem65->columnText = stUDFInfo.strUDFVersion;
+            tableItem65->itemColumn = 1;
+            tableItem65->itemRow = nRowCount;
+            tableItem65->rowSpan = false;
+            tableItem65->rowBold = false;
+            myTable.append(tableItem65);
         }
 
-        if(hideEmptyFields==false || stUDFInfo.strUDFPartition.length()>0 ){
+        if(stUDFInfo.strUDFPartition.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemUDFPartitionFix = new QTableWidgetItem(tr("Partition:"));
-            itemUDFPartitionFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemUDFPartition = new QTableWidgetItem(stUDFInfo.strUDFPartition);
-            itemUDFPartition->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemUDFPartitionFix);
-            diskInfoTable->setItem(nRowCount,1,itemUDFPartition);
+            pTableItem *tableItem66 = new pTableItem();
+            tableItem66->columnText = tr("Partition:");
+            tableItem66->itemColumn = 0;
+            tableItem66->itemRow = nRowCount;
+            tableItem66->rowSpan = false;
+            tableItem66->rowBold = false;
+            myTable.append(tableItem66);
+
+            pTableItem *tableItem67 = new pTableItem();
+            tableItem67->columnText = stUDFInfo.strUDFPartition;
+            tableItem67->itemColumn = 1;
+            tableItem67->itemRow = nRowCount;
+            tableItem67->rowSpan = false;
+            tableItem67->rowBold = false;
+            myTable.append(tableItem67);
         }
 
-        if(hideEmptyFields==false || stUDFInfo.strPerparer.length()>0 ){
+        if(stUDFInfo.strPerparer.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemUDFPerparerFix = new QTableWidgetItem(tr("Preparer:"));
-            itemUDFPerparerFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemUDFPerparer = new QTableWidgetItem(stUDFInfo.strPerparer);
-            itemUDFPerparer->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemUDFPerparerFix);
-            diskInfoTable->setItem(nRowCount,1,itemUDFPerparer);
+            pTableItem *tableItem68 = new pTableItem();
+            tableItem68->columnText = tr("Preparer:");
+            tableItem68->itemColumn = 0;
+            tableItem68->itemRow = nRowCount;
+            tableItem68->rowSpan = false;
+            tableItem68->rowBold = false;
+            myTable.append(tableItem68);
+
+            pTableItem *tableItem69 = new pTableItem();
+            tableItem69->columnText = stUDFInfo.strPerparer;
+            tableItem69->itemColumn = 1;
+            tableItem69->itemRow = nRowCount;
+            tableItem69->rowSpan = false;
+            tableItem69->rowBold = false;
+            myTable.append(tableItem69);
         }
 
-        if(hideEmptyFields==false || stUDFInfo.strUDFFolders.length()>0 ){
+        if(stUDFInfo.strUDFFolders.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemUDFFoldersFix = new QTableWidgetItem(tr("Folder Count:"));
-            itemUDFFoldersFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemUDFFolders = new QTableWidgetItem(stUDFInfo.strUDFFolders);
-            itemUDFFolders->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemUDFFoldersFix);
-            diskInfoTable->setItem(nRowCount,1,itemUDFFolders);
+            pTableItem *tableItem70 = new pTableItem();
+            tableItem70->columnText = tr("Folder Count:");
+            tableItem70->itemColumn = 0;
+            tableItem70->itemRow = nRowCount;
+            tableItem70->rowSpan = false;
+            tableItem70->rowBold = false;
+            myTable.append(tableItem70);
+
+            pTableItem *tableItem71 = new pTableItem();
+            tableItem71->columnText = stUDFInfo.strUDFFolders;
+            tableItem71->itemColumn = 1;
+            tableItem71->itemRow = nRowCount;
+            tableItem71->rowSpan = false;
+            tableItem71->rowBold = false;
+            myTable.append(tableItem71);
         }
 
-        if(hideEmptyFields==false || stUDFInfo.strUDFFiles.length()>0 ){
+        if(stUDFInfo.strUDFFiles.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemUDFFilesFix = new QTableWidgetItem(tr("File Count:"));
-            itemUDFFilesFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemUDFFiles = new QTableWidgetItem(stUDFInfo.strUDFFiles);
-            itemUDFFiles->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemUDFFilesFix);
-            diskInfoTable->setItem(nRowCount,1,itemUDFFiles);
+            pTableItem *tableItem72 = new pTableItem();
+            tableItem72->columnText = tr("File Count:");
+            tableItem72->itemColumn = 0;
+            tableItem72->itemRow = nRowCount;
+            tableItem72->rowSpan = false;
+            tableItem72->rowBold = false;
+            myTable.append(tableItem72);
+
+            pTableItem *tableItem73 = new pTableItem();
+            tableItem73->columnText = stUDFInfo.strUDFFiles;
+            tableItem73->itemColumn = 1;
+            tableItem73->itemRow = nRowCount;
+            tableItem73->rowSpan = false;
+            tableItem73->rowBold = false;
+            myTable.append(tableItem73);
         }
 
-        if(hideEmptyFields==false || stUDFInfo.strRootAddress.length()>0 ){
+        if(stUDFInfo.strRootAddress.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemUDFRootAddressFix = new QTableWidgetItem(tr("Root Address:"));
-            itemUDFRootAddressFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemUDFRootAddress = new QTableWidgetItem(stUDFInfo.strRootAddress);
-            itemUDFRootAddress->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemUDFRootAddressFix);
-            diskInfoTable->setItem(nRowCount,1,itemUDFRootAddress);
+            pTableItem *tableItem74 = new pTableItem();
+            tableItem74->columnText = tr("Root Address:");
+            tableItem74->itemColumn = 0;
+            tableItem74->itemRow = nRowCount;
+            tableItem74->rowSpan = false;
+            tableItem74->rowBold = false;
+            myTable.append(tableItem74);
+
+            pTableItem *tableItem75 = new pTableItem();
+            tableItem75->columnText = stUDFInfo.strRootAddress;
+            tableItem75->itemColumn = 1;
+            tableItem75->itemRow = nRowCount;
+            tableItem75->rowSpan = false;
+            tableItem75->rowBold = false;
+            myTable.append(tableItem75);
         }
     }
     if(stAudioInfo.isAudio == 1){
         nRowCount++;
-        QTableWidgetItem* header2e = new QTableWidgetItem(tr("Contents Audio"));
-        header2e->setFlags(Qt::NoItemFlags);
-        header2e->setFont(originalFont);
-        QTableWidgetItem* header2f = new QTableWidgetItem("");
-        header2f->setFlags(Qt::NoItemFlags);
-        diskInfoTable->setItem(nRowCount,0,header2e);
-        diskInfoTable->setItem(nRowCount,1,header2f);
-        diskInfoTable->setSpan(nRowCount,0,1,2);
+        pTableItem *tableItem76 = new pTableItem();
+        tableItem76->columnText = tr("Contents Audio");
+        tableItem76->itemColumn = 0;
+        tableItem76->itemRow = nRowCount;
+        tableItem76->rowSpan = true;
+        tableItem76->rowBold = true;
+        myTable.append(tableItem76);
 
-        if(hideEmptyFields==false || stAudioInfo.strTitle.length()>0 ){
+        pTableItem *tableItem77 = new pTableItem();
+        tableItem77->columnText = "";
+        tableItem77->itemColumn = 1;
+        tableItem77->itemRow = nRowCount;
+        tableItem77->rowSpan = true;
+        tableItem77->rowBold = false;
+        myTable.append(tableItem77);
+
+        if(stAudioInfo.strTitle.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemAudioTitleFix = new QTableWidgetItem(tr("CDText Title:"));
-            itemAudioTitleFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemAudioTitle = new QTableWidgetItem(stAudioInfo.strTitle);
-            itemAudioTitle->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemAudioTitleFix);
-            diskInfoTable->setItem(nRowCount,1,itemAudioTitle);
+            pTableItem *tableItem78 = new pTableItem();
+            tableItem78->columnText = tr("CDText Title:");
+            tableItem78->itemColumn = 0;
+            tableItem78->itemRow = nRowCount;
+            tableItem78->rowSpan = false;
+            tableItem78->rowBold = false;
+            myTable.append(tableItem78);
+
+            pTableItem *tableItem79 = new pTableItem();
+            tableItem79->columnText = stAudioInfo.strTitle;
+            tableItem79->itemColumn = 1;
+            tableItem79->itemRow = nRowCount;
+            tableItem79->rowSpan = false;
+            tableItem79->rowBold = false;
+            myTable.append(tableItem79);
         }
 
-        if(hideEmptyFields==false || stAudioInfo.strPerformer.length()>0 ){
+        if(stAudioInfo.strPerformer.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemAudioPerformerFix = new QTableWidgetItem(tr("CDText Performer:"));
-            itemAudioPerformerFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemAudioPerformer = new QTableWidgetItem(stAudioInfo.strPerformer);
-            itemAudioPerformer->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemAudioPerformerFix);
-            diskInfoTable->setItem(nRowCount,1,itemAudioPerformer);
+            pTableItem *tableItem80 = new pTableItem();
+            tableItem80->columnText = tr("CDText Performer:");
+            tableItem80->itemColumn = 0;
+            tableItem80->itemRow = nRowCount;
+            tableItem80->rowSpan = false;
+            tableItem80->rowBold = false;
+            myTable.append(tableItem80);
+
+            pTableItem *tableItem81 = new pTableItem();
+            tableItem81->columnText = stAudioInfo.strPerformer;
+            tableItem81->itemColumn = 1;
+            tableItem81->itemRow = nRowCount;
+            tableItem81->rowSpan = false;
+            tableItem81->rowBold = false;
+            myTable.append(tableItem81);
         }
 
-        if(hideEmptyFields==false || stAudioInfo.strSongWriter.length()>0 ){
+        if(stAudioInfo.strSongWriter.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemAudioSongWriterFix = new QTableWidgetItem(tr("CDText SongWriter:"));
-            itemAudioSongWriterFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemAudioSongWriter = new QTableWidgetItem(stAudioInfo.strSongWriter);
-            itemAudioSongWriter->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemAudioSongWriterFix);
-            diskInfoTable->setItem(nRowCount,1,itemAudioSongWriter);
+            pTableItem *tableItem82 = new pTableItem();
+            tableItem82->columnText = tr("CDText SongWriter:");
+            tableItem82->itemColumn = 0;
+            tableItem82->itemRow = nRowCount;
+            tableItem82->rowSpan = false;
+            tableItem82->rowBold = false;
+            myTable.append(tableItem82);
+
+            pTableItem *tableItem83 = new pTableItem();
+            tableItem83->columnText = stAudioInfo.strSongWriter;
+            tableItem83->itemColumn = 1;
+            tableItem83->itemRow = nRowCount;
+            tableItem83->rowSpan = false;
+            tableItem83->rowBold = false;
+            myTable.append(tableItem83);
         }
 
-        if(hideEmptyFields==false || stAudioInfo.strComposer.length()>0 ){
+        if(stAudioInfo.strComposer.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemAudioComposerFix = new QTableWidgetItem(tr("CDText Composer:"));
-            itemAudioComposerFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemAudioComposer = new QTableWidgetItem(stAudioInfo.strComposer);
-            itemAudioComposer->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemAudioComposerFix);
-            diskInfoTable->setItem(nRowCount,1,itemAudioComposer);
+            pTableItem *tableItem84 = new pTableItem();
+            tableItem84->columnText = tr("CDText Composer:");
+            tableItem84->itemColumn = 0;
+            tableItem84->itemRow = nRowCount;
+            tableItem84->rowSpan = false;
+            tableItem84->rowBold = false;
+            myTable.append(tableItem84);
+
+            pTableItem *tableItem85 = new pTableItem();
+            tableItem85->columnText = stAudioInfo.strComposer;
+            tableItem85->itemColumn = 1;
+            tableItem85->itemRow = nRowCount;
+            tableItem85->rowSpan = false;
+            tableItem85->rowBold = false;
+            myTable.append(tableItem85);
         }
 
-        if(hideEmptyFields==false || stAudioInfo.strArranger.length()>0 ){
+        if(stAudioInfo.strArranger.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemAudioArrangerFix = new QTableWidgetItem(tr("CDText Arranger:"));
-            itemAudioArrangerFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemAudioArranger = new QTableWidgetItem(stAudioInfo.strArranger);
-            itemAudioArranger->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemAudioArrangerFix);
-            diskInfoTable->setItem(nRowCount,1,itemAudioArranger);
+            pTableItem *tableItem86 = new pTableItem();
+            tableItem86->columnText = tr("CDText Arranger:");
+            tableItem86->itemColumn = 0;
+            tableItem86->itemRow = nRowCount;
+            tableItem86->rowSpan = false;
+            tableItem86->rowBold = false;
+            myTable.append(tableItem86);
+
+            pTableItem *tableItem87 = new pTableItem();
+            tableItem87->columnText = stAudioInfo.strArranger;
+            tableItem87->itemColumn = 1;
+            tableItem87->itemRow = nRowCount;
+            tableItem87->rowSpan = false;
+            tableItem87->rowBold = false;
+            myTable.append(tableItem87);
         }
 
-        if(hideEmptyFields==false || stAudioInfo.strMessage.length()>0 ){
+        if(stAudioInfo.strMessage.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemAudioMessageFix = new QTableWidgetItem(tr("CDText Message:"));
-            itemAudioMessageFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemAudioMessage = new QTableWidgetItem(stAudioInfo.strMessage);
-            itemAudioMessage->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemAudioMessageFix);
-            diskInfoTable->setItem(nRowCount,1,itemAudioMessage);
+            pTableItem *tableItem88 = new pTableItem();
+            tableItem88->columnText = tr("CDText Message:");
+            tableItem88->itemColumn = 0;
+            tableItem88->itemRow = nRowCount;
+            tableItem88->rowSpan = false;
+            tableItem88->rowBold = false;
+            myTable.append(tableItem88);
+
+            pTableItem *tableItem89 = new pTableItem();
+            tableItem89->columnText = stAudioInfo.strMessage;
+            tableItem89->itemColumn = 1;
+            tableItem89->itemRow = nRowCount;
+            tableItem89->rowSpan = false;
+            tableItem89->rowBold = false;
+            myTable.append(tableItem89);
         }
 
-        if(hideEmptyFields==false || stAudioInfo.strISRC.length()>0 ){
+        if(stAudioInfo.strISRC.length()>0 ){
             nRowCount++;
-            QTableWidgetItem* itemAudioISRCFix = new QTableWidgetItem(tr("CDText ISRC:"));
-            itemAudioISRCFix->setFlags(Qt::NoItemFlags);
-            QTableWidgetItem* itemAudioISRC = new QTableWidgetItem(stAudioInfo.strISRC);
-            itemAudioISRC->setFlags(Qt::NoItemFlags);
-            diskInfoTable->setItem(nRowCount,0,itemAudioISRCFix);
-            diskInfoTable->setItem(nRowCount,1,itemAudioISRC);
+            pTableItem *tableItem90 = new pTableItem();
+            tableItem90->columnText = tr("CDText ISRC:");
+            tableItem90->itemColumn = 0;
+            tableItem90->itemRow = nRowCount;
+            tableItem90->rowSpan = false;
+            tableItem90->rowBold = false;
+            myTable.append(tableItem90);
+
+            pTableItem *tableItem91 = new pTableItem();
+            tableItem91->columnText = stAudioInfo.strISRC;
+            tableItem91->itemColumn = 1;
+            tableItem91->itemRow = nRowCount;
+            tableItem91->rowSpan = false;
+            tableItem91->rowBold = false;
+            myTable.append(tableItem91);
         }
     }
 
-    diskInfoTable->setRowCount(nRowCount);
+    items.append(treeItem);
+    emit thread_finished(items, myTable);
+
+}
+
+void MdiChildDiskInfo::startUpdateInfo()
+{
+    diskInfoTable->clear();
+    treeWidget->clear();
+
+    //Move to main thread
+    treeWidget->header() ->close ();
+    treeWidget->updateData(0);
+
+    if(!mWorkThread){
+        mWorkThread = new ThreadInfo(this);
+        connect(this, SIGNAL(thread_finished(QList<QTreeWidgetItem *>,QVector<pTableItem *>)), this, SLOT(on_thread_completed(QList<QTreeWidgetItem *>,QVector<pTableItem *>)));
+    }
+
+    mWorkThread->start();
+}
+
+void MdiChildDiskInfo::on_thread_completed(QList<QTreeWidgetItem *> items, QVector<pTableItem *> myTable)
+{
+
+    for (int ridx = 0; ridx < myTable.count(); ridx++ ){
+        QTableWidgetItem* item = new QTableWidgetItem();
+        item->setText(myTable[ridx]->columnText);
+        item->setFlags(Qt::NoItemFlags);
+        if(myTable[ridx]->rowBold==true){
+            QFont originalFont = (item)->font();
+            originalFont.setBold(true);
+            item->setFont(originalFont);
+        }
+        diskInfoTable->setItem(myTable[ridx]->itemRow, myTable[ridx]->itemColumn, item);
+        if(myTable[ridx]->rowSpan==true && myTable[ridx]->itemColumn==1){
+            diskInfoTable->setSpan(myTable[ridx]->itemRow,0,1,2);
+        }
+    }
+
+    diskInfoTable->setRowCount(myTable.count()/2); //myTable has one entry for each column, so divided by columncount
+
     diskInfoTable->resizeColumnsToContents();
 
-    //listWidget->setGeometry(150, 0, 200, 200);
-    //listWidget->setContentsMargins(2, 2, 2, 2);
+    treeWidget->insertTopLevelItems(0, items);
+    treeWidget ->expandAll();
+
+    if(treeWidget->treeCount()>1){
+        treeWidget->updateData(1);
+        hasData = 1;
+    }
 
     splitter->setStretchFactor(0, 1);
     splitter->setStretchFactor(1, 2);
 
-    //myUpdateMenus->trigger();
-
-    QString style(
-        "QTableView:disabled {"
-            "gridline-color: #32414B;"
-                "border: 1px solid #32414B;"
-                  "color: #32414B;"
-        "}"
-    );
-    diskInfoTable->setStyleSheet(style);
-
+    emit stopSpinner();
+    emit subwindowchanged(GetProjectType());
 }
+
+
+//MixedMode oder AudioCD oder ISO

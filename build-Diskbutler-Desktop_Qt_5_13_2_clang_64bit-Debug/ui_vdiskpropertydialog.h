@@ -53,6 +53,7 @@ public:
     QLabel *labelSize;
     QLabel *label_7;
     QLabel *labelFiles;
+    QCheckBox *dateUsage;
     QWidget *tabFileExclision;
     QWidget *verticalLayoutWidget_2;
     QVBoxLayout *verticalLayout_3;
@@ -98,7 +99,7 @@ public:
     {
         if (VDiskPropertyDialog->objectName().isEmpty())
             VDiskPropertyDialog->setObjectName(QString::fromUtf8("VDiskPropertyDialog"));
-        VDiskPropertyDialog->resize(365, 396);
+        VDiskPropertyDialog->resize(404, 396);
         QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         sizePolicy.setHorizontalStretch(0);
         sizePolicy.setVerticalStretch(0);
@@ -124,7 +125,7 @@ public:
         tabDisk->setObjectName(QString::fromUtf8("tabDisk"));
         formLayoutWidget = new QWidget(tabDisk);
         formLayoutWidget->setObjectName(QString::fromUtf8("formLayoutWidget"));
-        formLayoutWidget->setGeometry(QRect(0, 20, 331, 229));
+        formLayoutWidget->setGeometry(QRect(0, 20, 371, 250));
         formLayout = new QFormLayout(formLayoutWidget);
         formLayout->setObjectName(QString::fromUtf8("formLayout"));
         formLayout->setContentsMargins(0, 0, 0, 0);
@@ -141,67 +142,72 @@ public:
         label_2 = new QLabel(formLayoutWidget);
         label_2->setObjectName(QString::fromUtf8("label_2"));
 
-        formLayout->setWidget(1, QFormLayout::LabelRole, label_2);
+        formLayout->setWidget(2, QFormLayout::LabelRole, label_2);
 
         dateTimeCreation = new QDateTimeEdit(formLayoutWidget);
         dateTimeCreation->setObjectName(QString::fromUtf8("dateTimeCreation"));
         dateTimeCreation->setEnabled(true);
 
-        formLayout->setWidget(1, QFormLayout::FieldRole, dateTimeCreation);
+        formLayout->setWidget(2, QFormLayout::FieldRole, dateTimeCreation);
 
         label_3 = new QLabel(formLayoutWidget);
         label_3->setObjectName(QString::fromUtf8("label_3"));
 
-        formLayout->setWidget(2, QFormLayout::LabelRole, label_3);
+        formLayout->setWidget(3, QFormLayout::LabelRole, label_3);
 
         dateTimeMdification = new QDateTimeEdit(formLayoutWidget);
         dateTimeMdification->setObjectName(QString::fromUtf8("dateTimeMdification"));
         dateTimeMdification->setEnabled(true);
 
-        formLayout->setWidget(2, QFormLayout::FieldRole, dateTimeMdification);
+        formLayout->setWidget(3, QFormLayout::FieldRole, dateTimeMdification);
 
         label_4 = new QLabel(formLayoutWidget);
         label_4->setObjectName(QString::fromUtf8("label_4"));
 
-        formLayout->setWidget(3, QFormLayout::LabelRole, label_4);
+        formLayout->setWidget(4, QFormLayout::LabelRole, label_4);
 
         dateTimeExpiration = new QDateTimeEdit(formLayoutWidget);
         dateTimeExpiration->setObjectName(QString::fromUtf8("dateTimeExpiration"));
         dateTimeExpiration->setEnabled(true);
 
-        formLayout->setWidget(3, QFormLayout::FieldRole, dateTimeExpiration);
+        formLayout->setWidget(4, QFormLayout::FieldRole, dateTimeExpiration);
 
         label_5 = new QLabel(formLayoutWidget);
         label_5->setObjectName(QString::fromUtf8("label_5"));
 
-        formLayout->setWidget(4, QFormLayout::LabelRole, label_5);
+        formLayout->setWidget(5, QFormLayout::LabelRole, label_5);
 
         dateTimeEffective = new QDateTimeEdit(formLayoutWidget);
         dateTimeEffective->setObjectName(QString::fromUtf8("dateTimeEffective"));
         dateTimeEffective->setEnabled(true);
 
-        formLayout->setWidget(4, QFormLayout::FieldRole, dateTimeEffective);
+        formLayout->setWidget(5, QFormLayout::FieldRole, dateTimeEffective);
 
         label_6 = new QLabel(formLayoutWidget);
         label_6->setObjectName(QString::fromUtf8("label_6"));
 
-        formLayout->setWidget(5, QFormLayout::LabelRole, label_6);
+        formLayout->setWidget(6, QFormLayout::LabelRole, label_6);
 
         labelSize = new QLabel(formLayoutWidget);
         labelSize->setObjectName(QString::fromUtf8("labelSize"));
         labelSize->setMargin(0);
 
-        formLayout->setWidget(5, QFormLayout::FieldRole, labelSize);
+        formLayout->setWidget(6, QFormLayout::FieldRole, labelSize);
 
         label_7 = new QLabel(formLayoutWidget);
         label_7->setObjectName(QString::fromUtf8("label_7"));
 
-        formLayout->setWidget(6, QFormLayout::LabelRole, label_7);
+        formLayout->setWidget(7, QFormLayout::LabelRole, label_7);
 
         labelFiles = new QLabel(formLayoutWidget);
         labelFiles->setObjectName(QString::fromUtf8("labelFiles"));
 
-        formLayout->setWidget(6, QFormLayout::FieldRole, labelFiles);
+        formLayout->setWidget(7, QFormLayout::FieldRole, labelFiles);
+
+        dateUsage = new QCheckBox(formLayoutWidget);
+        dateUsage->setObjectName(QString::fromUtf8("dateUsage"));
+
+        formLayout->setWidget(1, QFormLayout::FieldRole, dateUsage);
 
         tabWidget->addTab(tabDisk, QString());
         tabFileExclision = new QWidget();
@@ -422,7 +428,7 @@ public:
         QObject::connect(buttonBox, SIGNAL(accepted()), VDiskPropertyDialog, SLOT(accept()));
         QObject::connect(buttonBox, SIGNAL(rejected()), VDiskPropertyDialog, SLOT(reject()));
 
-        tabWidget->setCurrentIndex(1);
+        tabWidget->setCurrentIndex(0);
 
 
         QMetaObject::connectSlotsByName(VDiskPropertyDialog);
@@ -440,6 +446,7 @@ public:
         labelSize->setText(QCoreApplication::translate("VDiskPropertyDialog", "0", nullptr));
         label_7->setText(QCoreApplication::translate("VDiskPropertyDialog", "Amount of files:", nullptr));
         labelFiles->setText(QCoreApplication::translate("VDiskPropertyDialog", "0", nullptr));
+        dateUsage->setText(QCoreApplication::translate("VDiskPropertyDialog", "Use dates", nullptr));
         tabWidget->setTabText(tabWidget->indexOf(tabDisk), QCoreApplication::translate("VDiskPropertyDialog", "Disk", nullptr));
         buttonImportSystemFilter->setText(QCoreApplication::translate("VDiskPropertyDialog", "Import global settings", nullptr));
         buttonResetFilter->setText(QCoreApplication::translate("VDiskPropertyDialog", "Reset", nullptr));

@@ -97,6 +97,8 @@ protected:
   void closeEvent(QCloseEvent *event);
   void createFileExplorers();
 
+
+
 private:
   bool maybeSave();
   void setCurrentFile(const QString &fileName, bool isFile = true);

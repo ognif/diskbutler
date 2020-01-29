@@ -123,12 +123,6 @@ private:
     int timerId;
     int startTimerId;
     QAction *myStartBurnCommand;
-    QAction *mySetRibbonChanges;
-    //QAction *postProgress;
-    //QAction *postMessage;
-    //QAction *postFileEvent;
-    //QAction *postJobDone;
-    //QAction *startBurning;
     ContentThread *mContentThread;
     int m_enState;
 

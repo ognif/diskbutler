@@ -205,7 +205,7 @@ void QHexView::paintEvent(QPaintEvent *event)
 			if ((ch < 0x20) or (ch > 0x7e))
 			ch = '.';
 
-            qDebug("Sector firstLineIdx %d lineIdx %d i %d ch %s",firstLineIdx,lineIdx,i,QString(ch).toLatin1().constData());
+            //qDebug("Sector firstLineIdx %d lineIdx %d i %d ch %s",firstLineIdx,lineIdx,i,QString(ch).toLatin1().constData());
 
             //This is the part behind the line
             painter.drawText(xPosAscii, yPos, QString(ch));

@@ -151,6 +151,7 @@ SOURCES += $${SOURCES_CONTROLS} \
         CommonTreeWidget.cpp \
         audiotaginfo.cpp \
         configdialog.cpp \
+        hex/QDummyTextTree.cpp \
         main.cpp \
         mainwindow.cpp \
         mdichild_base.cpp \
@@ -179,6 +180,7 @@ HEADERS += $${HEADERS_CONTROLS} \
         CommonTreeWidget.h \
         audiotaginfo.h \
         configdialog.h \
+        hex/QDummyTextTree.h \
         mainwindow.h \
         mdichild_base.h \
         mdichild_deviceinfo.h \

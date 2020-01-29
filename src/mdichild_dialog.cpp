@@ -127,7 +127,8 @@ void MdiChildDialog::createTreeWidget(RuleManager::ProjectType projectType, bool
     vSplitter->addWidget(treeWidget);
     fileExplorerSplitter->addWidget(treeFileExplorer);
     fileExplorerSplitter->addWidget(listFileExplorer);
-    setCentralWidget(vSplitter);
+    //setCentralWidget(vSplitter);
+    setWidget(vSplitter);
     //connect(treeWidget, SIGNAL(itemSelectionChanged()),
     //        this, SLOT(on_project_selection_changed()));
     connect(treeWidget, SIGNAL(contentsChanged(bool)),
@@ -682,7 +683,7 @@ QString MdiChildDialog::buildExploreStatusBar(QString inProjectType)
     if(medium->getExtendedMediumType()==BS_EMT_CD_AUDIO){
         statusStr = buildAudioCD(tr("Audio Disk"));
     }else{
-        statusStr = buildCommonCD(tr("Data /Video Disk"));
+        statusStr = (tr("Data /Video Disk"));
     }
 
     return statusStr;
@@ -783,18 +784,18 @@ QString MdiChildDialog::strippedName(const QString &fullFileName)
 
 void MdiChildDialog::triggerFSSync()
 {
-    if (treeWidget != NULL)
+    if (treeWidget != nullptr)
         treeWidget->FSSync();
 }
 
 void MdiChildDialog::triggerFSUnsync()
 {
-    if (treeWidget != NULL)
+    if (treeWidget != nullptr)
         treeWidget->FSUnsync();
 }
 
 void MdiChildDialog::triggerReset()
 {
-    if (treeWidget != NULL)
+    if (treeWidget != nullptr)
         treeWidget->ResetFiles();
 }

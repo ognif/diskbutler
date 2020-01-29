@@ -76,6 +76,7 @@ QDiskItem::QDiskItem(CommonTreeWidget *view)
   , useSimulate(false)
   , useAutoErase(true)
   , mISO1Extension(0)
+  , useDiskDates(0)
 {
   project_type = view->GetProjectType();
   SetType(QDataItem::Disk);

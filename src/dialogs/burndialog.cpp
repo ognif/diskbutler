@@ -36,6 +36,7 @@
 //3. Debug
 
 
+//ACHTUNG! Der Thread hat noch MixedMode Fehler.
 
 void ContentThread::run()
 {
@@ -44,7 +45,6 @@ void ContentThread::run()
 
     QTreeWidgetItemIterator it(myTree);
     while (*it) {
-
 
         //Static cast
         if (((QDataItem*)(*it))->GetType()==QDataItem::AudioTrack){
@@ -88,12 +88,16 @@ void ContentThread::run()
             ++it;
 
             if(((QDataItem*)(*it))->GetType()==QDataItem::File){
+
                 SFileToAdd file;
                 QString strSavePath = QDir::toNativeSeparators(((QDataItem*)(*it))->GetFullPath());
 #if defined (WIN32)
     file.lpszSourceFilePath = (const wchar_t *)strSavePath.utf16();
 #else
-    file.lpszSourceFilePath = strSavePath.toUtf8();
+    QByteArray isoPath = QDir::cleanPath(QDir::toNativeSeparators(((QDataItem*)(*it))->GetDiskPath())).toUtf8();
+    isoPath.append('\0');
+    file.lpszSourceFilePath = isoPath;
+
 #endif
                 if(myTree->GetProjectType()==RuleManager::TYPE_PROJECT_MIXEDMODE){
 #if defined (WIN32)
@@ -125,22 +129,31 @@ void ContentThread::run()
 
             }else{
                 //Fatal Error
+                qDebug("Fatal Error");
             }
 
 
         }else{
 
             if (((QDataItem*)(*it))->GetType()==QDataItem::Folder){
+
                 //addLogItem(((QDataItem*)(*it))->GetDiskPath(),2);
                 SDirToCreate dir;
+
                 QString strSavePath = QDir::toNativeSeparators(((QDataItem*)(*it))->GetDiskPath());
 #if defined (WIN32)
                 dir.lpszDestinationPath = (const wchar_t *)strSavePath.utf16();
                 dir.lpszDir = (const wchar_t *)((QDataItem*)(*it))->GetName().utf16();
 #else
-                dir.lpszDestinationPath = strSavePath.toUtf8();
-                dir.lpszDir = ((QDataItem*)(*it))->GetName().toUtf8();
+                QByteArray folderPath = QDir::cleanPath(QDir::toNativeSeparators(((QDataItem*)(*it))->GetDiskPath())).toUtf8();
+                folderPath.append('\0');
+                QByteArray folderName = ((QDataItem*)(*it))->GetName().toUtf8();
+                folderName.append('\0');
+                dir.lpszDestinationPath = folderPath;
+                dir.lpszDir = folderName;
+
 #endif
+
 
                 int32 res = ::CreateDir(dir);
                 if (res != BS_SDK_ERROR_NO)
@@ -156,13 +169,16 @@ void ContentThread::run()
                 QString strSavePath1 = QDir::toNativeSeparators(((QDataItem*)(*it))->GetFullPath());
                 QString strSavePath2 = QDir::toNativeSeparators(((QDataItem*)(*it))->GetDiskPath());
 #if defined (WIN32)
-    file.lpszFileName = (const wchar_t *)((QDataItem*)(*it))->GetName().utf16();
+    //file.lpszFileName = (const wchar_t *)((QDataItem*)(*it))->GetName().utf16();
     file.lpszSourceFilePath = (const wchar_t *)strSavePath1.utf16();
     file.lpszDestinationPath = (const wchar_t *)strSavePath2.utf16();
 #else
-    //file.lpszFileName = ((QDataItem*)(*it))->GetName().toUtf8();
-    file.lpszSourceFilePath = strSavePath1.toUtf8();
-    file.lpszDestinationPath = strSavePath2.toUtf8();
+    QByteArray sourcePath = QDir::cleanPath(QDir::toNativeSeparators(((QDataItem*)(*it))->GetFullPath())).toUtf8();
+    sourcePath.append('\0');
+    QByteArray destPath = QDir::cleanPath(QDir::toNativeSeparators(((QDataItem*)(*it))->GetDiskPath())).toUtf8();
+    destPath.append('\0');
+    file.lpszSourceFilePath = sourcePath;
+    file.lpszDestinationPath = destPath;
 #endif
                 file.bVideoFile = BS_FALSE;
                 file.nSavePath = BS_DONT_SAVE_PATH;
@@ -184,6 +200,8 @@ void ContentThread::run()
                 tAdded.nSecond  = ((QDataItem*)(*it))->GetDateAdded().time().second();
 
                 SFileDateTime tCreated;
+
+                tAdded.nYear = static_cast<uint8>(dynamic_cast<QDataItem*>(*it)->GetDateAdded().date().year());
                 tCreated.nYear = ((QDataItem*)(*it))->GetDateCreated().date().year();
                 tCreated.nMonth = ((QDataItem*)(*it))->GetDateCreated().date().year();
                 tCreated.nDay = ((QDataItem*)(*it))->GetDateCreated().date().day();
@@ -203,7 +221,7 @@ void ContentThread::run()
 #if defined (WIN32)
     res = ::SetFileTimes((const wchar_t *)strSavePath3.utf16(), &tCreated, &tModified, &tAdded);
 #else
-    res = ::SetFileTimes(strSavePath3.toUtf8(), &tCreated, &tModified, &tAdded);
+    res = ::SetFileTimes(sourcePath, &tCreated, &tModified, &tAdded);
 #endif
                 if (res != BS_SDK_ERROR_NO)
                 {
@@ -216,7 +234,7 @@ void ContentThread::run()
 #if defined (WIN32)
     res = ::SetFileAttr((const wchar_t *)strSavePath3.utf16(), nAttrib);
 #else
-    res = ::SetFileAttr(strSavePath3.toUtf8(), nAttrib);
+    res = ::SetFileAttr(sourcePath, nAttrib);
 #endif
 
                 if (res != BS_SDK_ERROR_NO)
@@ -237,7 +255,7 @@ void ContentThread::run()
   emit tContentDone();
 }
 
-void burnDialog::OnCreateDirEvent(const TCHAR *pcFullName, const TCHAR *pcJolietName, const TCHAR* pcISOName, const TCHAR* pcUDFName, burnDialog *pUserData)
+void burnDialog::OnCreateDirEvent(const TCHAR *pcFullName, const TCHAR *, const TCHAR*, const TCHAR*, burnDialog *pUserData)
 {
 #if defined (WIN32)
     QString strOut = QString("Directory created: %1").arg(QString::fromUtf16(pcFullName));
@@ -247,7 +265,7 @@ void burnDialog::OnCreateDirEvent(const TCHAR *pcFullName, const TCHAR *pcJoliet
     pUserData->addLogItem(strOut,1);
 }
 
-void burnDialog::OnAddFileEvent(const TCHAR *pcFullPath, const TCHAR *pcJolietName, const TCHAR *pcISOName, const TCHAR* pcUDFName , double dDateTime, double dFileSize, burnDialog *pUserData)
+void burnDialog::OnAddFileEvent(const TCHAR *pcFullPath, const TCHAR *, const TCHAR *, const TCHAR* , double , double dFileSize, burnDialog *pUserData)
 {
 #if defined (WIN32)
     QString strOut = QString("File added: %1 (%2MB)").arg(QString::fromUtf16(pcFullPath), QString::number(dFileSize/1024/1024));
@@ -362,18 +380,14 @@ void burnDialog::OnEraseDoneEvent(const TCHAR *pcError, burnDialog *pUserData)
 burnDialog::burnDialog(int sdkJobType, CommonTreeWidget *contentOwner, QString imagePath, MdiChildDialog *sourceDialog, SAudioGrabbingParams *xParams, QWidget *parent) :
     QDialog(parent),
     thisJobType(sdkJobType),
-    projectParams(xParams),
-    projectTree(contentOwner),
     strImageFilePath(imagePath),
-    dlgSource(sourceDialog),
-    ui(new Ui::burnDialog)
+    ui(new Ui::burnDialog),
+    projectTree(contentOwner),
+    projectParams(xParams),
+    dlgSource(sourceDialog)
 {
+    setAttribute(Qt::WA_DeleteOnClose);
     ui->setupUi(this);
-
-
-
-    mySetRibbonChanges = new QAction(this);
-    connect(mySetRibbonChanges, SIGNAL(triggered()), parent, SLOT(setBurnDeviceFromSlot()));
 
     buildCommonDialog(sdkJobType);
 
@@ -383,16 +397,14 @@ burnDialog::burnDialog(int sdkJobType, CommonTreeWidget *contentOwner, QString i
 burnDialog::burnDialog(int sdkJobType, CommonTreeWidget *contentOwner, MdiChildDiskInfo *contentSource, QString imagePath, MdiChildDialog *sourceDialog, QWidget *parent) :
     QDialog(parent),
     thisJobType(sdkJobType),
+    strImageFilePath(imagePath),
+    ui(new Ui::burnDialog),
     projectTree(contentOwner),
     jobSource(contentSource),
-    strImageFilePath(imagePath),
-    dlgSource(sourceDialog),
-    ui(new Ui::burnDialog)
+    dlgSource(sourceDialog)
 {
+    setAttribute(Qt::WA_DeleteOnClose);
     ui->setupUi(this);
-
-    mySetRibbonChanges = new QAction(this);
-    connect(mySetRibbonChanges, SIGNAL(triggered()), parent, SLOT(setBurnDeviceFromSlot()));
 
     buildCommonDialog(sdkJobType);
 
@@ -408,6 +420,7 @@ void burnDialog::buildCommonDialog(int sdkJobType)
     timerId = 0;
 
     m_enState = ST_NONE;
+    mContentThread = nullptr;
 
     ui->totalProgress->setRange(0,100);
     ui->bufferValue->setRange(0,100);
@@ -454,7 +467,7 @@ void burnDialog::buildCommonDialog(int sdkJobType)
     SetInfoTextEventCallback((InfoTextEvent) burnDialog::OnInfoTextEvent, BS_IL_INFO, this);
     SetJobDoneEventCallback((JobDoneEvent) burnDialog::OnJobDoneEvent, this);
     SetProcessEventCallback((ProcessEvent) burnDialog::OnProcessEvent, this);
-    SetStartVerifyEventCallback((StartVerifyEvent) burnDialog::OnProcessEvent, this);
+    SetStartVerifyEventCallback((StartVerifyEvent) burnDialog::OnStartVerifyEvent, this);
     SetVerifyDoneEventCallback((VerifyDoneEvent) burnDialog::OnVerifyDoneEvent, this);
     SetVerifyErrorEventCallback((VerifyErrorEvent) burnDialog::OnVerifyErrorEvent, this);
     SetVerifyFileEventCallback((VerifyFileEvent) burnDialog::OnVerifyFileEvent, this);
@@ -548,7 +561,7 @@ void burnDialog::buildCommonDialog(int sdkJobType)
 
 burnDialog::~burnDialog()
 {
-
+    qDebug("End Dialog");
     SetAddFileEventCallback(nullptr, nullptr);
     SetCreateDirEventCallback(nullptr, nullptr);
     SetBurnDoneEventCallback(nullptr, nullptr);
@@ -562,6 +575,7 @@ burnDialog::~burnDialog()
     SetVerifyDoneEventCallback(nullptr, nullptr);
     SetVerifyErrorEventCallback(nullptr, nullptr);
     SetVerifyFileEventCallback(nullptr, nullptr);
+    qDebug("killTimer");
     killTimer(timerId);
     delete ui;
 }
@@ -1037,7 +1051,7 @@ void burnDialog::step5Project()
         res = ::AddFile(fileToAdd);
         if (res != BS_SDK_ERROR_NO)
         {
-           onHandleError(res);
+           (res);
            return;
         }
         addLogItem(tr("Start preparing disk now (::Prepare())"),0);
@@ -1072,9 +1086,9 @@ void burnDialog::step2Project()
     ui->totalProgress->setValue(0);
     //Set read device fpr image creation. THe source drive is the main drive in general settings.
     //It is not #Imagedrive
-    QString strDriveName = ConfigurationPage::mSettings.value("CurrentBurnDevice","").toString();
+    QString strDriveName = jobSource->getBurnDrive();
 
-    addLogItem(tr("Set read device: ")+strDriveName,0);
+    addLogItem(QString("Set read device %1").arg(strDriveName),0);
 
     int32 res = ::SetReadDevice(strDriveName.at(0).toLatin1());
     if (res != BS_SDK_ERROR_NO)
@@ -1083,46 +1097,25 @@ void burnDialog::step2Project()
        return;
     }
 
-    //First we check if imageformat is allowed:
-    int16 nImageFormats;
-    int32 nRes = ::GetPossibleImageFormats(&nImageFormats);
-
-    if(jobSource->getImageCreateMethod()==301){
-        if (!nImageFormats & BS_IMG_ISO)
-        {
-            addLogItem(tr("Error, wrong image type"),0);
-            return;
-        }
-    }else{
-        if (!nImageFormats & BS_IMG_BIN)
-        {
-            addLogItem(tr("Error, wrong image type"),0);
-            return;
-        }
-    }
-
     QString strSavePath = QDir::toNativeSeparators(jobSource->getImagePath());
 
     SCreateImageParams cCreateImageParams;
     cCreateImageParams.cErrorParams.bErrorCorrection = jobSource->getErrorCorrection();
-    cCreateImageParams.cErrorParams.bBlankBadSectors = jobSource->getBlankBadSectors();
+    cCreateImageParams.cErrorParams.bBlankBadSectors = false;
+
+    addLogItem(QString("Error Correction %1").arg(QString::number(jobSource->getErrorCorrection())),0);
 
 #if defined (WIN32)
     wcsncpy(cCreateImageParams.lpszImagePath, (const wchar_t *)strSavePath.utf16(), 128*sizeof(TCHAR));
 #else
     _tcsncpy(cCreateImageParams.lpszImagePath,strSavePath.toLocal8Bit(),128*sizeof(TCHAR));
 #endif
-    addLogItem(tr("Set image file: ")+strSavePath,0);
+    addLogItem(QString("Set image file %1").arg(strSavePath),0);
 
-    cCreateImageParams.nImageType = (jobSource->getImageCreateMethod()==301)?BS_IMG_ISO:BS_IMG_BIN;
-    cCreateImageParams.cErrorParams.nHardwareRetryCount = jobSource->getErrorHarwareRetry();
-    cCreateImageParams.cErrorParams.nSoftwareRetryCount = jobSource->getErrorSoftwareRetry();
 
-    if(jobSource->getImageVerify()==1){
-        addLogItem(tr("Set job type: BS_IMGTASK_VERIFY"),0);
-    }else{
-        addLogItem(tr("Set job type: BS_IMGTASK_CREATE"),0);
-    }
+    cCreateImageParams.nImageType = (jobSource->getImageCreateMethod()==1)?BS_IMG_ISO:BS_IMG_BIN;
+    cCreateImageParams.cErrorParams.nHardwareRetryCount = jobSource->getImageCreateHardRetry();
+    cCreateImageParams.cErrorParams.nSoftwareRetryCount = jobSource->getImageCreateSoftRetry();
 
     int32 nSpeed = 0;
     ::GetReadSpeed(BS_READ_DEVICE,&nSpeed);
@@ -1131,14 +1124,31 @@ void burnDialog::step2Project()
         ::GetMaxReadSpeed(BS_READ_DEVICE, &nSpeed);
     }
     ui->currentSpeed->setText(QString("%1 KB/s").arg(QString::number(nSpeed)));
+    addLogItem(QString("Readspeed %1 KB/s").arg(QString::number(nSpeed)),0);
 
 
-    res = ::CreateImage(cCreateImageParams, (jobSource->getImageVerify()==1)?BS_IMGTASK_VERIFY:BS_IMGTASK_CREATE);
+    //Wir müssen hier beide Als Maske übergeben.
+    int8 dwOperation = 0;
+    if(jobSource->getImageJobCreate()!=0){
+        dwOperation = BS_IMGTASK_CREATE;
+        addLogItem(tr("Set job type: BS_IMGTASK_CREATE"),0);
+    }
+    if(jobSource->getImageJobVerify()!=0){
+        dwOperation |= BS_IMGTASK_VERIFY;
+        addLogItem(tr("Set job type: BS_IMGTASK_VERIFY"),0);
+    }
+
+    res = ::CreateImage(cCreateImageParams, dwOperation);
     if (res != BS_SDK_ERROR_NO)
     {
        onHandleError(res);
        return;
     }
+
+    //Aufgefallen:
+    //Die Verify Medlungen kommen nicht im Log an.
+    //Verify Start
+    //Verify End
 
 
     m_enState = ST_BURN;
@@ -1311,14 +1321,21 @@ void burnDialog::step1Project()
        return;
     }
 
+    QString strDriveName = "";
     bImageWriter = false;
-
-    //Set Drive
-    QString strDriveName = diskItem->getBurnDevice();
-    if(strDriveName.at(0)=='#'){
-        bImageWriter = true;
-        addLogItem(tr("Imagewriter activated"),0);
+    if(diskItem->getBurnDevices().length()==1){
+        qDebug("Ein Laufwerk");
+        strDriveName = diskItem->getBurnDevices()[0];
+        if(strDriveName.at(0)=='#'){
+            bImageWriter = true;
+            addLogItem(tr("Imagewriter activated"),0);
+        }
+    }else{
+        qDebug("Mehr Laufwerke, wir steigen erstmal aus");
+        return;
     }
+
+    qDebug("Set Burn Device");
 
     res = ::SetBurnDevice(strDriveName.at(0).toLatin1());
     if (res != BS_SDK_ERROR_NO)
@@ -1383,6 +1400,10 @@ void burnDialog::step1Project()
 
 
     //SetOptions infoEx
+    SISOInfoEx isoInfo;
+    memset(&isoInfo, 0, sizeof(isoInfo));
+    //::GetISOInfoEx(&isoInfo);
+
 
     if( (project_type==RuleManager::TYPE_PROJECT_OPEN)
             || (project_type==RuleManager::TYPE_PROJECT_MIXEDMODE)
@@ -1390,8 +1411,6 @@ void burnDialog::step1Project()
             || (project_type==RuleManager::TYPE_PROJECT_ISOUDF))
     {
         addLogItem(tr("Set options ISOInfoEx"),1);
-        SISOInfoEx isoInfo;
-        ::GetISOInfoEx(&isoInfo);
         isoInfo.ISOAllowLowercaseNames = diskItem->getAllowLowerCaseNames();
         addLogItem(tr("Set allow lower case names: ")+QString::number(diskItem->getAllowLowerCaseNames()),1);
         isoInfo.ISOAllowManyDirectories = diskItem->getAllowManyDirectories();
@@ -1404,12 +1423,7 @@ void burnDialog::step1Project()
         addLogItem(tr("Set ISO level: ")+QString::number(diskItem->getISOFsType()),1);
         isoInfo.ISOAddSuffix = ((diskItem->getAllowLongJolietFileNames()==0)?1:0);
         addLogItem(tr("Set not write ISO Extension: ")+QString::number((diskItem->getAllowLongJolietFileNames()==0)?1:0),1);
-        res = ::SetISOInfoEx(isoInfo);
-        if (res != BS_SDK_ERROR_NO)
-        {
-           onHandleError(res);
-           return;
-        }
+
     }
 
     if( (project_type==RuleManager::TYPE_PROJECT_OPEN)
@@ -1418,8 +1432,6 @@ void burnDialog::step1Project()
             || (project_type==RuleManager::TYPE_PROJECT_VIDEODVD)
             || (project_type==RuleManager::TYPE_PROJECT_ISOUDF))
     {
-        SISOInfoEx info;
-        ::GetISOInfoEx(&info);
 
         //wcsncpy(info.ISOAbstractFileIdentifier, diskItem->getAbstractFile().toStdWString().c_str(), 36*sizeof(TCHAR));
         //wcsncpy(info.ISOApplicationIdentifier, diskItem->getApplication().toStdWString().c_str(), 128*sizeof(TCHAR));
@@ -1430,15 +1442,74 @@ void burnDialog::step1Project()
         //wcsncpy(info.ISOSystemIdentifier, diskItem->getSystemId().toStdWString().c_str(), 31*sizeof(TCHAR));
         //wcsncpy(info.ISOSetIdentifier, diskItem->getVolumeSet().toStdWString().c_str(), 128*sizeof(TCHAR));
 
-        //TimeEx infos
+         _tcsncpy(isoInfo.ISOAbstractFileIdentifier, diskItem->getAbstractFile().toLocal8Bit(), 36*sizeof(TCHAR));
+         _tcsncpy(isoInfo.ISOApplicationIdentifier, diskItem->getApplication().toLocal8Bit(), 128*sizeof(TCHAR));
+         _tcsncpy(isoInfo.ISOBiblioIdentifier, diskItem->getBibliographicFile().toLocal8Bit(), 36*sizeof(TCHAR));
+         _tcsncpy(isoInfo.ISOCopyrightFileIdentifier, diskItem->getCoprightFile().toLocal8Bit(), 36*sizeof(TCHAR));
+         _tcsncpy(isoInfo.ISODataPreparerIdentifier, diskItem->getDatapreparer().toLocal8Bit(), 128*sizeof(TCHAR));
+         _tcsncpy(isoInfo.ISOPublisherIdentifier, diskItem->getPublisher().toLocal8Bit(), 128*sizeof(TCHAR));
+         _tcsncpy(isoInfo.ISOSystemIdentifier, diskItem->getSystemId().toLocal8Bit(), 31*sizeof(TCHAR));
+         _tcsncpy(isoInfo.ISOSetIdentifier, diskItem->getVolumeSet().toLocal8Bit(), 128*sizeof(TCHAR));
 
-        res = ::SetISOInfoEx(info);
-        if (res != BS_SDK_ERROR_NO)
-        {
-           onHandleError(res);
-           return;
-        }
+         qDebug("Datum bauen");
+
+        //TimeEx infos
+         SFileDateTime tCreated;
+         tCreated.nYear = static_cast<uint8>(diskItem->getDiskDateCreation().date().year()- 1900);
+         tCreated.nMonth = static_cast<uint8>(diskItem->getDiskDateCreation().date().month());
+         tCreated.nDay = static_cast<uint8>(diskItem->getDiskDateCreation().date().day());
+         tCreated.nHour  = static_cast<uint8>(diskItem->getDiskDateCreation().time().hour());
+         tCreated.nMinute  = static_cast<uint8>(diskItem->getDiskDateCreation().time().minute());
+         tCreated.nSecond  = static_cast<uint8>(diskItem->getDiskDateCreation().time().second());
+
+         SFileDateTime tModified;
+         tModified.nYear = static_cast<uint8>(diskItem->getDiskDateMdification().date().year()- 1900);
+         tModified.nMonth = static_cast<uint8>(diskItem->getDiskDateMdification().date().month());
+         tModified.nDay = static_cast<uint8>(diskItem->getDiskDateMdification().date().day());
+         tModified.nHour  = static_cast<uint8>(diskItem->getDiskDateMdification().time().hour());
+         tModified.nMinute  = static_cast<uint8>(diskItem->getDiskDateMdification().time().minute());
+         tModified.nSecond  = static_cast<uint8>(diskItem->getDiskDateMdification().time().second());
+
+         SFileDateTime tEffective;
+         tEffective.nYear = static_cast<uint8>(diskItem->getDiskDateEffective().date().year()- 1900);
+         tEffective.nMonth = static_cast<uint8>(diskItem->getDiskDateEffective().date().month());
+         tEffective.nDay = static_cast<uint8>(diskItem->getDiskDateEffective().date().day());
+         tEffective.nHour  = static_cast<uint8>(diskItem->getDiskDateEffective().time().hour());
+         tEffective.nMinute  = static_cast<uint8>(diskItem->getDiskDateEffective().time().minute());
+         tEffective.nSecond  = static_cast<uint8>(diskItem->getDiskDateEffective().time().second());
+
+         SFileDateTime tExpiration;
+         tExpiration.nYear = static_cast<uint8>(diskItem->getDiskDateExpiration().date().year()- 1900);
+         tExpiration.nMonth = static_cast<uint8>(diskItem->getDiskDateExpiration().date().month());
+         tExpiration.nDay = static_cast<uint8>(diskItem->getDiskDateExpiration().date().day());
+         tExpiration.nHour  = static_cast<uint8>(diskItem->getDiskDateExpiration().time().hour());
+         tExpiration.nMinute  = static_cast<uint8>(diskItem->getDiskDateExpiration().time().minute());
+         tExpiration.nSecond  = static_cast<uint8>(diskItem->getDiskDateExpiration().time().second());
+
+         if(diskItem->getIsoExUseDates()==true){
+             qDebug("Datum setzen");
+             isoInfo.ISOUseCreationDateTime = BS_TRUE;
+             isoInfo.ISOUseModificationDateTime = BS_TRUE;
+             isoInfo.ISOUseExpirationDateTime = BS_TRUE;
+             isoInfo.ISOUseEffectiveDateTime = BS_TRUE;
+
+             isoInfo.ISOCreationDateTime = tCreated;
+             isoInfo.ISOModificationDateTime = tModified;
+             isoInfo.ISOExpirationDateTime = tExpiration;
+             isoInfo.ISOEffectiveDateTime = tEffective;
+         }
+
+
     }
+
+    res = ::SetISOInfoEx(isoInfo);
+    if (res != BS_SDK_ERROR_NO)
+    {
+       onHandleError(res);
+       return;
+    }
+
+    //return;
 
     if(diskItem->getDoBootDisk()==true){
         addLogItem(tr("Set options SBootInfoEx"),0);
@@ -1563,12 +1634,16 @@ void burnDialog::step1Project()
         checkBluRayProject();
     }
 
-
+    //Also irgednwas stimmt da nicht.
+    //Ordner mit Leerzeichen?
 
     //First we try to set AddFile Event and look what happen
-    mContentThread  = new ContentThread(projectTree);
-    connect(mContentThread, SIGNAL(tContentDone()), this, SLOT(onContentDone()));
-    connect(mContentThread, SIGNAL(tHandleError(int32)), this, SLOT(onHandleError(int32)));
+    if(!mContentThread){
+        mContentThread  = new ContentThread(projectTree);
+        connect(mContentThread, SIGNAL(tContentDone()), this, SLOT(onContentDone()));
+        connect(mContentThread, SIGNAL(tHandleError(int32)), this, SLOT(onHandleError(int32)));
+    }
+
     mContentThread->start();
 
 }
@@ -1678,6 +1753,7 @@ void burnDialog::onHandleError(int32 res)
       QString strError = QString("SDK Error: %1").arg(QString::fromUtf8(chError));
 #endif
     addLogItem(strError,0);
+    qDebug("Error: %s",strError.toLatin1().constData());
 }
 
 void burnDialog::debugStateChanged(int nState)
@@ -1880,12 +1956,12 @@ bool burnDialog::selectImage()
 
     if(diskItem->getProjectType()==RuleManager::TYPE_PROJECT_MIXEDMODE || diskItem->getProjectType()==RuleManager::TYPE_PROJECT_AUDIOCD || diskItem->getProjectType()==RuleManager::TYPE_PROJECT_VIDEOCD || diskItem->getProjectType()==RuleManager::TYPE_PROJECT_SUPERVIDEO){
         //fileName = tr("E:/test.bin");
-        fileName = QFileDialog::getSaveFileName(this, tr("Save to BIN/CUE image file"), NULL, tr("BIN Files (*.bin)"));
+        fileName = QFileDialog::getSaveFileName(this, tr("Save to BIN/CUE image file"), nullptr, tr("BIN Files (*.bin)"));
         if (fileName.isEmpty())
           return false;
     }else{
         //fileName = tr("E:/test.iso");
-        fileName = QFileDialog::getSaveFileName(this, tr("Save to ISO image file"), NULL, tr("ISO Files (*.iso)"));
+        fileName = QFileDialog::getSaveFileName(this, tr("Save to ISO image file"), nullptr, tr("ISO Files (*.iso)"));
         if (fileName.isEmpty())
           return false;
 

@@ -44,6 +44,7 @@ public:
   }
 signals:
   void completed(QDataItem *parent, QDataItem *item);
+  void addTreeEx(bool*, QString);
 protected:
   void run();
   CommonTreeWidget *mTree;
@@ -56,7 +57,7 @@ class CommonTreeWidget : public QTreeWidget
   Q_OBJECT
   friend class ThreadAddTree;
 public:
-  CommonTreeWidget(RuleManager::ProjectType projectType, bool isXbel, QWidget *parent = 0);
+  CommonTreeWidget(RuleManager::ProjectType projectType, bool isXbel, QWidget *parent = nullptr);
   QDataItem* InsertItem(const QString &path);
   QDataItem* InsertPlaylistItem(const QString &path);
   void InsertItemFromRibbon();
@@ -76,6 +77,7 @@ Q_SIGNALS:
   void audiotrackChanged(bool bEnable);
   void extractItem();
   void grabItem();
+  void testMessage(const QString, bool*);
 
 public Q_SLOTS:
   QDataItem* AddNewFolder();
@@ -96,6 +98,7 @@ public Q_SLOTS:
   void createContentList();
   void createIndex();
   void slot_rename_in_place();
+  bool on_add_tree(const QString &path, bool* newData);
 
 public:
   QDataItem *SetSelectedParent();
@@ -105,7 +108,7 @@ public:
   void SetDataItemCount(int count) {mItemCount = count;}
   int GetDataItemCount() {return mItemCount;}
   bool IsModified() {return mModified;}
-  bool IsDataTrackExist() {return NULL != mDataTrackItem;}
+  bool IsDataTrackExist() {return nullptr != mDataTrackItem;}
   void SetProjectType(RuleManager::ProjectType type) {mProjectType = type;}
   RuleManager::ProjectType GetProjectType() {return mProjectType;}
   bool GetEraseable() {return false;}
@@ -182,6 +185,7 @@ protected:
 
   void handleRename(QTreeWidgetItem *item, int column);
   void handleChangeComment(QTreeWidgetItem *item, int column);
+
 protected Q_SLOTS:
   //void slot_handle_collapse(QTreeWidgetItem *item);
   void slot_handle_itemChanged(QTreeWidgetItem *item, int column);

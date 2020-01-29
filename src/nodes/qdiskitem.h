@@ -151,6 +151,7 @@ public:
   bool getFeatureVerify(){return useVerify;}
   bool getFeatureAutoErase(){return useAutoErase;}
   bool getFeaturePadDataTrack(){return usePadDataTrack;}
+  bool getIsoExUseDates(){return useDiskDates;}
 
   void setFeatureOPC(bool bState){useOPC=bState;}
   void setFeatureAVCHD(bool bState){useAVCDH=bState;}
@@ -166,7 +167,7 @@ public:
   void setDiskDateEffective(QDateTime date) {mDateEffective = date;}
   void setDiskDateCreation(QDateTime date) {mDateCreation = date;}
   void setDateMdification(QDateTime date) {mDateMdification = date;}
-
+  void setIsoExUseDates(bool newValue){useDiskDates = newValue;}
 
 
   bool isFilterSuffix(QString suffix);
@@ -178,8 +179,10 @@ private:
   QDateTime mDateCreation;
   QDateTime mDateMdification;
 
-
-
+  bool mUseDateExpiration;
+  bool mUseDateEffective;
+  bool mUseDateCreation;
+  bool mUseDateMdification;
 
   //filter
   QStringList *mFilterList;
@@ -218,6 +221,8 @@ private:
 
   int nCopies;
   int nSpeed;
+
+  bool useDiskDates;
 
   bool isAllowedSimulate;
   bool useSimulate;
