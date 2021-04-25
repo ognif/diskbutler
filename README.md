@@ -10,3 +10,5 @@ Diskbutler is written in QT and use the well know FoxBurner SDK.
 
 
 ![diskbutler screenhot](img/ui.png)
+
+The new commit is dedicated to QT 6.02 and FoxSDK 9.3.7
