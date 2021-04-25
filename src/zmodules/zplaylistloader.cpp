@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -22,6 +22,7 @@
 
 #include "zplaylistloader.h"
 #include "utils_common.h"
+#include "qdataitem.h"
 
 ZPlaylistLoader::ZPlaylistLoader(CommonTreeWidget *tree)
   : mTree(tree)
@@ -75,7 +76,7 @@ void ZPlaylistLoader::parseM3U(const QString &playlistPath, QString &all)
     } else if (type.contains(':')) {
       item.set(match.captured(4), title, seconds, ZPlaylistItem::NORM);
     } else {
-      item.set(baseDir + "/" + match.captured(4), title, seconds, ZPlaylistItem::NORM);
+      item.set(baseDir + PATHSEPSTRING + match.captured(4), title, seconds, ZPlaylistItem::NORM);
     }
     //mItemList.push_back(item);
     addItem(item);
@@ -99,7 +100,7 @@ void ZPlaylistLoader::parsePLS(const QString &playlistPath, QString &all)
     } else if (type.contains(':')) {
       item.set(match.captured(2), title, seconds, ZPlaylistItem::NORM);
     } else {
-      item.set(baseDir + "/" + match.captured(2), title, seconds, ZPlaylistItem::NORM);
+      item.set(baseDir + PATHSEPSTRING + match.captured(2), title, seconds, ZPlaylistItem::NORM);
     }
     //mItemList.push_back(item);
     addItem(item);

@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -49,34 +49,34 @@ QDiskItem::QDiskItem(CommonTreeWidget *view)
   , mBootLoadSegment("7C0")
   , mBootEmulationType(2)
   , mBootPlatformID(0)
-  , mISOFsType(0)
-  , mISOJoliet(0)
-  , mISORockRidge(0)
-  , mISOLowerCaseNames(0)
-  , mISOManyDirectories(0)
-  , mISOLongFilesNames(0)
-  , mISOLongJolietFilesNames(0)
-  , mUDFType(0)
-  , mUDFPartition(0)
-  , mUDFWriteStream(0)
-  , strDrive("")
+  , useDiskDates(0)
+  , isAllowedSimulate(false)
+  , useSimulate(false)
+  , useBurnProof(true)
+  , useEjectAfterBurn(true)
   , isAllowedOPC(true)
   , useOPC(true)
   , isAllowedFinishDisk(false)
   , useFinishDisk(false)
   , isAllowedVerify(true)
   , useVerify(false)
+  , useAutoErase(true)
   , isAllowedPadDataTrack(false)
-  , usePadDataTrack(false)
   , isAllowedAVCHD(false)
   , useAVCDH(false)
-  , useBurnProof(true)
-  , useEjectAfterBurn(true)
-  , isAllowedSimulate(false)
-  , useSimulate(false)
-  , useAutoErase(true)
   , mISO1Extension(0)
-  , useDiskDates(0)
+  , mISOFsType(2)
+  , mISOJoliet(1)
+  , mISORockRidge(0)
+  , mISOLowerCaseNames(0)
+  , mISOManyDirectories(1)
+  , mISOLongFilesNames(1)
+  , mISOLongJolietFilesNames(1)
+  , mUDFType(0)
+  , mUDFPartition(0)
+  , mUDFWriteStream(0)
+  , strDrive("")
+
 {
   project_type = view->GetProjectType();
   SetType(QDataItem::Disk);
@@ -84,14 +84,16 @@ QDiskItem::QDiskItem(CommonTreeWidget *view)
   mDateFrom = QDate::currentDate().toString();
   mDateTo = QDate::currentDate().toString();
 
-  mSystemId = "";//ConfigurationPage::mSettings.value("systemId","").toString();
-  mVolumeSet = "";//ConfigurationPage::mSettings.value("volumeSet","").toString();
-  mPublisher = "";//ConfigurationPage::mSettings.value("publisher","").toString();
-  mDatapreparer = "";//ConfigurationPage::mSettings.value("datapreparer","").toString();
-  mApplication = "";//ConfigurationPage::mSettings.value("app","").toString();
-  mCoprightFile = "";//ConfigurationPage::mSettings.value("corightfile","").toString();
-  mAbstractFile = "";//ConfigurationPage::mSettings.value("abstractfile","").toString();
-  mBibliographicFile = "";//ConfigurationPage::mSettings.value("bibliographicfile","").toString();
+  //We do not have created a project in this state. And we do not have added any file.
+  //So we can only took this information out the sttings page. Not yet implemented.
+  mSystemId = ConfigurationPage::mSettings.value("systemId","").toString();
+  mVolumeSet = ConfigurationPage::mSettings.value("volumeSet","").toString();
+  mPublisher = ConfigurationPage::mSettings.value("publisher","").toString();
+  mDatapreparer = ConfigurationPage::mSettings.value("datapreparer","").toString();
+  mApplication = ConfigurationPage::mSettings.value("app","").toString();
+  mCoprightFile = ConfigurationPage::mSettings.value("corightfile","").toString();
+  mAbstractFile = ConfigurationPage::mSettings.value("abstractfile","").toString();
+  mBibliographicFile = ConfigurationPage::mSettings.value("bibliographicfile","").toString();
 
   //Get Features from project
   isAllowedOPC = RuleManager::IsOptionAllowed(project_type, RuleManager::OPTION_SETTINGS_OPC);

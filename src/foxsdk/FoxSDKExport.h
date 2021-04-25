@@ -102,18 +102,26 @@ int32 BS_CALL	GetText					(int32 nTextID, TCHAR *pchText, int32 *pnLength);
 //// device / medium
 #	ifdef __cplusplus
 int32 BS_CALL	GetDevices				(TCHAR chListDevices[26][50], int32 *pnUsed, BS_BOOL bBurningDevicesOnly = BS_FALSE);
+int32 BS_CALL	GetDevicesIndex			(TCHAR chListDevices[26][50], int32 *pnUsed, BS_BOOL bBurningDevicesOnly = BS_FALSE);
 #	else
 int32 BS_CALL	GetDevices				(TCHAR chListDevices[26][50], int32 *pnUsed, BS_BOOL bBurningDevicesOnly);
+int32 BS_CALL	GetDevicesIndex			(TCHAR chListDevices[26][50], int32 *pnUsed, BS_BOOL bBurningDevicesOnly);
 #	endif																		// each	null-terminated
 int32 BS_CALL	SetBurnDevice				(TCHAR chDevice);
+int32 BS_CALL	SetBurnDeviceIndex			(int32 nDevice);
 int32 BS_CALL	AddBurnDevice				(TCHAR chDevice);
+int32 BS_CALL	AddBurnDeviceIndex			(int32 nDevice);
 int32 BS_CALL	RemoveBurnDevice			(TCHAR chDevice);
+int32 BS_CALL	RemoveBurnDeviceIndex		(int32 nDevice);
 int32 BS_CALL   SetReadDevice				(TCHAR chDevice);
+int32 BS_CALL   SetReadDeviceIndex			(int32 nDevice);
 int32 BS_CALL	GetErrorDeviceName			(TCHAR* pDeviceName, int32 nLength);
 
 int32 BS_CALL	RescanDevices				(void);
 int32 BS_CALL	GetBurnDevice				(TCHAR* lpszDevice, int32* pnLength);					// null-terminated
 int32 BS_CALL	GetReadDevice				(TCHAR* pchDevice);
+int32 BS_CALL	GetReadDeviceIndex			(int32* nDevice);
+int32 BS_CALL	GetBurnDeviceIndex			(int32* nDevices, int32* nCount);
 int32 BS_CALL	GetDeviceInformation			(int32 index, TCHAR chVendorID[9], TCHAR chProductID[17], TCHAR chProductRevision[5]);
 int32 BS_CALL	GetDeviceInformationEx			(int32 index, SExtendedDeviceInformation* pExtendedInformation);
 int32 BS_CALL	GetActiveDevicesCount			(int32 *pnCount);
@@ -244,9 +252,9 @@ int32 BS_CALL	RemoveFile				(struct SFileToRemove FileToRemove);
 int32 BS_CALL	RenameFile				(struct SFileToRename FileToRename);
 int32 BS_CALL	RenameDir				(struct SDirToRename DirToRename);
 int32 BS_CALL	SetFileAttr				(const TCHAR *lpszFilePath, int32 nFileAttributes);
-int32 BS_CALL	SetFileTimes			(const TCHAR *pszFilePath, const SFileDateTime *pCreationTime, const SFileDateTime *pModificationTime, const SFileDateTime *pAccessTime);
-int32 BS_CALL	SetFileUserParam		(const TCHAR *pszFilePath, void *pUserData);
-int32 BS_CALL	GetFileEntry			(const TCHAR *pszFilePath, struct SFileEntry* pFileEntry);
+int32 BS_CALL	SetFileTimes			(const TCHAR *lpszFilePath, const SFileDateTime *pCreationTime, const SFileDateTime *pModificationTime, const SFileDateTime *pAccessTime);
+int32 BS_CALL	SetFileUserParam		(const TCHAR *lpszFilePath, void *pUserData);
+int32 BS_CALL	GetFileEntry			(const TCHAR *lpszFilePath, struct SFileEntry* pFileEntry);
 int32 BS_CALL	SetRAWStructure			(struct SRAWTrackToAdd* pTracks, int32 nLength);
 int32 BS_CALL	ClearAll				(void);
 int32 BS_CALL	GetPrecisePlayTime		(const TCHAR *strFileName, double *time);

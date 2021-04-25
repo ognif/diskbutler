@@ -1,6 +1,6 @@
-#include "QDummyTextTree.h"
+#include "qdummytexttree.h"
 
-QDummyTextTree::QDummyTextTree(QWidget* parent)
+QDummyTextTree::QDummyTextTree(QWidget*)
 {
     orgFont = this->font();
     mData = 0;
@@ -17,16 +17,16 @@ void QDummyTextTree::paintEvent(QPaintEvent *event)
 {
     if(mData==0){
 
-        viewport()->setFont(QFont("Courier", 14));
-        m_charWidth = fontMetrics().width(QLatin1Char('9'));
+        viewport()->setFont(QFont("Courier", 9));
+        m_charWidth = fontMetrics().horizontalAdvance(QLatin1Char('9'));
 
         QPainter painter(viewport());
         QSize areaSize = viewport()->size();
 
-        QString dataMessage = tr("Empty disc. No data available.");
+        QString dataMessage = tr("Empty disc. No data available2.");
         painter.fillRect(event->rect(), this->palette().color(QPalette::Base));
 
-        int pX = (areaSize.width()/2)-((m_charWidth*dataMessage.length())/2);
+        int pX = (areaSize.width()/2)-((static_cast<int>(m_charWidth)*dataMessage.length())/2);
         int pY = areaSize.height()/2;
 
         painter.setPen(Qt::darkGray);

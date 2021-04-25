@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -124,7 +124,7 @@ RuleManager::OptionID RuleManager::rule_UDF[] = {
   OPTION_FILESYSTEMS_UDF25,
   OPTION_FILESYSTEMS_UDF26,
   //specials
-  OPTION_SPECIALS_BootCD_DVD_BD,
+  //OPTION_SPECIALS_BootCD_DVD_BD,
   OPTION_SPECIALS_AVCHD,
   //UDF
   OPTION_UDF_PARTITION,

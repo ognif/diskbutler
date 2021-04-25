@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -28,7 +28,7 @@
 #include "mdichild_base.h"
 #include "FoxSDKBurningLib.h"
 #include "vrulemanager.h"
-#include "QScanBoard.h"
+#include "qscanboard.h"
 
 class QScrollArea;
 class QScrollBar;
@@ -77,10 +77,11 @@ class MdiChildScan : public MdiChildBase
       int mBufferSize;
       bool mScanIsRunning;
       int mMaxSectors;
+      QString strlastSelectedTab;
     };
 
 public:
-    MdiChildScan(QWidget* parent, const QString &device);
+    MdiChildScan(const QString &device, QWidget* parent = nullptr);
     RuleManager::ProjectType GetProjectType() {return mProjectType;}
 
     //I prefer to work with sturctures.
@@ -103,7 +104,11 @@ public:
     void onStartScan(int offsetSectors, int readSectors);
     void onWriteReport();
 
-
+    QString getlastSelectedTab(){ return thisData.strlastSelectedTab; }
+    void setlastSelectedTab( QString nValue ) {
+        qDebug() << "mdichild_scan " << nValue;
+        thisData.strlastSelectedTab = nValue;
+    }
     QString getBurnDrive() {return strBurnDrive;}
     void setBurnDrive(QString strValue) {
       strBurnDrive=strValue;
@@ -112,7 +117,11 @@ public:
       wTitle += strBurnDrive;
       wTitle += ")";
       setWindowTitle(wTitle);
+      startUpdateInfo();
     }
+    void setUIControls(Ribbon *baseRibbon, QWidget* parent);
+    void setBurnDeviceList(QWidget* parent);
+    void setRibbonTabs(Ribbon *baseRibbon, QWidget* parent);
 
 protected:
     RuleManager::ProjectType mProjectType;
@@ -137,12 +146,12 @@ private:
     void qDebugAusgabeSDK(int32 errCode, const QString &customMessage);
 
 Q_SIGNALS:
-    void datatrack_changed();
     void thread_finished(int mMaxSize, int bufferSize, int dataState);
     void enableControls();
     void disableControls();
     void startSpinner();
     void stopSpinner();
+    void datatrack_changed2();
 
 private slots:
     void onCurrentSector(int newSector, bool isBad);

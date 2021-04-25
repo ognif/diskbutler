@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -66,10 +66,11 @@ void readDiskSectors::run()
 
 }
 
-MdiChildScan::MdiChildScan(QWidget* parent, const QString &device)
+MdiChildScan::MdiChildScan(const QString &device, QWidget*)
     : scrollArea(new QScrollArea)
-     ,strBurnDrive(device){
+    ,strBurnDrive(device){
     setAttribute(Qt::WA_DeleteOnClose);
+    setWindowIcon(QIcon(":/icons/diskscan32.png"));
     mProjectType = RuleManager::TYPE_PROJECT_SCAN;
     mreadDiskSectors = nullptr;
     manalyzeDisk = nullptr;
@@ -80,6 +81,8 @@ MdiChildScan::MdiChildScan(QWidget* parent, const QString &device)
     wTitle += ")";
 
     setWindowTitle(wTitle);
+
+
 
     scanBoard = new QScanBoard(100, 50);
     setWidget(scanBoard);
@@ -107,7 +110,8 @@ void MdiChildScan::qDebugAusgabeSDK(int32 errCode, const QString &customMessage)
 
     ::GetText(errCode,chError, &nLength);
     QString errDesc;
-    errDesc= QString::fromUtf8(chError);
+    errDesc= convertToQT(chError);
+
     qDebug("SDKError %s: %s", customMessage.toLatin1().constData(), errDesc.toLatin1().constData());
 
 }
@@ -147,6 +151,8 @@ void MdiChildScan::startScanThread(int offsetSectors, int readSectors)
         mreadDiskSectors->readSectors = offsetSectors + readSectors;
     }
 
+    setScanState(true);
+
     mreadDiskSectors->start();
 
     qDebug("Start Thread");
@@ -173,6 +179,7 @@ void MdiChildScan::onStopScan()
 {
     qDebug("Stop can");
     scanBoard->isActive=false;
+    setScanState(false);
     mreadDiskSectors = nullptr;
     emit enableControls();
 
@@ -186,16 +193,16 @@ void MdiChildScan::onStartScan(int offsetSectors, int readSectors)
 void MdiChildScan::onWriteReport()
 {
     QString fileName = QFileDialog::getSaveFileName(
-                    this,
-                    tr("Repor"),
-                    QDir::currentPath(),
-                    tr("Text File (*.txt)") );
+                this,
+                tr("Repor"),
+                QDir::currentPath(),
+                tr("Text File (*.txt)") );
 
-      if (fileName.isEmpty()){
-          QMessageBox::information(this, tr("Information"),
-                                   tr("No file selected"));
-          return;
-      }
+    if (fileName.isEmpty()){
+        QMessageBox::information(this, tr("Information"),
+                                 tr("No file selected"));
+        return;
+    }
 
     scanBoard->saveTofile(fileName,strBurnDrive);
 }
@@ -212,41 +219,29 @@ void MdiChildScan::analyzeDisc()
     int mMaxSize = 0;
 
     int32 ret = ::SetBurnDevice(getBurnDrive().at(0).toLatin1());
-    if (ret != BS_SDK_ERROR_NO){
-        qDebugAusgabeSDK(ret, "SetBurnDevice");
-        return;
-    }
+    if (ret == BS_SDK_ERROR_NO){
+        BS_BOOL	bReady = BS_FALSE;
+        ret = ::IsDeviceReady(BS_CURRENT_DEVICE, &bReady);
+        if (ret == BS_SDK_ERROR_NO){
+            bool bIsEmptyDisk = false;
+            SMediumInfo mi;
+            ret = ::GetMediumInformation(BS_CURRENT_DEVICE, &mi);
+            if (ret == BS_SDK_ERROR_NO){
+                if(mi.nMediumStatus==BS_MS_EMPTY_DISK){
+                    bIsEmptyDisk = true;
+                }
+                if(bIsEmptyDisk==false){
+                    bufferSize = 2048;
+                    if(mi.nExtendedMediumType==BS_EMT_CD_AUDIO){
+                        bufferSize = 2352;
+                    }
 
-    //We need here threading function with isDeviceReady call.
-    BS_BOOL	bReady = BS_FALSE;
-    ret = ::IsDeviceReady(BS_CURRENT_DEVICE, &bReady);
-    if (ret != BS_SDK_ERROR_NO){
-        qDebugAusgabeSDK(ret, "IsDeviceReady");
-        return;
-    }
-
-    bool bIsEmptyDisk = false;
-    SMediumInfo mi;
-    ret = ::GetMediumInformation(BS_CURRENT_DEVICE, &mi);
-    if (ret != BS_SDK_ERROR_NO){
-        qDebugAusgabeSDK(ret, "GetMediumInformation");
-        setDataState(0);
-        return;
-    }
-
-    if(mi.nMediumStatus==BS_MS_EMPTY_DISK){
-        bIsEmptyDisk = true;
-    }
-
-    if(bIsEmptyDisk==false){
-        bufferSize = 2048;
-        if(mi.nExtendedMediumType==BS_EMT_CD_AUDIO){
-            bufferSize = 2352;
+                    //Disable all controls. Default text possible for control?
+                    mMaxSize = static_cast<int>(mi.dMediumUsedSize / static_cast<double>(bufferSize));
+                    dataState = 1;
+                }
+            }
         }
-
-        //Disable all controls. Default text possible for control?
-        mMaxSize = static_cast<int>(mi.dMediumUsedSize / static_cast<double>(bufferSize));
-        dataState = 1;
     }
 
     emit thread_finished(mMaxSize, bufferSize, dataState);
@@ -275,7 +270,7 @@ void MdiChildScan::startUpdateInfo()
 
     if(!manalyzeDisk){
         manalyzeDisk = new ThreadAnalyze(this);
-        connect(this, SIGNAL(thread_finished(int, int, int)), this, SLOT(on_thread_completed(int, int, int)));
+        connect(this, SIGNAL(thread_finished(int,int,int)), this, SLOT(on_thread_completed(int,int,int)));
     }
 
     manalyzeDisk->start();
@@ -290,8 +285,105 @@ void MdiChildScan::on_thread_completed(int mMaxSize, int bufferSize, int dataSta
     setMaxSector(mMaxSize);
     scanBoard->setMaxSide(mMaxSize);
     emit stopSpinner();
-    emit datatrack_changed();
+    emit datatrack_changed2();
 
 }
 
+void MdiChildScan::setUIControls(Ribbon *, QWidget* parent)
+{
+    MainWindow *ribbonOwner = qobject_cast<MainWindow *>(parent);
 
+    ribbonOwner->delEditButton->setEnabled(false);
+    ribbonOwner->renameEditButton->setEnabled(false);
+    ribbonOwner->viewBrowserButton->setEnabled(false);
+    ribbonOwner->delAllEditButton->setEnabled(false);
+    ribbonOwner->updtEditButton->setEnabled(false);
+    ribbonOwner->inverseSelectEditButton->setEnabled(false);
+    ribbonOwner->allSelectEditButton->setEnabled(false);
+    ribbonOwner->addFolderEditButton->setEnabled(false);
+    ribbonOwner->addFileEditButton->setEnabled(false);
+    ribbonOwner->dataTrackEditButton->setEnabled(false);
+    ribbonOwner->audioTrackEditButton->setEnabled(false);
+    ribbonOwner->appSaveButton->setEnabled(false);
+    ribbonOwner->appSaveAsButton->setEnabled(false);
+    ribbonOwner->createFolderEditButton->setEnabled(false);
+
+    ribbonOwner->grabAudioMediaButton->setEnabled(false);
+    ribbonOwner->imageMediaButton->setEnabled(false);
+
+    ribbonOwner->scanReadOffset->setRange( 0, getMaxSector() );
+    ribbonOwner->scanStartOffset->setRange( 0, getMaxSector() );
+    ribbonOwner->scanReadOffset->setValue( getReadOffset() );
+    ribbonOwner->scanStartOffset->setValue( getSectorOffset() );
+
+    //Scan ist das Aktive Fenster
+    ribbonOwner->updateScanEditor->setEnabled( true );
+
+    if( getDataState() == 1 ){
+        qDebug() << "DataState=1";
+        if( getScanState() == false ){
+            qDebug() << "ScanState = flase";
+            ribbonOwner->startScanEditor->setEnabled( true );
+            ribbonOwner->stopScanEditor->setEnabled( false );
+            ribbonOwner->saveScanEditor->setEnabled( true );
+            ribbonOwner->scanStartOffset->setEnabled( true );
+            ribbonOwner->scanReadOffset->setEnabled( true );
+            ribbonOwner->updateScanEditor->setEnabled( true );
+        }else{
+            qDebug() << "ScanState = true";
+            ribbonOwner->updateScanEditor->setEnabled( false );
+            ribbonOwner->startScanEditor->setEnabled( false );
+            ribbonOwner->stopScanEditor->setEnabled( true );
+            ribbonOwner->saveScanEditor->setEnabled( false );
+            ribbonOwner->scanStartOffset->setEnabled( false );
+            ribbonOwner->scanReadOffset->setEnabled( false );
+        }
+    }else{
+        qDebug() << "DataState!=1";
+        ribbonOwner->startScanEditor->setEnabled( false );
+        ribbonOwner->stopScanEditor->setEnabled( false );
+        ribbonOwner->saveScanEditor->setEnabled( false );
+        ribbonOwner->scanStartOffset->setEnabled( false );
+        ribbonOwner->scanReadOffset->setEnabled( false );
+    }
+}
+
+//SetBurnDevice List ist in den pDevice Projekten dann das ReadDevice.
+void MdiChildScan::setBurnDeviceList(QWidget* parent)
+{
+    MainWindow *ribbonOwner = qobject_cast<MainWindow *>(parent);
+
+    for(int i = 0; i < ribbonOwner->listReadDevicesWidget->count(); ++i)
+    {
+        if(ribbonOwner->listReadDevicesWidget->itemText(i) == getBurnDrive()){
+            ribbonOwner->listReadDevicesWidget->setCurrentIndex(i);
+        }
+    }
+}
+
+//emit subwindowchanged(GetProjectType());
+void MdiChildScan::setRibbonTabs(Ribbon *baseRibbon, QWidget* parent)
+{
+
+    //Für morgen
+    //IM Child wird das letzte aktive Tab gespeichert.
+    //Bei DiskInfo wird gespeichert ob 2Image aktiv wwar.
+    baseRibbon->blockSignals(true);
+    QString lastTab = getlastSelectedTab();
+    qDebug() << "Scan";
+    baseRibbon->hideAll();
+    baseRibbon->showTab(":/icons/diskscan32.png",tr("Scan Editor"));
+    if(baseRibbon->isTabVisible(lastTab)){
+        baseRibbon->currentTab(lastTab);
+    }else{
+        baseRibbon->currentTab(tr("Scan Editor"));
+    }
+
+    if(parent!=nullptr){
+        setUIControls(baseRibbon, parent);
+        setBurnDeviceList(parent);
+    }
+
+    baseRibbon->blockSignals(false);
+
+}

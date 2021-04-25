@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -22,7 +22,9 @@
 #include "configdialog.h"
 #include "settingspages.h"
 
-QSettings ConfigurationPage::mSettings("IFoerster", "Diskbutler");
+
+//Currently we use the native API, because INI file is not really clear
+QSettings ConfigurationPage::mSettings( QSettings::IniFormat, QSettings::UserScope, "IFoerster", "Diskbutler" );
 
 ConfigurationPage::ConfigurationPage(QWidget *parent)
     : QWidget(parent)
@@ -36,7 +38,7 @@ ConfigurationPage::ConfigurationPage(QWidget *parent)
     serverCombo->addItem(tr("Qt (German)"),1031);
 
     //QSettings settings("IFoerster", "Diskbutler");
-    int tmpLang = mSettings.value("language",0).toInt();
+    int tmpLang = ConfigurationPage::mSettings.value("language",0).toInt();
 
     for(int i=0;i<serverCombo->count();i++){
         if(serverCombo->itemData(i).toInt()==tmpLang){
@@ -60,31 +62,33 @@ ConfigurationPage::ConfigurationPage(QWidget *parent)
     QHBoxLayout *hboxSecLayout = new QHBoxLayout;
 
     mAddAudioToAudioTrack =  new QRadioButton(tr("Add Audio to Audiotrack"), this);
-    mAddAudioToAudioTrack->setChecked(mSettings.value("AudioToAudioTrack", true).toBool());
+    mAddAudioToAudioTrack->setChecked(ConfigurationPage::mSettings.value("AudioToAudioTrack", true).toBool());
     mAddAudioToDataTrackToo = new QCheckBox(tr("Add to Datatrack, too "), this);
-    mAddAudioToDataTrackToo->setChecked(mSettings.value("AudioToDataTrackToo", false).toBool());
+    mAddAudioToDataTrackToo->setChecked(ConfigurationPage::mSettings.value("AudioToDataTrackToo", false).toBool());
     hboxSecLayout->addWidget(mAddAudioToDataTrackToo);
     hboxSecLayout->insertSpacing(0, 16);
     mAddAudioToDataTrack = new QRadioButton(tr("Add Audio to Datatrack"), this);
-    mAddAudioToDataTrack->setChecked(mSettings.value("AudioToDataTrack", !mAddAudioToAudioTrack->isChecked()).toBool());
+    mAddAudioToDataTrack->setChecked(ConfigurationPage::mSettings.value("AudioToDataTrack", !mAddAudioToAudioTrack->isChecked()).toBool());
 
     connect(mAddAudioToAudioTrack, SIGNAL(clicked(bool)), this, SLOT(on_checkAddAudioToAudioTrack_clicked(bool)));
     connect(mAddAudioToDataTrack, SIGNAL(clicked(bool)), this, SLOT(on_checkAddAudioToDataTrack_clicked(bool)));
 
     mCreateDataTrackAuto = new QCheckBox(tr("Create data track if not exists"), this);
-    mCreateDataTrackAuto->setChecked(mSettings.value("CreateDataTrackAuto", true).toBool());
+    mCreateDataTrackAuto->setChecked(ConfigurationPage::mSettings.value("CreateDataTrackAuto", true).toBool());
     mCreateAndShowChecksum = new QCheckBox(tr("Create and show Checksum"), this);
-    mCreateAndShowChecksum->setChecked(mSettings.value("CreateAndShowChecksum", true).toBool());
+    mCreateAndShowChecksum->setChecked(ConfigurationPage::mSettings.value("CreateAndShowChecksum", true).toBool());
     connect(mCreateAndShowChecksum, SIGNAL(clicked(bool)), this, SLOT(on_checkCreateAndShowChecksum_clicked(bool)));
 
     QHBoxLayout *checksumHBoxLayout = new QHBoxLayout;
     QLabel *noChecksumFileSizeLabel = new QLabel(tr("No checksum filesize > "));
     mChecksumFileSizeEdit = new QLineEdit(tr(""), this);
     mChecksumFileSizeEdit->setFixedWidth(50);
-    mChecksumFileSizeEdit->setText(mSettings.value("NoChecksumFileSize", tr("32")).toString());
-    QRegExp regx("[0-9]+$");
-    QValidator *validator = new QRegExpValidator(regx, mChecksumFileSizeEdit);
+    mChecksumFileSizeEdit->setText(ConfigurationPage::mSettings.value("NoChecksumFileSize", tr("32")).toString());
+
+    QRegularExpression rx("[0-9]+$");
+    QValidator *validator = new QRegularExpressionValidator(rx, mChecksumFileSizeEdit);
     mChecksumFileSizeEdit->setValidator( validator );
+
     QLabel *noChecksumFileSizeMBLabel = new QLabel(tr("MB"));
     checksumHBoxLayout->addWidget(noChecksumFileSizeLabel, 0, Qt::AlignLeft);
     checksumHBoxLayout->addWidget(mChecksumFileSizeEdit);
@@ -122,11 +126,11 @@ ConfigurationPage::ConfigurationPage(QWidget *parent)
     mDefaultProjectCombo = new QComboBox;
     mDefaultProjectCombo->blockSignals(false);
     mDefaultProjectCombo->addItem(tr("None"), -1);
-    for (int i = RuleManager::TYPE_PROJECT_OPEN; i < RuleManager::TYPE_PROJECT_MAX; i++) {
+    for (int i = RuleManager::TYPE_PROJECT_AUDIOCD; i < RuleManager::TYPE_PROJECT_MAX; i++) {
       if (RuleManager::TYPE_PROJECT_EXPLORE == i) continue;
       mDefaultProjectCombo->addItem(RuleManager::GetProjectTypeStr((RuleManager::ProjectType)i), i);
     }
-    int tmpDefualtType = mSettings.value(tr("DefaultProject"),RuleManager::TYPE_PROJECT_OPEN).toInt();
+    int tmpDefualtType = ConfigurationPage::mSettings.value(tr("DefaultProject"),RuleManager::TYPE_PROJECT_ISOUDF).toInt();
 
     for (int i=0; i<mDefaultProjectCombo->count(); i++) {
         if (mDefaultProjectCombo->itemData(i).toInt()==tmpDefualtType) {
@@ -153,16 +157,16 @@ ConfigurationPage::ConfigurationPage(QWidget *parent)
 void ConfigurationPage::saveSettings()
 {
     //QSettings settings("IFoerster", "Diskbutler");
-    mSettings.setValue("language",serverCombo->itemData(serverCombo->currentIndex()));
-    mSettings.setValue("AudioToAudioTrack", mAddAudioToAudioTrack->isChecked());
-    mSettings.setValue("AudioToDataTrackToo", mAddAudioToDataTrackToo->isChecked());
-    mSettings.setValue("AudioToDataTrack", mAddAudioToDataTrack->isChecked());
-    mSettings.setValue("CreateDataTrackAuto", mCreateDataTrackAuto->isChecked());
-    mSettings.setValue("CreateAndShowChecksum", mCreateAndShowChecksum->isChecked());
-    mSettings.setValue("NoChecksumFileSize", mChecksumFileSizeEdit->text());
-    mSettings.setValue("FSsyncType", fsCombo->itemData(fsCombo->currentIndex()));
-    mSettings.setValue("DefaultProject", mDefaultProjectCombo->itemData(mDefaultProjectCombo->currentIndex()));
-    mSettings.sync();
+    ConfigurationPage::mSettings.setValue("language",serverCombo->itemData(serverCombo->currentIndex()));
+    ConfigurationPage::mSettings.setValue("AudioToAudioTrack", mAddAudioToAudioTrack->isChecked());
+    ConfigurationPage::mSettings.setValue("AudioToDataTrackToo", mAddAudioToDataTrackToo->isChecked());
+    ConfigurationPage::mSettings.setValue("AudioToDataTrack", mAddAudioToDataTrack->isChecked());
+    ConfigurationPage::mSettings.setValue("CreateDataTrackAuto", mCreateDataTrackAuto->isChecked());
+    ConfigurationPage::mSettings.setValue("CreateAndShowChecksum", mCreateAndShowChecksum->isChecked());
+    ConfigurationPage::mSettings.setValue("NoChecksumFileSize", mChecksumFileSizeEdit->text());
+    ConfigurationPage::mSettings.setValue("FSsyncType", fsCombo->itemData(fsCombo->currentIndex()));
+    ConfigurationPage::mSettings.setValue("DefaultProject", mDefaultProjectCombo->itemData(mDefaultProjectCombo->currentIndex()));
+    ConfigurationPage::mSettings.sync();
 }
 
 void ConfigurationPage::on_checkAddAudioToDataTrack_clicked(bool checked)
@@ -220,8 +224,8 @@ DiskLabelPage::DiskLabelPage(QWidget *parent)
     vLabelLayout->addLayout(customLine1);
 
     mDiskCustomPattern = new QLineEdit(ConfigurationPage::mSettings.value("CustomDiskNamePattern", tr("%S-%D-%C")).toString(), this);
-    QRegExp regx("^(?!.*(.)\\1)%[%SCD-]*$");
-    QValidator *validator = new QRegExpValidator(regx, mDiskCustomPattern);
+    QRegularExpression rx("^(?!.*(.)\\1)%[%SCD-]*$");
+    QValidator *validator = new QRegularExpressionValidator(rx, mDiskCustomPattern);
     mDiskCustomPattern->setValidator( validator );
 
     mDiskCustomPattern->setMaximumWidth(200);
@@ -242,7 +246,7 @@ DiskLabelPage::DiskLabelPage(QWidget *parent)
     mPatternDefaultNumber = new QLineEdit(ConfigurationPage::mSettings.value("CustomDiskNameNumber", tr("001")).toString(), this);
     mPatternDefaultNumber->setMaximumWidth(150);
 
-    mPatternDefaultNumber->setValidator( new QIntValidator(0, 10000000000, this) );
+    mPatternDefaultNumber->setValidator( new QIntValidator(0, 1410065408, this) );
     customLine4->addWidget(mPatternDefaultNumber);
     sPatternNumber = new QLabel(tr("Counting Number"));
     customLine4->addWidget(sPatternNumber);
@@ -273,12 +277,12 @@ DiskLabelPage::DiskLabelPage(QWidget *parent)
     }
 }
 
-void DiskLabelPage::on_mLabelSimple_clicked(bool checked)
+void DiskLabelPage::on_mLabelSimple_clicked(bool)
 {
     switchGroup(true);
 }
 
-void DiskLabelPage::on_mLabelCustom_clicked(bool checked){
+void DiskLabelPage::on_mLabelCustom_clicked(bool){
     switchGroup(false);
 }
 
@@ -323,23 +327,23 @@ MessagePage::MessagePage(QWidget *parent)
 
     listWidget = new QListWidget(this);
 
-        QSettings settings("IFoerster", "Diskbutler");
+        //QSettings settings("IFoerster", "Diskbutler");
         myMessage1 = new QCheckBox(this);
-        myMessage1->setChecked(settings.value("item1",true).toBool());
+        myMessage1->setChecked(ConfigurationPage::mSettings.value("item1",true).toBool());
         QListWidgetItem *item1 = new QListWidgetItem();
         myMessage1->setText(tr("Show project file error"));
         listWidget->addItem(item1);
         listWidget->setItemWidget(item1,myMessage1);
 
         myMessage2 = new QCheckBox(this);
-        myMessage2->setChecked(settings.value("item2",true).toBool());
+        myMessage2->setChecked(ConfigurationPage::mSettings.value("item2",true).toBool());
         QListWidgetItem *item2 = new QListWidgetItem();
         myMessage2->setText(tr("Show save error"));
         listWidget->addItem(item2);
         listWidget->setItemWidget(item2,myMessage2);
 
         myMessage3 = new QCheckBox(this);
-        myMessage3->setChecked(settings.value("warn_exceed_74min",true).toBool());
+        myMessage3->setChecked(ConfigurationPage::mSettings.value("warn_exceed_74min",true).toBool());
         QListWidgetItem *item3 = new QListWidgetItem();
         myMessage3->setText(tr("Warn if audio track exceed 74 minute total time."));
         listWidget->addItem(item3);
@@ -370,11 +374,11 @@ MessagePage::MessagePage(QWidget *parent)
 
 void MessagePage::saveSettings()
 {
-    QSettings settings("IFoerster", "Diskbutler");
-    settings.setValue("item1",myMessage1->isChecked());
-    settings.setValue("item2",myMessage2->isChecked());
-    settings.setValue("item3",myMessage3->isChecked());
-    settings.sync();
+    //QSettings settings("IFoerster", "Diskbutler");
+    ConfigurationPage::mSettings.setValue("item1",myMessage1->isChecked());
+    ConfigurationPage::mSettings.setValue("item2",myMessage2->isChecked());
+    ConfigurationPage::mSettings.setValue("item3",myMessage3->isChecked());
+    ConfigurationPage::mSettings.sync();
 
 }
 
@@ -382,22 +386,22 @@ ISOExPage::ISOExPage(QWidget *parent)
     : QWidget(parent)
 {
 
-   QSettings settings("IFoerster", "Diskbutler");
-   mEditSystemId = new QLineEdit(settings.value("systemId","").toString());
+   //QSettings settings("IFoerster", "Diskbutler");
+   mEditSystemId = new QLineEdit(ConfigurationPage::mSettings.value("systemId","").toString());
    mEditSystemId->setMinimumWidth(280);
-   mEditVolumeSet = new QLineEdit(settings.value("volumeSet","").toString());
+   mEditVolumeSet = new QLineEdit(ConfigurationPage::mSettings.value("volumeSet","").toString());
    mEditVolumeSet->setMinimumWidth(280);
-   mEditPublisher = new QLineEdit(settings.value("publisher","").toString());
+   mEditPublisher = new QLineEdit(ConfigurationPage::mSettings.value("publisher","").toString());
    mEditPublisher->setMinimumWidth(280);
-   mEditDatapreparer = new QLineEdit(settings.value("datapreparer","").toString());
+   mEditDatapreparer = new QLineEdit(ConfigurationPage::mSettings.value("datapreparer","").toString());
    mEditDatapreparer->setMinimumWidth(280);
-   mEditApp = new QLineEdit(settings.value("app","").toString());
+   mEditApp = new QLineEdit(ConfigurationPage::mSettings.value("app","").toString());
    mEditApp->setMinimumWidth(280);
-   mEditCorightFile = new QLineEdit(settings.value("corightfile","").toString());
+   mEditCorightFile = new QLineEdit(ConfigurationPage::mSettings.value("corightfile","").toString());
    mEditCorightFile->setMinimumWidth(280);
-   mEditAbstractFile = new QLineEdit(settings.value("abstractfile","").toString());
+   mEditAbstractFile = new QLineEdit(ConfigurationPage::mSettings.value("abstractfile","").toString());
    mEditAbstractFile->setMinimumWidth(280);
-   mEditBibliographicFile = new QLineEdit(settings.value("bibliographicfile","").toString());
+   mEditBibliographicFile = new QLineEdit(ConfigurationPage::mSettings.value("bibliographicfile","").toString());
    mEditBibliographicFile->setMinimumWidth(280);
 
   //Textfelder in der Länge beschreiben
@@ -418,30 +422,30 @@ ISOExPage::ISOExPage(QWidget *parent)
 }
 
 void ISOExPage::saveSettings() {
-  QSettings settings("IFoerster", "Diskbutler");
+  //QSettings settings("IFoerster", "Diskbutler");
 
-  settings.setValue("systemId",mEditSystemId->text());
-  settings.setValue("volumeSet",mEditVolumeSet->text());
-  settings.setValue("publisher",mEditPublisher->text());
-  settings.setValue("datapreparer",mEditDatapreparer->text());
-  settings.setValue("app",mEditApp->text());
-  settings.setValue("corightfile",mEditCorightFile->text());
-  settings.setValue("abstractfile",mEditAbstractFile->text());
-  settings.setValue("bibliographicfile",mEditBibliographicFile->text());
+  ConfigurationPage::mSettings.setValue("systemId",mEditSystemId->text());
+  ConfigurationPage::mSettings.setValue("volumeSet",mEditVolumeSet->text());
+  ConfigurationPage::mSettings.setValue("publisher",mEditPublisher->text());
+  ConfigurationPage::mSettings.setValue("datapreparer",mEditDatapreparer->text());
+  ConfigurationPage::mSettings.setValue("app",mEditApp->text());
+  ConfigurationPage::mSettings.setValue("corightfile",mEditCorightFile->text());
+  ConfigurationPage::mSettings.setValue("abstractfile",mEditAbstractFile->text());
+  ConfigurationPage::mSettings.setValue("bibliographicfile",mEditBibliographicFile->text());
 
-  settings.sync();
+  ConfigurationPage::mSettings.sync();
 }
 
 FilterPage::FilterPage(QWidget *parent)
     : QWidget(parent)
 {
-  QSettings settings("IFoerster", "Diskbutler");
+  //QSettings settings("IFoerster", "Diskbutler");
   QGroupBox *groupByType = new QGroupBox("By Type:");
   QGroupBox *groupByDate = new QGroupBox("");
 
   QFont font;
-  font.setFamily("Font Awesome 5 Free");
-  font.setPixelSize(16);
+  font.setFamily("Font Awesome 5 Free Solid");
+  font.setPixelSize(12);
 
   //by type
   QVBoxLayout *btnlayout = new QVBoxLayout;
@@ -449,13 +453,17 @@ FilterPage::FilterPage(QWidget *parent)
   mButtonRemove = new QPushButton("");
 
   mButtonAdd->setFont(font);
+  mButtonAdd->setMinimumSize(QSize(32,32));
+  mButtonAdd->setMaximumSize(QSize(32,32));
   mButtonRemove->setFont(font);
-  mButtonAdd->setText("\uf055");
-  mButtonRemove->setText("\uf056");
+  mButtonRemove->setMinimumSize(QSize(32,32));
+  mButtonRemove->setMaximumSize(QSize(32,32));
+  mButtonAdd->setText(QChar(0xf067));
+  mButtonRemove->setText(QChar(0xf1f8));
+  //Er scheint das Fon zu nehmen aber nicht das Symbol zu finde.
 
   btnlayout->addWidget(mButtonAdd, 0, Qt::AlignBottom);
   btnlayout->addWidget(mButtonRemove, 0, Qt::AlignTop);
-  //btnlayout->setGeometry(QRect(0, 0, 100, 60));
 
   QHBoxLayout *typeLayout = new QHBoxLayout;
   mListWidget = new QListWidget();
@@ -463,22 +471,22 @@ FilterPage::FilterPage(QWidget *parent)
   typeLayout->addLayout(btnlayout, 1);
   typeLayout->setAlignment(btnlayout, Qt::AlignTop);
   groupByType->setLayout(typeLayout);
-  int filterCount = settings.value("filtercount", 0).toInt();
+  int filterCount = ConfigurationPage::mSettings.value("filtercount", 0).toInt();
   for (int i=0; i<filterCount; i++) {
-    QListWidgetItem *item = new QListWidgetItem(settings.value("filteritem"+i, "").toString());
+    QListWidgetItem *item = new QListWidgetItem(ConfigurationPage::mSettings.value("filteritem" + QString::number(i), "").toString());
     mListWidget->addItem(item);
     item->setFlags(item->flags() | Qt::ItemIsEditable);
   }
 
   //by date
   mCheckByDate = new QCheckBox("By Date:");
-  mCheckByDate->setChecked(settings.value("bydate", false).toBool());
+  mCheckByDate->setChecked(ConfigurationPage::mSettings.value("bydate", false).toBool());
   QVBoxLayout *dateLayout = new QVBoxLayout();
   QHBoxLayout *timeLayout = new QHBoxLayout;
   QLabel *labelForm = new QLabel("From:");
-  mDateFrom = new QDateEdit(settings.value("datefrom").toDate());
+  mDateFrom = new QDateEdit(ConfigurationPage::mSettings.value("datefrom").toDate());
   QLabel *labelTo = new QLabel("To:");
-  mDateTo = new QDateEdit(settings.value("dateto").toDate());
+  mDateTo = new QDateEdit(ConfigurationPage::mSettings.value("dateto").toDate());
   timeLayout->addWidget(labelForm);
   timeLayout->addWidget(mDateFrom);
   timeLayout->addWidget(labelTo);
@@ -500,19 +508,19 @@ FilterPage::FilterPage(QWidget *parent)
 }
 
 void FilterPage::saveSettings() {
-  QSettings settings("IFoerster", "Diskbutler");
+  //QSettings settings("IFoerster", "Diskbutler");
 
-  settings.setValue("bydate",mCheckByDate->isChecked());
-  settings.setValue("datefrom", mDateFrom->date());
-  settings.setValue("dateto", mDateTo->date());
+  ConfigurationPage::mSettings.setValue("bydate",mCheckByDate->isChecked());
+  ConfigurationPage::mSettings.setValue("datefrom", mDateFrom->date());
+  ConfigurationPage::mSettings.setValue("dateto", mDateTo->date());
 
   int filterCount = mListWidget->count();
   for (int i=0; i<filterCount; i++) {
-    settings.setValue("filteritem"+i, mListWidget->item(i)->text());
+    ConfigurationPage::mSettings.setValue("filteritem" + QString::number(i), mListWidget->item(i)->text());
   }
-  settings.setValue("filtercount", mListWidget->count());
+  ConfigurationPage::mSettings.setValue("filtercount", mListWidget->count());
 
-  settings.sync();
+  ConfigurationPage::mSettings.sync();
 }
 
 void FilterPage::on_mButtonAdd_clicked() {

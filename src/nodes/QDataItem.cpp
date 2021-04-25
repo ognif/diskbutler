@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -17,12 +17,14 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "QDataItem.h"
-#include "CommonTreeWidget.h"
 #include <QFileInfo>
 #include <QFileIconProvider>
-#include "utils_common.h"
 #include <qstack.h>
+
+#include "qdataitem.h"
+#include "CommonTreeWidget.h"
+#include "utils_common.h"
+
 
 QIcon QDataItem::mFolderIcon;
 QIcon QDataItem::mFixedFolderIcon;
@@ -130,15 +132,28 @@ void QDataItem::SetDataWithName(const QString &name)
   mDateModified = mDateAdded;
   SetDefaultIcon();
   setText(0, mName);
-  setText(1, humanReadableSize(mSize));
+  setText(1, humanReadableSize(mSize,nullptr));
   setText(2, mComment);
+}
+
+void QDataItem::checkPathAndNaming()
+{
+    //Get the Path from this item
+    //mName
+    //mFullPath
+    //mOrgIcon
+    //Wo bekomme ich jetzt die Regeln her?
+
 }
 
 void QDataItem::SetData(const QString &path)
 {
   QFileInfo fileinfo(path);
+
+  //Path longer than 255 chars?
   fileinfo.setFile(fileinfo.absoluteFilePath());
   mName = fileinfo.fileName();
+
   mDateAdded = QDateTime::currentDateTime();
   if (0 == path.compare(mName)) {
     // it's a virtual new added item, not from filesystem.
@@ -166,12 +181,34 @@ void QDataItem::SetData(const QString &path)
   */
   mChecksum = "";
   mComment = "";
+  //Check Icon, if Warning, we use the warn provider
+  //Then we need to save the provider Icon in list.
   QFileIconProvider iconprovider;
-  QIcon icon = iconprovider.icon(fileinfo);
-  setIcon(0, icon);
+  //QIcon icon = iconprovider.icon(fileinfo);
+  mOrgIcon = iconprovider.icon(fileinfo);
+  setIcon(0, mOrgIcon);
   setText(0, mName);
-  setText(1, humanReadableSize(mSize));
+  setText(1, humanReadableSize(mSize,nullptr));
   setText(2, mComment);
+}
+
+void QDataItem::setIconWarning(bool isWarning, const QString &strWarning)
+{
+    if(isWarning == true){
+        setIcon(0, QIcon(":/icons/warning16.png"));
+        mWarning = strWarning;
+        setText(2, mWarning);
+    }else{
+        mWarning = "";
+        if (QDataItem::Folder == mType) {
+          setIcon(0, mFolderIcon);
+        } else if (QDataItem::FixedFolder == mType) {
+          setIcon(0, mFixedFolderIcon);
+        } else if (QDataItem::File == mType) {
+          setIcon(0, mOrgIcon);
+        }
+        setText(2, mComment);
+    }
 }
 
 void QDataItem::SetDataAudio(const QString &path, qint64 data_time, const QString &comment)
@@ -199,8 +236,8 @@ void QDataItem::SetDataAudio(const QString &path, qint64 data_time, const QStrin
     QIcon icon = iconprovider.icon(fileinfo);
     setIcon(0, icon);
     setText(0, mName);
-    setText(1, humanReadableSize(mSize));
-    setText(2, QDateTime::fromTime_t(mPlayTime).toUTC().toString("hh:mm:ss"));
+    setText(1, humanReadableSize(mSize,nullptr));
+    setText(2, QDateTime::fromSecsSinceEpoch(mPlayTime).toUTC().toString("hh:mm:ss"));
     setText(3, mComment);
 }
 
@@ -222,7 +259,7 @@ void QDataItem::SetData(ValueType type, const QString &path, const QString &name
   mItemCount = item_count;
   mNodeCount = node_count;
   setText(0, mName);
-  setText(1, humanReadableSize(mSize));
+  setText(1, humanReadableSize(mSize,nullptr));
   setText(2, mComment);
 }
 
@@ -252,16 +289,16 @@ void QDataItem::SetDataSize(const qint64 data_size,bool isExplorer)
 {
   mSize = data_size;
   if(isExplorer==false){
-      setText(1, humanReadableSize(mSize));
+      setText(1, humanReadableSize(mSize,nullptr));
   }else{
-      setText(2, humanReadableSize(mSize));
+      setText(2, humanReadableSize(mSize,nullptr));
   }
 
 }
 
 void QDataItem::SetDataTime(const qint64 data_time)
 {
-  setText(2, QDateTime::fromTime_t(data_time).toUTC().toString("hh:mm:ss"));
+  setText(2, QDateTime::fromSecsSinceEpoch(data_time).toUTC().toString("hh:mm:ss"));
 }
 
 QString QDataItem::GetDiskPath()
@@ -275,13 +312,13 @@ QString QDataItem::GetDiskPath()
       if(parent->GetType()==QDataItem::DataTrack)break;
 
       //We have changed it from slash to backslash. We keep everything backslash here.
-      disk_path.insert(0, parent->GetName() + "//");
+      disk_path.insert(0, parent->GetName() + PATHSEPSTRING);
       parent = static_cast<QDataItem*>(parent->parent());
 
   }
   //qDebug("Path1: %s",disk_path.toLatin1().constData());
  //We have changed it from slash to backslash. We keep everything backslash here.
-  disk_path.insert(0, "//");
+  disk_path.insert(0, PATHSEPSTRING);
   //qDebug("Path2: %s",disk_path.toLatin1().constData());
   return disk_path;
 }
@@ -294,11 +331,11 @@ QString QDataItem::GetDiskFilePath()
   while (parent != nullptr) {
     if(parent->GetType()==QDataItem::DataTrack)break;
     //We have changed it from slash to backslash. We keep everything backslash here.
-    disk_path.insert(0, parent->GetName() + "//");
+    disk_path.insert(0, parent->GetName() + PATHSEPSTRING);
     parent = static_cast<QDataItem*>(parent->parent());
   }
   //We have changed it from slash to backslash. We keep everything backslash here.
-  disk_path.insert(0, "//");
+  disk_path.insert(0, PATHSEPSTRING);
   return disk_path;
 }
 

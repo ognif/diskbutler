@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -18,7 +18,7 @@
  */
 
 #include <QtWidgets>
-#include "QScanBoard.h"
+#include "qscanboard.h"
 #include <QDebug>
 #include <QPainter>
 #include <QScrollBar>
@@ -31,14 +31,14 @@ QScanBoard::QScanBoard(unsigned int numRows, unsigned int numCols, QWidget* pare
     , m_numCols(numCols)
     , maxSide(0)
 {
-    setFont(QFont("Courier", 14));
+    setFont(QFont("Courier", 9));
 
     m_squareWidth = 8;
     m_squareHeight = 8;
     sOffset = 0;
     isActive = false;
 
-    m_charWidth = fontMetrics().width(QLatin1Char('9'));
+    m_charWidth = fontMetrics().horizontalAdvance(QLatin1Char('9'));
 
     nCurrentRange = 0;
 
@@ -93,9 +93,9 @@ QSize QScanBoard::fullSize() const
     QSize areaSize = viewport()->size();
 
     int nWidth = areaSize.width();
-    int columCount = nWidth / (m_squareWidth+2);
+    int columCount = nWidth / (static_cast<int>(m_squareWidth)+2);
     int rowCount = maxSide / columCount;
-    int allSizeHeight = rowCount * (m_squareHeight+2);
+    int allSizeHeight = rowCount * (static_cast<int>(m_squareHeight)+2);
 
     //qDebug("Columncount: %d",columCount);
     //qDebug("Rowcount: %d",rowCount);
@@ -117,7 +117,7 @@ void QScanBoard::paintEvent(QPaintEvent *event)
         QString dataMessage = tr("Empty disc. No data available.");
         painter.fillRect(event->rect(), this->palette().color(QPalette::Base));
 
-        int pX = (areaSize.width()/2)-((m_charWidth*dataMessage.length())/2);
+        int pX = (areaSize.width()/2)-((static_cast<int>(m_charWidth)*dataMessage.length())/2);
         int pY = areaSize.height()/2;
 
         painter.setPen(Qt::darkGray);
@@ -130,19 +130,19 @@ void QScanBoard::paintEvent(QPaintEvent *event)
     //We step 1 Line by another through the widget
     //Perfect Step, one line after another
     //Page ste is the step fo a whole screen.
-    verticalScrollBar()->setPageStep(m_squareHeight+2);
+    verticalScrollBar()->setPageStep(static_cast<int>(m_squareHeight)+2);
 
     //Current calculation error is 117 Lines missing.
-    verticalScrollBar()->setRange(0, (widgetSize.height() - areaSize.height()) / (m_squareHeight+2) + 1);
+    verticalScrollBar()->setRange(0, (widgetSize.height() - areaSize.height()) / (static_cast<int>(m_squareHeight)+2) + 1);
 
 
 
     int firstLineIdx = verticalScrollBar() -> value();
-    int lastLineIdx = firstLineIdx + areaSize.height() / (m_squareHeight+2);
+    int lastLineIdx = firstLineIdx + areaSize.height() / (static_cast<int>(m_squareHeight)+2);
 
     painter.fillRect(event->rect(), this->palette().color(QPalette::Base));
 
-    int nRaster = (areaSize.width() / (m_squareWidth+2));
+    int nRaster = (areaSize.width() / (static_cast<int>(static_cast<int>(m_squareWidth))+2));
     int nLines = maxSide / nRaster;
 
     //We jsut paint what we see.
@@ -166,7 +166,7 @@ void QScanBoard::paintEvent(QPaintEvent *event)
 
             //Der ist ja 0 wenn i kleiner gleich 0 ist und i kleiner als 0 + height / squere
 
-            if(i>=firstLineIdx && i < (firstLineIdx + (areaSize.height() / (m_squareHeight+2)))){
+            if( i >= firstLineIdx && i < (firstLineIdx + (areaSize.height() / (static_cast<int>(m_squareHeight)+2))) ){
                 /*
                 if(i % 2 == 0){
                     painter.setBrush(QBrush(Qt::green, Qt::SolidPattern));
@@ -196,7 +196,7 @@ void QScanBoard::paintEvent(QPaintEvent *event)
 
                 }
 
-                QRect rect(y*(m_squareWidth+2), (i-firstLineIdx)*(m_squareWidth+2), m_squareWidth, m_squareWidth);
+                QRect rect(y*(static_cast<int>(m_squareWidth)+2), (i-firstLineIdx)*(static_cast<int>(m_squareWidth)+2), static_cast<int>(m_squareWidth), static_cast<int>(m_squareWidth));
                 painter.drawRect(rect);
             }
 
@@ -214,7 +214,7 @@ void QScanBoard::paintEvent(QPaintEvent *event)
     //My idea is, todisable ensure visible when manual scroll was detected.
     if(isActive && nCurrentRange > (lastLineIdx*nRaster)){
 
-        verticalScrollBar() ->setValue(firstLineIdx + (areaSize.height() / (m_squareHeight+2))/2 );
+        verticalScrollBar() ->setValue(firstLineIdx + (areaSize.height() / (static_cast<int>(m_squareHeight)+2))/2 );
 
     }
 

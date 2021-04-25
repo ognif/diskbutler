@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -20,38 +20,34 @@
 #ifndef QFILEITEM_H
 #define QFILEITEM_H
 
-#include "QDataItem.h"
+#include "qdataitem.h"
 #include "FoxSDKExport.h"
+#include "utils_common.h"
 
 class QFileItem : public QDataItem
 {
 public:
-  static QFileItem* create(QDataItem *parent, const HSESSION hSession, const SFileEntry& entry);
+    static QFileItem* create(QDataItem *parent, const HSESSION hSession, const SFileEntry& entry);
 
-  void ParseGenericInfo();
-  virtual QString GetLBA() {return QString("%1").arg(mInfo.nAddress);}
-  virtual std::vector<uint32>* GetExtentLocation() {return &mLocationVector;}
-  virtual std::vector<uint32>* GetExtentLength() {return &mLengthVector;}
-  virtual QString createAttributeString();
-  virtual QString getPath() {
-#if defined (WIN32)
-    return QString::fromUtf16((const ushort*)mInfo.lpszFilePath);
-#else
-    return QString::fromUtf8(mInfo.lpszFilePath);
-#endif
-
-  }
+    void ParseGenericInfo();
+    virtual QString GetLBA() {return QString("%1").arg(mInfo.nAddress);}
+    virtual std::vector<uint32>* GetExtentLocation() {return &mLocationVector;}
+    virtual std::vector<uint32>* GetExtentLength() {return &mLengthVector;}
+    virtual QString createAttributeString();
+    virtual QString getPath() {
+        return convertToQT(mInfo.lpszFilePath);
+    }
 
 
 private:
-  QFileItem(QDataItem *parent, const HSESSION hSession, const SFileEntry& entry);
-  void ParseAllocationTable(const HSESSION hSession);
+    QFileItem(QDataItem *parent, const HSESSION hSession, const SFileEntry& entry);
+    void ParseAllocationTable(const HSESSION hSession);
 
 
 protected:
-  SFileEntry mInfo;
-  std::vector<uint32> mLocationVector;
-  std::vector<uint32> mLengthVector;
+    SFileEntry mInfo;
+    std::vector<uint32> mLocationVector;
+    std::vector<uint32> mLengthVector;
 
 };
 

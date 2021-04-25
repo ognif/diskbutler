@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -20,66 +20,59 @@
 #ifndef QMEDIUMITEM_H
 #define QMEDIUMITEM_H
 
-#include "QDataItem.h"
+#include "qdataitem.h"
 #include <QList>
 
 #include "FoxSDKExport.h"
+#include "utils_common.h"
 
 class QMediumItem : public QDataItem
 {
 public:
-  static QMediumItem* create(CommonTreeWidget *view);
+    static QMediumItem* create(CommonTreeWidget *view);
 
-  void ParseGenericInfo();
-  void CreateAndLoadChildren();
+    void ParseGenericInfo();
+    void CreateAndLoadChildren();
 
-  virtual QString getMediumType() {
-#if defined (WIN32)
-      return QString::fromUtf16(mInfo.chMediumType);/
-#else
-      return QString::fromUtf8(mInfo.chMediumType);
-#endif
-  }
-  virtual QString getMediumStatus();
-  virtual QString getUPCCode() {
-#if defined (WIN32)
-      return QString::fromUtf16(mInfo.chUPCEANCode);/
-#else
-      return QString::fromUtf8(mInfo.chUPCEANCode);
-#endif
-  }
-  virtual int getTrackCount() {return mInfo.nLastTrack;}
-  virtual int getSessionCount() {return mInfo.nLastSession;}
-  virtual qint64 getMediumSize() {return mInfo.dMediumSize;}
-  //We return the new calculated size in property dialog
-  virtual qint64 getMediumUsedSize() {return nMediumSize; /*mInfo.dMediumUsedSize;*/}
-  virtual qint64 getMediumFreeSize();
-  virtual int16 getImageFormats() {return nImageFormats;}
-  QString getPerformer() {return strPerformer;}
-  QString getTitle() {return strTitle;}
-  QString getArranger() {return strArranger;}
-  QString getComposer() {return strComposer;}
-  QString getMessage() {return strMessage;}
-  QString getSongWriter() {return strSongWriter;}
-  int16 getExtendedMediumType() {return mInfo.nExtendedMediumType;}
-  void setMediumSize(qint64 nSize) {nMediumSize=nSize;}
-  void setNewSize() {SetDataSize(nMediumSize,true);}
+    virtual QString getMediumType() {
+        return convertToQT(mInfo.chMediumType);
+    }
+    virtual QString getMediumStatus();
+    virtual QString getUPCCode() {
+        return convertToQT(mInfo.chUPCEANCode);
+    }
+    virtual int getTrackCount() {return mInfo.nLastTrack;}
+    virtual int getSessionCount() {return mInfo.nLastSession;}
+    virtual qint64 getMediumSize() {return mInfo.dMediumSize;}
+    //We return the new calculated size in property dialog
+    virtual qint64 getMediumUsedSize() {return nMediumSize; /*mInfo.dMediumUsedSize;*/}
+    virtual qint64 getMediumFreeSize();
+    virtual int16 getImageFormats() {return nImageFormats;}
+    QString getPerformer() {return strPerformer;}
+    QString getTitle() {return strTitle;}
+    QString getArranger() {return strArranger;}
+    QString getComposer() {return strComposer;}
+    QString getMessage() {return strMessage;}
+    QString getSongWriter() {return strSongWriter;}
+    int16 getExtendedMediumType() {return mInfo.nExtendedMediumType;}
+    void setMediumSize(qint64 nSize) {nMediumSize=nSize;}
+    void setNewSize() {SetDataSize(nMediumSize,true);}
 
 
 private:
-  QMediumItem(CommonTreeWidget *view);
+    QMediumItem(CommonTreeWidget *view);
 
 protected:
-  int32 ExtractTextFromHandle(int32 handle,int32 nCDTCI, QString& rText);
-  SMediumInfo mInfo;
-  int16 nImageFormats;
-  QString strPerformer;
-  QString strTitle;
-  QString strArranger;
-  QString strComposer;
-  QString strMessage;
-  qint64 nMediumSize;
-  QString strSongWriter;
+    int32 ExtractTextFromHandle(int32 handle,int32 nCDTCI, QString& rText);
+    SMediumInfo mInfo;
+    int16 nImageFormats;
+    QString strPerformer;
+    QString strTitle;
+    QString strArranger;
+    QString strComposer;
+    QString strMessage;
+    qint64 nMediumSize;
+    QString strSongWriter;
 };
 
 #endif // QMEDIUMITEM_H

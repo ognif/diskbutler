@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -27,8 +27,10 @@
 #include <QFileSystemModel>
 #include <QSplitter>
 #include "CommonTreeWidget.h"
-#include "QDataItem.h"
+#include "qdataitem.h"
+#include "qdiskitem.h"
 #include "vrulemanager.h"
+#include "mainwindow.h"
 
 //QT_BEGIN_NAMESPACE
 //class QTreeWidget;
@@ -84,6 +86,14 @@ public:
   bool GetOpenDisk() {return false;}
   CommonTreeWidget *getTreeWidget() {return treeWidget;}
   void checkAndTags(int32 sourceTags);
+  QString getlastSelectedTab(){ return strlastSelectedTab; }
+  void setlastSelectedTab( QString nValue ) {
+      qDebug() << "mdichild_dialog " << nValue;
+      strlastSelectedTab = nValue;
+  }
+  void setUIControls(Ribbon *baseRibbon, QWidget* parent);
+  void setBurnDeviceList(QWidget* parent);
+  void setRibbonTabs(Ribbon *baseRibbon, QWidget* parent);
 
 Q_SIGNALS:
   void status_changed(const QString &text);
@@ -107,6 +117,7 @@ private:
   QString buildExploreStatusBar(QString inProjectType);
   QString buildCommonCD(QString inProjectType);
   QString buildAudioCD(QString inProjectType);
+  bool isAudioTrack();
 
 private slots:
   void documentWasModified(bool modified);
@@ -133,6 +144,7 @@ private:
 
   QDataItem *item;
   QPixmap folderOnPixmap, folderOffPixmap, filePixmap;
+  QString strlastSelectedTab;
 };
 
 #endif

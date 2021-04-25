@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -43,7 +43,7 @@ VPropertyDialog::VPropertyDialog(QWidget *parent, QDataItem *qItem) :
   QFont f = ui->labelSource->font();
   QFontMetrics fm = QFontMetrics(f);
   int max_w = ui->labelSource->width();
-  QString elided_text = fm.elidedText(qItem->GetFullPath(), Qt::ElideMiddle, max_w);
+  QString elided_text = fm.elidedText(QDir::toNativeSeparators(qItem->GetFullPath()), Qt::ElideMiddle, max_w);
   ui->labelSource->setText(elided_text); //need change
 
   f = ui->labelPath->font();
@@ -55,7 +55,7 @@ VPropertyDialog::VPropertyDialog(QWidget *parent, QDataItem *qItem) :
   //ui->editContent->setText(QString::number(qItem->GetDataItemCount()));
   ui->labelContent->setText(tr("%1 files, %2 folders")
                            .arg(qItem->GetDataItemCount()).arg(qItem->GetDataNodeCount()));
-  ui->labelSize->setText(humanReadableSize(qItem->GetDataSize())
+  ui->labelSize->setText(humanReadableSize(qItem->GetDataSize(),nullptr)
                         + ", " + humanReadableSector(qItem->GetDataSize()));
 
   //Get system info
@@ -147,7 +147,7 @@ void VPropertyDialog::on_buttonSync_clicked()
 
   if (QDataItem::File == mItem->GetType()) {
     ui->imageWarningSize->hide();
-    ui->labelSize->setText(humanReadableSize(entry.size())
+    ui->labelSize->setText(humanReadableSize(entry.size(),nullptr)
                           + ", " + humanReadableSector(entry.size()));
   }
 

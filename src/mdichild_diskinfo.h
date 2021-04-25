@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -28,7 +28,8 @@
 #include "mdichild_base.h"
 #include "FoxSDKBurningLib.h"
 #include "vrulemanager.h"
-#include "QDummyTextTree.h"
+#include "qdummytexttree.h"
+#include "utils_common.h"
 
 class MdiChildDiskInfo;
 
@@ -50,220 +51,233 @@ protected:
 
 class MdiChildDiskInfo : public MdiChildBase
 {
-  Q_OBJECT
+    Q_OBJECT
 
-  struct pTableItem {
-      QString columnText;
-      int itemColumn;
-      int itemRow;
-      bool rowSpan;
-      bool rowBold;
-  };
+    struct pTableItem {
+        QString columnText;
+        int itemColumn;
+        int itemRow;
+        bool rowSpan;
+        bool rowBold;
+    };
 
-  struct pInformations {
-    QString strMediaType;
-    QString strMediaID;
-    QString strMediaSpeeds;
-    QString strMediaStatus;
-    QString strMediaSize;
-    QString strMediaUsedSpace;
-    QString strMediaFreeSpace;
-    QString strMediaExType;
-    QString strMediaUPC;
-    QString strMediaMaxWSpeed;
-    QString strBootable;
-    QString strBridgeFileSystem;
-  };
+    struct pInformations {
+        QString strMediaType;
+        QString strMediaID;
+        QString strMediaSpeeds;
+        QString strMediaStatus;
+        QString strMediaSize;
+        QString strMediaUsedSpace;
+        QString strMediaFreeSpace;
+        QString strMediaExType;
+        QString strMediaUPC;
+        QString strMediaMaxWSpeed;
+        QString strBootable;
+        QString strBridgeFileSystem;
+    };
 
-  struct pUDF {
-    int isUDF;
-    QString strUDFVersion;
-    QString strUDFFiles;
-    QString strUDFFolders;
-    QString strUDFPartition;
-    QString strVolumeLabel;
-    QString strPerparer;
-    QString strRootAddress;
-  };
+    struct pUDF {
+        int isUDF;
+        QString strUDFVersion;
+        QString strUDFFiles;
+        QString strUDFFolders;
+        QString strUDFPartition;
+        QString strVolumeLabel;
+        QString strPerparer;
+        QString strRootAddress;
+    };
 
-  struct pISO {
-    int isISO;
-    QString strVolumeLabel;
-    QString strCreationTime;
-    QString strModificationTime;
-    QString strExpirationTime;
-    QString strEffectiveTime;
-    QString strAbstract;
-    QString strApplication;
-    QString strBiblio;
-    QString strCopyright;
-    QString strDataPreparer;
-    QString strPublisher;
-    QString strSet;
-    QString strSystem;
-    QString strISOLevel;
-    QString strISOExtension;
-    QString strRootAddress;
-  };
+    struct pISO {
+        int isISO;
+        QString strVolumeLabel;
+        QString strCreationTime;
+        QString strModificationTime;
+        QString strExpirationTime;
+        QString strEffectiveTime;
+        QString strAbstract;
+        QString strApplication;
+        QString strBiblio;
+        QString strCopyright;
+        QString strDataPreparer;
+        QString strPublisher;
+        QString strSet;
+        QString strSystem;
+        QString strISOLevel;
+        QString strISOExtension;
+        QString strRootAddress;
+    };
 
-  struct pAudio {
-    int isAudio;
-    QString strTitle;
-    QString strPerformer;
-    QString strSongWriter;
-    QString strComposer;
-    QString strArranger;
-    QString strMessage;
-    QString strISRC;
-  };
+    struct pAudio {
+        int isAudio;
+        QString strTitle;
+        QString strPerformer;
+        QString strSongWriter;
+        QString strComposer;
+        QString strArranger;
+        QString strMessage;
+        QString strISRC;
+    };
 
-  struct pData {
-    int mFormat;
-    int imageHardRetry;
-    int imageSoftRetry;
-    int imageCorrSwitch;
-    int imageJobVerify;
-    int imageJobCreate;
+    struct pData {
+        int mFormat;
+        int imageHardRetry;
+        int imageSoftRetry;
+        int imageCorrSwitch;
+        int imageJobVerify;
+        int imageJobCreate;
 
-    int mHasData;
-    int16 nImageFormats;
+        int mHasData;
+        int16 nImageFormats;
 
-    int nImageCreateMethode;
-    int nReadMethod; //0=ISO;1=RAW;2=RAW+SUB
-    bool bBlankBadSectors;
-    bool bUseErrorCorrection;
-    bool bCopyEject;
-    int bImageVerify;
-    int bCopyVerify;
-    bool hideEmptyFields;
-    bool bIsISO;
-    bool bIsBIN;
-    int nWriteMethod; //0=DAO;1=DAO96
-    int nHardwareRetry;
-    int nSoftwareRetry;
-    bool bIsEmptyDisk;
-    bool bEraseEject;
-    bool bEraseFast;
-    bool isEraseable;
-    bool isOpen;
-    QString strImagePath;
-    QString strBurnDrive;
-    QString deviceLetter;
-  };
+        int nImageCreateMethode;
+        int nReadMethod; //0=ISO;1=RAW;2=RAW+SUB
+        bool bBlankBadSectors;
+        bool bUseErrorCorrection;
+        bool bCopyEject;
+        int bImageVerify;
+        int bCopyVerify;
+        bool hideEmptyFields;
+        bool bIsISO;
+        bool bIsBIN;
+        int nWriteMethod; //0=DAO;1=DAO96
+        int nHardwareRetry;
+        int nSoftwareRetry;
+        bool bIsEmptyDisk;
+        bool bEraseEject;
+        bool bEraseFast;
+        bool isEraseable;
+        bool isOpen;
+        QString strImagePath;
+        QString strBurnDrive;
+        QString deviceLetter;
+        QString strlastSelectedTab;
+    };
 
 public:
-  MdiChildDiskInfo(QWidget* parent, const QString &device);
-  int32 ExtractTextFromHandle(int32 handle,int32 nCDTCI, QString& rText);
-  int32 ExtractTrackTextFromHandle(int32 handle, int32 nTrack, int32 nCDTCI, QString& rText);
-  RuleManager::ProjectType GetProjectType() {return mProjectType;}
-  QString GetDeviceLetter() {return thisData.deviceLetter;}
-
-  int hasData;
-
-
-  bool GetEraseable() {return thisData.isEraseable;}
-  void setEraseable(bool newValue) {thisData.isEraseable = newValue;}
-
-  bool GetOpenDisk() {return thisData.isOpen;}
-  void setOpenDisk(bool newValue) {thisData.isOpen = newValue;}
-
-  bool GetEmptyDisk() {return thisData.bIsEmptyDisk;}
-  void setEmptyDisk(bool newValue) {thisData.bIsEmptyDisk = newValue;}
-
-  bool getHideEmptyFields() {return thisData.hideEmptyFields;}
-  void setHideEmptyFields(bool bValue) {thisData.hideEmptyFields=bValue;}
-  void updateDiskInfo();
-
-  void setCopyVerify(int bValue) {thisData.bCopyVerify=bValue;}
-  int getCopyVerify() {return thisData.bCopyVerify;}
-
-  void setImageVerify(int bValue) {thisData.bImageVerify=bValue;}
-  int getImageVerify() {return thisData.bImageVerify;}
-
-  void setCopyEject(bool bValue) {thisData.bCopyEject=bValue;}
-  bool getCopyEject() {return thisData.bCopyEject;}
-  void setUseErrorCorrection(bool bValue) {thisData.bUseErrorCorrection=bValue;}
-  bool getErrorCorrection() {return thisData.bUseErrorCorrection;}
-  void setBlankBadSectors(bool bValue) {thisData.bBlankBadSectors=bValue;}
-  bool getBlankBadSectors() {return thisData.bBlankBadSectors;}
-  void setCopyReadMethod(int nValue) {thisData.nReadMethod=nValue;}
-  int getCopyReadMethod() {return thisData.nReadMethod;}
-
-  void setImageFormats(int nValue) {thisData.nImageFormats=nValue;}
-  int getImageFormats() {return thisData.nImageFormats;}
-
-  //I prefer to work with sturctures.
-  //Image Create Values
-  int getImageCreateSoftRetry() {return thisData.imageSoftRetry;}
-  void setImageCreateSoftRetry(int newValue) {thisData.imageSoftRetry = newValue;}
-  int getImageCreateHardRetry() {return thisData.imageHardRetry;}
-  void setImageCreateHardRetry(int newValue) {thisData.imageHardRetry = newValue;}
-  int getImageCorrSwitch() {return thisData.imageCorrSwitch;}
-  void setImageCorrSwitch(int newValue) {thisData.imageCorrSwitch = newValue;}
-  int getImageJobCreate() {return thisData.imageJobCreate;}
-  void setImageJobCreate(int newValue) {thisData.imageJobCreate = newValue;}
-  int getImageJobVerify() {return thisData.imageJobVerify;}
-  void setImageJobVerify(int newValue) {thisData.imageJobVerify = newValue;}
-  int getImageCreateMethod() {return thisData.nImageCreateMethode;}
-  void setImageCreateMethod(int newValue) {thisData.nImageCreateMethode = newValue;}
-  QString getImagePath() {return thisData.strImagePath;}
-  void setImagePath(QString strValue) {thisData.strImagePath=strValue;}
-
-  bool getIsIsoDisk() {return thisData.bIsISO;}
-  void setIsIsoDisk(bool newValue) {thisData.bIsISO = newValue;}
-  bool getIsBinDisk() {return thisData.bIsBIN;}
-  void setIsBinDisk(bool newValue) {thisData.bIsBIN = newValue;}
-
-  bool getDataState() {return thisData.mHasData;}
-  void setDataState(bool newData) {thisData.mHasData = newData;}
-
-  void setCopyWriteMethod(int nValue) {thisData.nWriteMethod=nValue;}
-  int getCopyWriteMethod() {return thisData.nWriteMethod;}
-
-  void setErrorHarwareRetry(int nValue) {thisData.nHardwareRetry=nValue;}
-  int getErrorHarwareRetry() {return thisData.nHardwareRetry;}
-  void setErrorSoftwareRetry(int nValue) {thisData.nSoftwareRetry=nValue;}
-  int getErrorSoftwareRetry() {return thisData.nSoftwareRetry;}
-
-  void setEjectAfterErase(bool bValue) {thisData.bEraseEject=bValue;}
-  bool getEjectAfterErase() {return thisData.bEraseEject;}
-  void setFastErase(bool bValue) {thisData.bEraseFast=bValue;}
-  bool getFastErase() {return thisData.bEraseFast;}
+    MdiChildDiskInfo(QWidget* parent, const QString &device);
+    int32 ExtractTextFromHandle(int32 handle,int32 nCDTCI, QString& rText);
+    int32 ExtractTrackTextFromHandle(int32 handle, int32 nTrack, int32 nCDTCI, QString& rText);
+    RuleManager::ProjectType GetProjectType() {return mProjectType;}
+    QString GetDeviceLetter() {return thisData.deviceLetter;}
+    QString getlastSelectedTab(){ return thisData.strlastSelectedTab; }
+    void setlastSelectedTab( QString nValue ) {
+        qDebug() << "4";
+        qDebug() << nValue;
+        thisData.strlastSelectedTab = nValue;
+    }
+    void setUIControls(Ribbon *baseRibbon, QWidget* parent);
+    int hasDataChild() {return hasData;};
+    int hasData;
 
 
-  QString getBurnDrive() {return thisData.strBurnDrive;}
-  void setBurnDrive(QString strValue) {
-      thisData.strBurnDrive=strValue;
-      QString wTitle = tr("Disk Info");
-      wTitle += " (";
-      wTitle += thisData.strBurnDrive;
-      wTitle += ")";
-      setWindowTitle(wTitle);
-      }
+    bool GetEraseable() {return thisData.isEraseable;}
+    void setEraseable(bool newValue) {thisData.isEraseable = newValue;}
 
-  void readDiskInfo();
+    bool GetOpenDisk() {return thisData.isOpen;}
+    void setOpenDisk(bool newValue) {thisData.isOpen = newValue;}
+
+    bool GetEmptyDisk() {return thisData.bIsEmptyDisk;}
+    void setEmptyDisk(bool newValue) {thisData.bIsEmptyDisk = newValue;}
+
+    bool getHideEmptyFields() {return thisData.hideEmptyFields;}
+    void setHideEmptyFields(bool bValue) {thisData.hideEmptyFields=bValue;}
+    void updateDiskInfo();
+
+    void setCopyVerify(int bValue) {thisData.bCopyVerify=bValue;}
+    int getCopyVerify() {return thisData.bCopyVerify;}
+
+    void setImageVerify(int bValue) {thisData.bImageVerify=bValue;}
+    int getImageVerify() {return thisData.bImageVerify;}
+
+    void setCopyEject(bool bValue) {thisData.bCopyEject=bValue;}
+    bool getCopyEject() {return thisData.bCopyEject;}
+    void setUseErrorCorrection(bool bValue) {thisData.bUseErrorCorrection=bValue;}
+    bool getErrorCorrection() {return thisData.bUseErrorCorrection;}
+    void setBlankBadSectors(bool bValue) {thisData.bBlankBadSectors=bValue;}
+    bool getBlankBadSectors() {return thisData.bBlankBadSectors;}
+    void setCopyReadMethod(int nValue) {thisData.nReadMethod=nValue;}
+    int getCopyReadMethod() {return thisData.nReadMethod;}
+
+    void setImageFormats(int nValue) {thisData.nImageFormats=nValue;}
+    int getImageFormats() {return thisData.nImageFormats;}
+
+    //I prefer to work with sturctures.
+    //Image Create Values
+    int getImageCreateSoftRetry() {return thisData.imageSoftRetry;}
+    void setImageCreateSoftRetry(int newValue) {
+        thisData.imageSoftRetry = newValue;
+    }
+    int getImageCreateHardRetry() {return thisData.imageHardRetry;}
+    void setImageCreateHardRetry(int newValue) {thisData.imageHardRetry = newValue;}
+    int getImageCorrSwitch() {return thisData.imageCorrSwitch;}
+    void setImageCorrSwitch(int newValue) {thisData.imageCorrSwitch = newValue;}
+    int getImageJobCreate() {return thisData.imageJobCreate;}
+    void setImageJobCreate(int newValue) {thisData.imageJobCreate = newValue;}
+    int getImageJobVerify() {return thisData.imageJobVerify;}
+    void setImageJobVerify(int newValue) {thisData.imageJobVerify = newValue;}
+    int getImageCreateMethod() {return thisData.nImageCreateMethode;}
+    void setImageCreateMethod(int newValue) {thisData.nImageCreateMethode = newValue;}
+    QString getImagePath() {return thisData.strImagePath;}
+    void setImagePath(QString strValue) {thisData.strImagePath=strValue;}
+
+    bool getIsIsoDisk() {return thisData.bIsISO;}
+    void setIsIsoDisk(bool newValue) {thisData.bIsISO = newValue;}
+    bool getIsBinDisk() {return thisData.bIsBIN;}
+    void setIsBinDisk(bool newValue) {thisData.bIsBIN = newValue;}
+
+    bool getDataState() {return thisData.mHasData;}
+    void setDataState(bool newData) {thisData.mHasData = newData;}
+
+    void setCopyWriteMethod(int nValue) {thisData.nWriteMethod=nValue;}
+    int getCopyWriteMethod() {return thisData.nWriteMethod;}
+
+    void setErrorHarwareRetry(int nValue) {thisData.nHardwareRetry=nValue;}
+    int getErrorHarwareRetry() {return thisData.nHardwareRetry;}
+    void setErrorSoftwareRetry(int nValue) {thisData.nSoftwareRetry=nValue;}
+    int getErrorSoftwareRetry() {return thisData.nSoftwareRetry;}
+
+    void setEjectAfterErase(bool bValue) {thisData.bEraseEject=bValue;}
+    bool getEjectAfterErase() {return thisData.bEraseEject;}
+    void setFastErase(bool bValue) {thisData.bEraseFast=bValue;}
+    bool getFastErase() {return thisData.bEraseFast;}
+
+
+    QString getBurnDrive() {return thisData.strBurnDrive;}
+    void setBurnDrive(QString strValue) {
+        thisData.strBurnDrive=strValue;
+        QString wTitle = tr("Disk Info");
+        wTitle += " (";
+        wTitle += thisData.strBurnDrive;
+        wTitle += ")";
+        setWindowTitle(wTitle);
+    }
+    void setBurnDeviceList(QWidget* parent);
+    void setRibbonTabs(Ribbon *baseRibbon, QWidget* parent) ;
+
+    void readDiskInfo();
 
 protected:
-  void closeEvent(QCloseEvent *event);
-  RuleManager::ProjectType mProjectType;
-  QTableWidget* diskInfoTable;
-  //QTreeWidget *treeWidget;
-  QDummyTextTree *treeWidget;
-  QSplitter *splitter;
-  pData thisData;
-  ThreadInfo *mWorkThread;
+    void closeEvent(QCloseEvent *event);
+    RuleManager::ProjectType mProjectType;
+    QTableWidget* diskInfoTable;
+    //QTreeWidget *treeWidget;
+    QDummyTextTree *treeWidget;
+    QSplitter *splitter;
+    pData thisData;
+    ThreadInfo *mWorkThread;
 Q_SIGNALS:
     void thread_finished(QList<QTreeWidgetItem *>, QVector<pTableItem *>);
     void startSpinner();
     void stopSpinner();
+    void datatrack_changed();
 protected Q_SLOTS:
     void on_thread_completed(QList<QTreeWidgetItem *> items, QVector<pTableItem *> myTable);
     void startUpdateInfo();
 
 private:
-  QAction *myUpdateMenus;
-  QAction *myRefreshMenus;
-  void qDebugAusgabeSDK(int32 errCode, const QString &customMessage);
+    QAction *myUpdateMenus;
+    QAction *myRefreshMenus;
+    void qDebugAusgabeSDK(int32 errCode, const QString &customMessage);
 };
 
 #endif

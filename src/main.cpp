@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -26,7 +26,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
     QSharedMemory shared("61BB200D-3579-453e-9044-#74");
-    if(!shared.create(512,QSharedMemory::ReadWrite)==true)
+    if( !shared.create( 512, QSharedMemory::ReadWrite ) == true )
     {
         //OK, we now dissallow the app to start twice but we need the possibility to push up the existing window.
        // exit(0);
@@ -40,8 +40,8 @@ int main(int argc, char *argv[])
                    )";
 
 
-    a.setStyleSheet(teststyle);
-    a.setApplicationVersion(APP_VERSION);
+    a.setStyleSheet( teststyle );
+    a.setApplicationVersion( APP_VERSION );
 
     /*
      * This is the current way from old backseat developer. I do not like this way.
@@ -61,18 +61,21 @@ int main(int argc, char *argv[])
 
     QTranslator pr;
 
-    QSettings settings("IFoerster", "Diskbutler");
-    int nLanguage = settings.value("language",0).toInt();
+    QSettings settings( QSettings::IniFormat, QSettings::UserScope, "IFoerster", "Diskbutler" );
+    int nLanguage = settings.value( "language", 0 ).toInt();
 
-    if(nLanguage!=0){
-        if(nLanguage==1031){
-            pr.load( "./diskbutler_de.qm" );
+    if( nLanguage!=0 ){
+        bool isLoaded = true;
+        if( nLanguage==1031 ){
+            isLoaded = pr.load( "./diskbutler_de.qm" );
         }
-        a.installTranslator( &pr);
+        if( isLoaded ) a.installTranslator( &pr);
     }
 
-    if (QFontDatabase::addApplicationFont(":/res/FontAwesome.otf") < 0)
-        qWarning() << "FontAwesome cannot be loaded !";
+    int id = QFontDatabase::addApplicationFont( ":/res/FontAwesome.otf" );
+    if ( id< 0 ){
+        qWarning()<<"Cannot load font";
+    }
 
     MainWindow w;
     w.show();

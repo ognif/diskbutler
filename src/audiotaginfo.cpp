@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -19,7 +19,7 @@
 
 #include <QtWidgets>
 #include "audiotaginfo.h"
-
+#include "utils_common.h"
 
 
 audioTagInfo::~audioTagInfo()
@@ -46,10 +46,12 @@ bool audioTagInfo::inititalize(int32 inMode)
 
     if ((nMode == BS_TCH_INTERNETDB) || (nMode == BS_TCH_CDTEXT_INTERNETDB) || (nMode == BS_TCH_INTERNETDB_CDTEXT))
     {
+        /*
         if (::TagsFromNetworkDialog(BS_READ_DEVICE, &m_NetworkHandle) != BS_SDK_ERROR_NO){
                 m_NetworkHandle = -1;
                 return false;
             }
+            */
     }
 
     return true;
@@ -123,19 +125,15 @@ int32 audioTagInfo::extractTextFromHandle(bool network, int32 handle,int32 nTrac
 
     if(res != BS_SDK_ERROR_NO)
     {
-        delete pBuf;
+        delete[] pBuf;
         return res;
     }
 
     pBuf[nLen-1] = _T('\0');
-#if defined (WIN32)
-      rText = QString::fromUtf16(pBuf);//QString::fromWCharArray(pBuf);
-#else
-      rText = QString::fromUtf8(pBuf);//QString::fromWCharArray(pBuf);
-#endif
 
+    rText = convertToQT(pBuf);
 
-    delete pBuf;
+    delete[] pBuf;
 
     return BS_SDK_ERROR_NO;
 }

@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -58,8 +58,37 @@ MdiChildDialog::MdiChildDialog(RuleManager::ProjectType projectType)
 
     createTreeWidget(projectType);
 
-    if(projectType==RuleManager::TYPE_PROJECT_EXPLORE){
-        fileExplorerSplitter->hide();
+    switch(projectType){
+        case RuleManager::TYPE_PROJECT_ISO:
+            setWindowIcon(QIcon(":/icons/datacd32.png"));
+        break;
+        case RuleManager::TYPE_PROJECT_ISOUDF:
+            setWindowIcon(QIcon(":/icons/dataudfiso32.png"));
+        break;
+        case RuleManager::TYPE_PROJECT_UDF:
+            setWindowIcon(QIcon(":/icons/dataudf32.png"));
+        break;
+        case RuleManager::TYPE_PROJECT_AUDIOCD:
+            setWindowIcon(QIcon(":/icons/audiocd32.png"));
+        break;
+        case RuleManager::TYPE_PROJECT_MIXEDMODE:
+            setWindowIcon(QIcon(":/icons/mixedmode32.png"));
+        break;
+        case RuleManager::TYPE_PROJECT_SUPERVIDEO:
+            setWindowIcon(QIcon(":/icons/svideocd32.png"));
+        break;
+        case RuleManager::TYPE_PROJECT_VIDEODVD:
+            setWindowIcon(QIcon(":/icons/videodvd32.png"));
+        break;
+        case RuleManager::TYPE_PROJECT_BLURAYVIDEO:
+            setWindowIcon(QIcon(":/icons/bluray32.png"));
+        break;
+        case RuleManager::RuleManager::TYPE_PROJECT_EXPLORE:
+            fileExplorerSplitter->hide();
+        break;
+        default:
+            setWindowIcon(QIcon(":/icons/datacd32.png"));
+    break;
     }
 
 }
@@ -659,11 +688,11 @@ QString MdiChildDialog::updateStatus() {
         qint64 nTotalTimeSeconds = treeWidget->getTotalTime();
         qint64 nDataSize = treeWidget->GetDataSize();
         qint64 nTotalDataSize = nDataSize + nTotalTimeSeconds*176400;
-        size_str = humanReadableSize(nTotalDataSize);
+        size_str = humanReadableSize(nTotalDataSize,nullptr);
 
         statusStr = tr("Project type: ") + project_str + tr(", ") + tr("Total size: ") + size_str
             + tr("\t/\t") + QString::number(treeWidget->GetDataItemCount()) + tr(" items")
-            + tr("\t/\t") + QDateTime::fromTime_t(nTotalTimeSeconds).toUTC().toString("hh:mm:ss");
+            + tr("\t/\t") + QDateTime::fromSecsSinceEpoch(nTotalTimeSeconds).toUTC().toString("hh:mm:ss");
     }else if(RuleManager::TYPE_PROJECT_EXPLORE == mProjectType){
         statusStr = buildExploreStatusBar(project_str);
     }else{
@@ -691,7 +720,7 @@ QString MdiChildDialog::buildExploreStatusBar(QString inProjectType)
 
 QString MdiChildDialog::buildCommonCD(QString inProjectType)
 {
-    QString size_str = humanReadableSize(treeWidget->GetDataSize());
+    QString size_str = humanReadableSize(treeWidget->GetDataSize(),nullptr);
     QString statusStr = tr("Project type: ") + inProjectType + tr(", ") + tr("Total size: ") + size_str
           + tr("\t/\t") + QString::number(treeWidget->GetDataItemCount()) + tr(" items");
 
@@ -710,10 +739,10 @@ QString MdiChildDialog::buildAudioCD(QString inProjectType)
 
     qint64 nDataSize = 0;
     qint64 nTotalDataSize = nDataSize + nTotalTimeSeconds*176400;
-    QString size_str = humanReadableSize(nTotalDataSize);
+    QString size_str = humanReadableSize(nTotalDataSize,nullptr);
 
     QString statusStr = tr("Project type: ") + inProjectType + tr(", ") + tr("Total size: ") + size_str
-          + tr("\t/\t") + QDateTime::fromTime_t(nTotalTimeSeconds).toUTC().toString("hh:mm:ss");
+          + tr("\t/\t") + QDateTime::fromSecsSinceEpoch(nTotalTimeSeconds).toUTC().toString("hh:mm:ss");
 
     return statusStr;
 
@@ -774,6 +803,7 @@ void MdiChildDialog::setCurrentFile(const QString &fileName, bool isFile)
         setWindowTitle(curFile + "[*]");
     }
     isUntitled = false;
+    treeWidget->resetModified();
     setWindowModified(false);
 }
 
@@ -798,4 +828,392 @@ void MdiChildDialog::triggerReset()
 {
     if (treeWidget != nullptr)
         treeWidget->ResetFiles();
+}
+
+void MdiChildDialog::setUIControls(Ribbon *baseRibbon, QWidget* parent)
+{
+    //Mal schauen ob der Cast arbeitet.
+    MainWindow *ribbonOwner = qobject_cast<MainWindow *>(parent);
+
+    ribbonOwner->simulateBurnGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_SIMULATE));
+    ribbonOwner->burnProofGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_BURNPROOF));
+    ribbonOwner->ejectAfterGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_EJECT));
+    ribbonOwner->finishDiscGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_FINALIZE));
+    ribbonOwner->verifyAfterGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_VERIFY));
+    ribbonOwner->autoEraseGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_AUTOERASE));
+    ribbonOwner->padDataGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_PADDATATRACKS));
+    ribbonOwner->avchdGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SPECIALS_AVCHD));
+    ribbonOwner->activeOPCGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_OPC));
+
+
+    ribbonOwner->imageMediaButton->setEnabled( false );
+    ribbonOwner->appSaveButton->setEnabled(true);
+    ribbonOwner->appSaveAsButton->setEnabled(true);
+
+    ribbonOwner->burnGeneralButton->setEnabled(true);
+
+    ribbonOwner->grabAudioMediaButton->setEnabled(false);
+
+    ribbonOwner->dataTrackEditButton->setEnabled(
+        !isDataTrackExist()
+        && GetProjectType() != RuleManager::TYPE_PROJECT_VIDEODVD
+        && GetProjectType() != RuleManager::TYPE_PROJECT_BLURAYVIDEO
+        );
+    ribbonOwner->audioTrackEditButton->setEnabled(
+        (GetProjectType() == RuleManager::TYPE_PROJECT_OPEN
+            || GetProjectType() == RuleManager::TYPE_PROJECT_MIXEDMODE
+            || GetProjectType() == RuleManager::TYPE_PROJECT_AUDIOCD));
+
+    ribbonOwner->addFileEditButton->setEnabled(
+        GetProjectType() != RuleManager::TYPE_PROJECT_EXPLORE
+        );
+
+    ribbonOwner->addFolderEditButton->setEnabled(
+                GetProjectType() != RuleManager::TYPE_PROJECT_EXPLORE
+        );
+
+    ribbonOwner->addFolderEditButton->setEnabled(GetProjectType() != RuleManager::TYPE_PROJECT_AUDIOCD);
+
+    bool hasSelection = hasSelectedTreeItem();
+
+    ribbonOwner->renameEditButton->setEnabled(hasSelection
+                          && GetProjectType() != RuleManager::TYPE_PROJECT_EXPLORE
+        );
+
+    ribbonOwner->allSelectEditButton->setEnabled(
+                GetProjectType() != RuleManager::TYPE_PROJECT_EXPLORE
+            );
+
+    ribbonOwner->inverseSelectEditButton->setEnabled(
+                GetProjectType() != RuleManager::TYPE_PROJECT_EXPLORE
+            );
+
+    ribbonOwner->delAllEditButton->setEnabled(true);
+
+    ribbonOwner->updtEditButton->setEnabled(true);
+
+    QDataItem *tempItem = nullptr;
+
+
+    if(GetProjectType() != RuleManager::TYPE_PROJECT_DISKINFO
+            && GetProjectType() != RuleManager::TYPE_PROJECT_DEVICEINFO)
+    {
+
+        tempItem = GetSelectedTreeItem();
+        if(tempItem){
+            if(tempItem->GetType()==QDataItem::Disk || tempItem->GetType()==QDataItem::Session || tempItem->GetType()==QDataItem::DataTrack){
+                ribbonOwner->delEditButton->setEnabled(false);
+                ribbonOwner->renameEditButton->setEnabled(false);
+            }else{
+                ribbonOwner->delEditButton->setEnabled(hasSelection);
+                ribbonOwner->renameEditButton->setEnabled(hasSelection);
+            }
+        }
+    }
+
+    ribbonOwner->viewBrowserButton->setEnabled(true);
+    if(GetProjectType() == RuleManager::TYPE_PROJECT_EXPLORE){
+        ribbonOwner->viewBrowserButton->setEnabled(false);
+    }
+
+    if(GetProjectType() == RuleManager::TYPE_PROJECT_AUDIOCD || GetProjectType() == RuleManager::TYPE_PROJECT_MIXEDMODE || GetProjectType() == RuleManager::TYPE_PROJECT_OPEN)
+    {
+        int nCounter = (isDataTrackExist()==true)?1:0;
+        int nChildCount = getTreeWidget()->getSessionItem()->childCount();
+
+        tempItem = GetSelectedTreeItem();
+
+        int index; // = activeMdiChild()->getTreeWidget()->getSessionItem()->indexOfChild(tempItem);
+
+        if(tempItem){
+            if(nChildCount > nCounter){
+                if(tempItem->GetType()==QDataItem::Disk || tempItem->GetType()==QDataItem::Session || tempItem->GetType()==QDataItem::DataTrack){
+                    //groupAudioOrder->setEnabled(false);
+                }else{
+                    //groupAudioOrder->setEnabled(true);
+                }
+            }else{
+                //groupAudioOrder->setEnabled(false);
+            }
+            //Why not show CDText dialog also if the audio item is selectd? It is also a track? Isn't it.
+            //(QDataItem*)(tempItem->parent())->GetType()
+            if(tempItem->GetType()==QDataItem::Disk || isAudioTrack()==true){
+                //actionCDText->setEnabled(true);
+            }else{
+                //actionCDText->setEnabled(false);
+            }
+            if(isAudioTrack()==true){
+                QTreeWidgetItem* parentItem = tempItem->parent();
+                if(parentItem){
+                    if(((QDataItem*)parentItem)->GetType()==QDataItem::AudioTrack){
+                        //actionAudioIndexies->setEnabled(true);
+                    }
+                }
+
+                if(tempItem->GetType()==QDataItem::AudioTrack){
+                    if(tempItem->childCount()==1){
+                        //actionCDText->setEnabled(true);
+                        //actionAudioIndexies->setEnabled(true);
+                    }else{
+                        //actionCDText->setEnabled(false);
+                        //actionAudioIndexies->setEnabled(false);
+                    }
+                }
+
+                if(tempItem->GetType()==QDataItem::AudioTrack){
+                    index = getTreeWidget()->getSessionItem()->indexOfChild(tempItem);
+                }else{
+                    QTreeWidgetItem* parentItem = tempItem->parent();
+                    index = getTreeWidget()->getSessionItem()->indexOfChild(parentItem);
+                }
+
+                if ((isDataTrackExist() && index == 1) || (!isDataTrackExist() && index == 0)) {
+                  //actionAudioUp->setEnabled(false);
+                } else {
+                  //actionAudioUp->setEnabled(true);
+                }
+                if (nChildCount-1 == index) {
+                  //actionAudioDown->setEnabled(false);
+                } else {
+                  //actionAudioDown->setEnabled(true);
+                }
+            }else{
+                //actionAudioIndexies->setEnabled(false);
+            }
+        }else{
+            //actionCDText->setEnabled(false);
+            //actionAudioIndexies->setEnabled(false);
+            //actionAudioDown->setEnabled(false);
+            //actionAudioUp->setEnabled(false);
+        }
+
+    }
+
+    QDiskItem *diskItem = (QDiskItem *)getTreeWidget()->topLevelItem(0);
+    //Wir fangen an die Sachen zu lesen.
+    if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SPECIALS_BootCD_DVD_BD)){
+        //Has Boot
+        if(diskItem->getDoBootDisk()==true){
+            baseRibbon->disableButtonGroup(tr("Boot Disc"), tr("El-Torito"), true);
+            ribbonOwner->delBootImageButton->setEnabled(true);
+        }else{
+            baseRibbon->disableButtonGroup(tr("Boot Disc"), tr("El-Torito"), false);
+            ribbonOwner->delBootImageButton->setEnabled(false);
+        }
+
+        ribbonOwner->imagePathBootEdit->setText(diskItem->getBootDiskFile());
+        ribbonOwner->emulationTypeBootCombo->setCurrentIndex(diskItem->getBootEmulationType());
+        ribbonOwner->platformBootCombo->setCurrentIndex(diskItem->getBootPlatformID());
+        ribbonOwner->developerIDBootEdit->setText(diskItem->getBootDeveloperID());
+        ribbonOwner->sectorsBootEdit->setText(diskItem->getBootSectors());
+        ribbonOwner->bootISOLevelCombo->setCurrentIndex(diskItem->getISOFsType());
+        ribbonOwner->loadSegmentBootEdit->setText(diskItem->getBootLoadSegment());
+    }
+
+
+    if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SPECIALS_ISOEXTINFO)){
+        ribbonOwner->edIsoExSystemIdValue->setText(diskItem->getSystemId());
+        ribbonOwner->edIsoExVolumeSetValue->setText(diskItem->getVolumeSet());
+        ribbonOwner->edIsoExPublisherValue->setText(diskItem->getPublisher());
+        ribbonOwner->edIsoExDataPreparerValue->setText(diskItem->getDatapreparer());
+        ribbonOwner->edIsoExApplicationValue->setText(diskItem->getApplication());
+        ribbonOwner->edIsoExCopyrightFileValue->setText(diskItem->getCoprightFile());
+        ribbonOwner->edIsoExAbstractFileValue->setText(diskItem->getAbstractFile());
+        ribbonOwner->edIsoExBibliographicFileValue->setText(diskItem->getBibliographicFile());
+    }
+
+
+    if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMS_UDF))
+    {
+        baseRibbon->disableButtonGroup(tr("File System"), tr("UDF"), true);
+        ribbonOwner->udfVersionFSCombo->clear();
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMS_UDF102)) ribbonOwner->udfVersionFSCombo->addItem(tr("UDF 1.02"));
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMS_UDF15)) ribbonOwner->udfVersionFSCombo->addItem(tr("UDF 1.5"));
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMS_UDF20)) ribbonOwner->udfVersionFSCombo->addItem(tr("UDF 2.0"));
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMS_UDF201)) ribbonOwner->udfVersionFSCombo->addItem(tr("UDF 2.01"));
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMS_UDF25)) ribbonOwner->udfVersionFSCombo->addItem(tr("UDF 2.5"));
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMS_UDF26)) ribbonOwner->udfVersionFSCombo->addItem(tr("UDF 2.6"));
+
+        ribbonOwner->udfPartitionFSCombo->clear();
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_UDF_PARTITION))
+        {
+            ribbonOwner->udfPartitionFSCombo->setEnabled(true);
+            ribbonOwner->udfPartitionFSCombo->addItem(tr("Physical"));
+            ribbonOwner->udfPartitionFSCombo->addItem(tr("Virtual"));
+            ribbonOwner->udfPartitionFSCombo->addItem(tr("Sparable"));
+        }else{
+            ribbonOwner->udfPartitionFSCombo->setEnabled(false);
+        }
+
+        ribbonOwner->udfFileStreamFSCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_UDF_WRITE_FILE_STREAM));
+
+    }else{
+        baseRibbon->disableButtonGroup(tr("File System"), tr("UDF"), false);
+    }
+
+
+    if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMS_ISO9660))
+    {
+        baseRibbon->disableButtonGroup(tr("File System"), tr("ISO9660"), true);
+
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SPECIALS_BootCD_DVD_BD)){
+            ribbonOwner->bootISOLevelCombo->clear();
+            if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ISOLEVEL1)) ribbonOwner->bootISOLevelCombo->addItem(tr("ISO Level 1"),BS_ISO_LEVEL_1);
+            if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ISOLEVEL2)) ribbonOwner->bootISOLevelCombo->addItem(tr("ISO Level 2"),BS_ISO_LEVEL_2);
+            if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ISOLEVEL3)) ribbonOwner->bootISOLevelCombo->addItem(tr("ISO Level 3"),BS_ISO_LEVEL_3);
+            if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ROMEO)) ribbonOwner->bootISOLevelCombo->addItem(tr("Romeo"),BS_ISO_LEVEL_ROMEO);
+
+        }
+
+        ribbonOwner->isoLevelFSCombo->clear();
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ISOLEVEL1)) ribbonOwner->isoLevelFSCombo->addItem(tr("ISO Level 1"),BS_ISO_LEVEL_1);
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ISOLEVEL2)) ribbonOwner->isoLevelFSCombo->addItem(tr("ISO Level 2"),BS_ISO_LEVEL_2);
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ISOLEVEL3)) ribbonOwner->isoLevelFSCombo->addItem(tr("ISO Level 3"),BS_ISO_LEVEL_3);
+        if(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ROMEO)) ribbonOwner->isoLevelFSCombo->addItem(tr("Romeo"),BS_ISO_LEVEL_ROMEO);
+
+        ribbonOwner->isoLongFileNamesFSCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ALLOW_LONGISO_FILENAMES));
+        ribbonOwner->isoManyDirectoriesFSCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ALLOW_MANY_DIRECTORIES));
+        ribbonOwner->useJolietFSCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMS_JOLIET));
+        ribbonOwner->useRockRidgeFSCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_FILESYSTEMEXT_ROCK_RIDGE));
+    } else{
+
+        baseRibbon->disableButtonGroup(tr("File System"), tr("ISO9660"), false);
+    }
+
+    ribbonOwner->isoLevelFSCombo->setCurrentIndex(diskItem->getISOFsType());
+    ribbonOwner->bootISOLevelCombo->setCurrentIndex(diskItem->getISOFsType());
+
+    ribbonOwner->useJolietFSCheck->setChecked(diskItem->getUseJoliet());
+    ribbonOwner->useRockRidgeFSCheck->setChecked(diskItem->getUseRockRidge());
+    ribbonOwner->isoManyDirectoriesFSCheck->setChecked(diskItem->getAllowManyDirectories());
+    ribbonOwner->isoLongFileNamesFSCheck->setChecked(diskItem->getAllowLongFileNames());
+    ribbonOwner->jolietLongNamesFSCheck->setChecked(diskItem->getAllowLongJolietFileNames());
+    ribbonOwner->udfVersionFSCombo->setCurrentIndex(diskItem->getUDFType());
+    ribbonOwner->udfPartitionFSCombo->setCurrentIndex(diskItem->getUDFPartition());
+    ribbonOwner->udfFileStreamFSCheck->setChecked(diskItem->getUDFWriteStream());
+    ribbonOwner->isoExtent1FSCheck->setChecked(diskItem->getNotWriteISO1Extension());
+
+    ribbonOwner->simulateBurnGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_SIMULATE));
+    ribbonOwner->simulateBurnGeneralCheck->setChecked(diskItem->getFeatureSimulate());
+    ribbonOwner->activeOPCGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_OPC));
+    ribbonOwner->activeOPCGeneralCheck->setChecked(diskItem->getFeatureOPC());
+    ribbonOwner->finishDiscGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_FINALIZE));
+    ribbonOwner->finishDiscGeneralCheck->setChecked(diskItem->getFeatureFinishDisk());
+    ribbonOwner->padDataGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_PADDATATRACKS));
+    ribbonOwner->padDataGeneralCheck->setChecked(diskItem->getFeaturePadDataTrack());
+    ribbonOwner->avchdGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SPECIALS_AVCHD));
+    ribbonOwner->avchdGeneralCheck->setChecked(diskItem->getFeatureAVCHD());
+    ribbonOwner->verifyAfterGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_VERIFY));
+    ribbonOwner->verifyAfterGeneralCheck->setChecked(diskItem->getFeatureVerify());
+
+    //Always allowed
+    ribbonOwner->ejectAfterGeneralCheck->setChecked(diskItem->getFeatureEject());
+    ribbonOwner->burnProofGeneralCheck->setChecked(diskItem->getFeatureBurnProof());
+    ribbonOwner->autoEraseGeneralCheck->setChecked(diskItem->getFeatureAutoErase());
+
+    ribbonOwner->createFolderEditButton->setEnabled(true);
+    if(GetProjectType() == RuleManager::TYPE_PROJECT_AUDIOCD){
+        ribbonOwner->addFolderEditButton->setEnabled(false);
+        ribbonOwner->createFolderEditButton->setEnabled(false);
+        ribbonOwner->dataTrackEditButton->setEnabled(false);
+        ribbonOwner->renameEditButton->setEnabled(false);
+    }
+
+    tempItem = GetSelectedTreeItem();
+    if(tempItem){
+        if(tempItem->GetType()==QDataItem::Disk || tempItem->GetType()==QDataItem::Session || tempItem->GetType()==QDataItem::AudioTrack){
+            //Kein Folder, Kein File, Kein Track
+            ribbonOwner->createFolderEditButton->setEnabled(false);
+            ribbonOwner->addFolderEditButton->setEnabled(false);
+            ribbonOwner->addFileEditButton->setEnabled(false);
+
+            if(tempItem->GetType()!=QDataItem::AudioTrack){
+                ribbonOwner->createFolderEditButton->setEnabled(false);
+                ribbonOwner->delEditButton->setEnabled(false);
+            }
+
+        }
+    }
+
+}
+
+bool MdiChildDialog::isAudioTrack()
+{
+
+    QDataItem *tempItem = GetSelectedTreeItem();
+
+    if(tempItem){
+
+        if(tempItem->GetType()==QDataItem::Session || tempItem->GetType()==QDataItem::Disk || tempItem->GetType()==QDataItem::DataTrack)
+        return false;
+
+        QTreeWidgetItem* parentItem = tempItem->parent();
+        if(tempItem->GetType()==QDataItem::AudioTrack || ((QDataItem*)parentItem)->GetType()==QDataItem::AudioTrack)
+        return true;
+
+    }
+
+    return false;
+}
+
+//SetBurnDevice List ist in den pDevice Projekten dann das ReadDevice.
+void MdiChildDialog::setBurnDeviceList(QWidget* parent)
+{
+    MainWindow *ribbonOwner = qobject_cast<MainWindow *>(parent);
+    QDiskItem *diskItem = nullptr;
+    diskItem = static_cast<QDiskItem *>(getTreeWidget()->topLevelItem(0));
+
+    for(int i = 0; i < ribbonOwner->listBurnDevicesWidget->count(); ++i)
+    {
+        if(ribbonOwner->listBurnDevicesWidget->itemText(i) == diskItem->getBurnDevice()){
+            ribbonOwner->listBurnDevicesWidget->setCurrentIndex(i);
+        }
+    }
+}
+
+void MdiChildDialog::setRibbonTabs(Ribbon *baseRibbon, QWidget* parent)
+{
+    baseRibbon->blockSignals(true);
+    QString lastTab = getlastSelectedTab();
+    switch(GetProjectType()){
+    case RuleManager::TYPE_PROJECT_ISO:
+        qDebug() << "ISO";
+        baseRibbon->hideAll();
+        baseRibbon->showTab(":/icons/filesystem32.png", tr("File System"));
+        baseRibbon->showTab(":/icons/extiso32.png", tr("ISO Extended"));
+        baseRibbon->showTab(":/icons/boot32.png", tr("Boot Disc"));
+        if(baseRibbon->isTabVisible(lastTab)){
+            baseRibbon->currentTab(lastTab);
+        }else{
+            baseRibbon->currentTab("General");
+        }
+        break;
+    case RuleManager::TYPE_PROJECT_UDF:
+        baseRibbon->hideAll();
+        baseRibbon->showTab(":/icons/filesystem32.png", tr("File System"));
+        if(baseRibbon->isTabVisible(lastTab)){
+            baseRibbon->currentTab(lastTab);
+        }else{
+            baseRibbon->currentTab("General");
+        }
+        break;
+    case RuleManager::TYPE_PROJECT_ISOUDF:
+        baseRibbon->hideAll();
+        baseRibbon->showTab(":/icons/filesystem32.png", tr("File System"));
+        baseRibbon->showTab(":/icons/extiso32.png", tr("ISO Extended"));
+        baseRibbon->showTab(":/icons/boot32.png", tr("Boot Disc"));
+        if(baseRibbon->isTabVisible(lastTab)){
+            baseRibbon->currentTab(lastTab);
+        }else{
+            baseRibbon->currentTab("General");
+        }
+        break;
+    }
+
+    if(parent!=nullptr){
+        setUIControls(baseRibbon, parent);
+        setBurnDeviceList(parent);
+    }
+
+    baseRibbon->blockSignals(false);
 }

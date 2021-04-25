@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -22,7 +22,7 @@
 #include <QMessageBox>
 
 
-bool showDiskbutlerMessage(int32 nError, QWidget* parent){
+bool showDiskbutlerMessage(int32 nError, QWidget*){
 
     if (nError != BS_SDK_ERROR_NO){
 
@@ -32,14 +32,10 @@ bool showDiskbutlerMessage(int32 nError, QWidget* parent){
         ::GetText(nError,chError, &nLength);
 
         QString errDesc;
-#if defined (WIN32)
-        errDesc= QString::fromUtf16(chError);
-#else
-        errDesc= QString::fromUtf8(chError);
-#endif
+        errDesc= convertToQT(chError);
 
-        QMessageBox::information(getMainWindow(),  QWidget::tr("Diskbutler Error"),
-                                  errDesc);
+        //QMessageBox::information(getMainWindow(),  QWidget::tr("Diskbutler Error"),
+         //                        errDesc);
         return false;
     }
 

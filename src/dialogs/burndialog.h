@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -27,19 +27,45 @@
 #include "mdichild_dialog.h"
 #include <QThread>
 
+#define DB_JOB_BURN         3
+#define DB_JOB_ERASE        4
+#define DB_JOB_IMAGECREATE  5
+#define DB_JOB_BURNIMAGE    6
+
+
+struct DBJobCommands
+{
+    QString burnDevice = "";
+    bool eraseFast = false;
+    bool ejectErase = false;
+
+    //options
+    QString imagePath = "";
+    bool bUnderrunProtection = false;
+    bool bEjectAfterBurn = false;
+    bool bAutoErase = false;
+    bool bFinalize = false;
+    bool bTestBurn = false;
+    bool bPadDataTracks = false;
+    bool bVerifyAfterBurn = false;
+    bool bPerformOPC = false;
+
+
+};
+
 
 
 class ContentThread : public QThread
 {
-  Q_OBJECT
+    Q_OBJECT
 public:
-  ContentThread(CommonTreeWidget *contentOwner) {myTree = contentOwner;}
+    ContentThread(CommonTreeWidget *contentOwner) {myTree = contentOwner;}
 signals:
-  void tContentDone();
-  void tHandleError(int32);
+    void tContentDone();
+    void tHandleError(int32);
 protected:
-  void run();
-  CommonTreeWidget *myTree;
+    void run();
+    CommonTreeWidget *myTree;
 };
 
 namespace Ui {
@@ -59,8 +85,12 @@ class burnDialog : public QDialog
     };
 
 public:
-    explicit burnDialog(int sdkJobType, CommonTreeWidget *contentOwner, MdiChildDiskInfo *contentSource = NULL, QString imagePath = tr(""), MdiChildDialog *sourceDialog = NULL, QWidget *parent = 0);
+    explicit burnDialog(int sdkJobType, CommonTreeWidget *contentOwner, MdiChildDiskInfo *contentSource = nullptr, QString imagePath = tr(""), MdiChildDialog *sourceDialog = nullptr, QWidget *parent = nullptr);
     explicit burnDialog(int sdkJobType, CommonTreeWidget *contentOwner, QString imagePath, MdiChildDialog *sourceDialog, SAudioGrabbingParams *xParams, QWidget *parent = 0);
+
+    explicit burnDialog(int sdkJobType, DBJobCommands *jobCommands, QWidget *parent);
+    explicit burnDialog(int sdkJobType, DBJobCommands *jobCommands, CommonTreeWidget *contentOwner, QWidget *parent = nullptr);
+    explicit burnDialog(int sdkJobType, QString imagePath = tr(""), MdiChildDiskInfo *sourceDialog = nullptr, QWidget *parent = nullptr);
     ~burnDialog();
     //int progPercent;
     //int progBuffer;
@@ -92,28 +122,27 @@ private slots:
     void myActionAfterBurn(QString msg, bool isError);
     void on_saveLog_clicked();
     void on_cancel_clicked();
-    void step1Project();
-    void step2Project();
+    void startBurnProject(QString burnDrive);
+    void createImageJob();
     void step3Project();
-    void step4Project();
-    void step5Project();
+    void burnDiskImage();
     void step6Project();
-    void step7Project();
-    void step8Project();
+    void extractAudioTrack();
     void step9Project();
     void onContentDone();
 
 
     void on_testmenu_clicked();
-
+public slots:
+    void onHandleError(int32 res);
 private:
     Ui::burnDialog *ui;
     CommonTreeWidget *projectTree;
     SAudioGrabbingParams *projectParams;
     QDiskItem *diskItem;
     void addLogItem(QString strText, int logLevel);
-    void onHandleError(int32 res);
-    void buildCommonDialog(int sdkJobType);
+
+    void buildCommonDialog();
     MdiChildDiskInfo *jobSource;
     MdiChildDialog *dlgSource;
 
@@ -125,6 +154,7 @@ private:
     QAction *myStartBurnCommand;
     ContentThread *mContentThread;
     int m_enState;
+    DBJobCommands *controlParams;
 
 
     //QStringListModel *logModel;

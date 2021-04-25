@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -27,132 +27,132 @@
 #include "qmediumitem.h"
 
 ZPropertyDialogFoxFile::ZPropertyDialogFoxFile(QWidget *parent, QDataItem *qItem) :
-  QDialog(parent),
-  ui(new Ui::ZPropertyDialogFoxFile)
+    QDialog(parent),
+    ui(new Ui::ZPropertyDialogFoxFile)
 {
-  ui->setupUi(this);
+    ui->setupUi(this);
 
-  mItem = qItem;
+    mItem = qItem;
 
-  if(mItem->GetType() != QDataItem::AudioTrack){
+    if(mItem->GetType() != QDataItem::AudioTrack){
 
-      QDataItem *parent_item = dynamic_cast<QDataItem*>(qItem->parent());
-      QDataItem *current_item = qItem;
+        QDataItem *parent_item = dynamic_cast<QDataItem*>(qItem->parent());
+        QDataItem *current_item = qItem;
 
-      while (parent_item != NULL && QDataItem::DataTrack != parent_item->GetType()) {
-        current_item = parent_item;
-        parent_item = dynamic_cast<QDataItem*>(parent_item->parent());
-      }
+        while (parent_item != NULL && QDataItem::DataTrack != parent_item->GetType()) {
+            current_item = parent_item;
+            parent_item = dynamic_cast<QDataItem*>(parent_item->parent());
+        }
 
 
-      if(parent_item != NULL){
-          if (QDataItem::DataTrack == parent_item->GetType()) {
-            QTrackItem *track = dynamic_cast<QTrackItem*>(parent_item);
-            STrackInfo info = track->GetTrackInfo();
+        if(parent_item != NULL){
+            if (QDataItem::DataTrack == parent_item->GetType()) {
+                QTrackItem *track = dynamic_cast<QTrackItem*>(parent_item);
+                STrackInfo info = track->GetTrackInfo();
 
-            //ui->label_tracknumber->setText(QString("%1").arg(info.nTrackNumber));
-            if (info.nFormat != BS_TF_AUDIO) {
-              // data track
-              QFileSysItem *fs = dynamic_cast<QFileSysItem*>(current_item);
-              //ui->label_fstype->setText(fs->GetFSTypeStr());
+                //ui->label_tracknumber->setText(QString("%1").arg(info.nTrackNumber));
+                if (info.nFormat != BS_TF_AUDIO) {
+                    // data track
+                    //QFileSysItem *fs = dynamic_cast<QFileSysItem*>(current_item);
+                    //ui->label_fstype->setText(fs->GetFSTypeStr());
+                }
             }
-          }
-      }
+        }
 
-  }
+    }
 
 
-  mInfoModel = new ZInfoTableModel(this);
-  ui->infoView->setModel(mInfoModel);
-  ui->infoView->setSortingEnabled(false);
-  ui->infoView->setSelectionBehavior(QAbstractItemView::SelectRows);
-  ui->infoView->horizontalHeader()->setDefaultSectionSize(120);
-  ui->infoView->horizontalHeader()->setStretchLastSection(true);
-  ui->infoView->verticalHeader()->hide();
-  ui->infoView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  ui->infoView->setSelectionMode(QAbstractItemView::SingleSelection);
-  ui->infoView->verticalHeader()->setDefaultSectionSize(21);
+    mInfoModel = new ZInfoTableModel(this);
+    ui->infoView->setModel(mInfoModel);
+    ui->infoView->setSortingEnabled(false);
+    ui->infoView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->infoView->horizontalHeader()->setDefaultSectionSize(120);
+    ui->infoView->horizontalHeader()->setStretchLastSection(true);
+    ui->infoView->verticalHeader()->hide();
+    ui->infoView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->infoView->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->infoView->verticalHeader()->setDefaultSectionSize(21);
 
-  if(mItem->GetType()!=QDataItem::File){
-      ui->groupBoxTable->setVisible(false);
-      ui->tableView->setVisible(false);
-      ui->infoView->resize(ui->infoView->width(),341);
-      ui->groupBoxGeneral->resize(ui->groupBoxGeneral->width(),371);
-  }
+    if(mItem->GetType()!=QDataItem::File){
+        ui->groupBoxTable->setVisible(false);
+        ui->tableView->setVisible(false);
+        ui->infoView->resize(ui->infoView->width(),341);
+        ui->groupBoxGeneral->resize(ui->groupBoxGeneral->width(),371);
+    }
 
-  if(mItem->GetType()==QDataItem::File){
-     fillFiles();
-  }else if(mItem->GetType()==QDataItem::Folder){
-      if(mItem->isISOFileSystem()==true){
-        fillISO();
-      }else if(mItem->isUDFFileSystem()==true){
-        fillUDF();
-      }else{
-        fillFolders();
-      }
-     return;
-  }else if(mItem->GetType()==QDataItem::Disk){
-      fillDisk();
-      return;
-  }else if(mItem->GetType()==QDataItem::Session){
-      fillSession();
-      return;
-  }else if(mItem->GetType()==QDataItem::DataTrack){
-      fillTrack();
-      return;
-  }else if(mItem->GetType()==QDataItem::AudioTrack){
-      fillAudioTrack();
-      return;
-  }
+    if(mItem->GetType()==QDataItem::File){
+        fillFiles();
+    }else if(mItem->GetType()==QDataItem::Folder){
+        if(mItem->isISOFileSystem()==true){
+            fillISO();
+        }else if(mItem->isUDFFileSystem()==true){
+            fillUDF();
+        }else{
+            fillFolders();
+        }
+        return;
+    }else if(mItem->GetType()==QDataItem::Disk){
+        fillDisk();
+        return;
+    }else if(mItem->GetType()==QDataItem::Session){
+        fillSession();
+        return;
+    }else if(mItem->GetType()==QDataItem::DataTrack){
+        fillTrack();
+        return;
+    }else if(mItem->GetType()==QDataItem::AudioTrack){
+        fillAudioTrack();
+        return;
+    }
 
-  mTableModel = new ZAllocationTableModel(this);
-  ui->tableView->setModel(mTableModel);
-  ui->tableView->setSortingEnabled(true);
-  ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
-  ui->tableView->horizontalHeader()->setDefaultSectionSize(120);
-  ui->tableView->horizontalHeader()->setStretchLastSection(true);
-  ui->tableView->verticalHeader()->hide();
-  ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
-  ui->tableView->setSelectionMode(QAbstractItemView::SingleSelection);
+    mTableModel = new ZAllocationTableModel(this);
+    ui->tableView->setModel(mTableModel);
+    ui->tableView->setSortingEnabled(true);
+    ui->tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableView->horizontalHeader()->setDefaultSectionSize(120);
+    ui->tableView->horizontalHeader()->setStretchLastSection(true);
+    ui->tableView->verticalHeader()->hide();
+    ui->tableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->tableView->setSelectionMode(QAbstractItemView::SingleSelection);
 
-  for (uint i = 0; i < mItem->GetExtentLocation()->size(); i++) {
-    addEntry(QString("%1").arg(mItem->GetExtentLocation()->at(i)), QString("%1").arg(mItem->GetExtentLength()->at(i)));
-  }
+    for (uint i = 0; i < mItem->GetExtentLocation()->size(); i++) {
+        addEntry(QString("%1").arg(mItem->GetExtentLocation()->at(i)), QString("%1").arg(mItem->GetExtentLength()->at(i)));
+    }
 }
 
 ZPropertyDialogFoxFile::~ZPropertyDialogFoxFile()
 {
-  delete ui;
+    delete ui;
 }
 
 void ZPropertyDialogFoxFile::addEntryInfo(QString location, QString length)
 {
-  QList<QPair<QString, QString> >list = mInfoModel->getList();
-  QPair<QString, QString> pair(location, length);
+    QList<QPair<QString, QString> >list = mInfoModel->getList();
+    QPair<QString, QString> pair(location, length);
 
-  if (!list.contains(pair)) {
-    mInfoModel->insertRows(0, 1, QModelIndex());
+    if (!list.contains(pair)) {
+        mInfoModel->insertRows(0, 1, QModelIndex());
 
-    QModelIndex index = mInfoModel->index(0, 0, QModelIndex());
-    mInfoModel->setData(index, location, Qt::EditRole);
-    index = mInfoModel->index(0, 1, QModelIndex());
-    mInfoModel->setData(index, length, Qt::EditRole);
-  }
+        QModelIndex index = mInfoModel->index(0, 0, QModelIndex());
+        mInfoModel->setData(index, location, Qt::EditRole);
+        index = mInfoModel->index(0, 1, QModelIndex());
+        mInfoModel->setData(index, length, Qt::EditRole);
+    }
 }
 
 void ZPropertyDialogFoxFile::addEntry(QString location, QString length)
 {
-  QList<QPair<QString, QString> >list = mTableModel->getList();
-  QPair<QString, QString> pair(location, length);
+    QList<QPair<QString, QString> >list = mTableModel->getList();
+    QPair<QString, QString> pair(location, length);
 
-  if (!list.contains(pair)) {
-    mTableModel->insertRows(0, 1, QModelIndex());
+    if (!list.contains(pair)) {
+        mTableModel->insertRows(0, 1, QModelIndex());
 
-    QModelIndex index = mTableModel->index(0, 0, QModelIndex());
-    mTableModel->setData(index, location, Qt::EditRole);
-    index = mTableModel->index(0, 1, QModelIndex());
-    mTableModel->setData(index, length, Qt::EditRole);
-  }
+        QModelIndex index = mTableModel->index(0, 0, QModelIndex());
+        mTableModel->setData(index, location, Qt::EditRole);
+        index = mTableModel->index(0, 1, QModelIndex());
+        mTableModel->setData(index, length, Qt::EditRole);
+    }
 }
 
 void ZPropertyDialogFoxFile::fillFiles()
@@ -160,7 +160,7 @@ void ZPropertyDialogFoxFile::fillFiles()
     //ui->tableWidget
     addEntryInfo(tr("Modified Date:"), mItem->GetDateModified().toString());
     addEntryInfo(tr("Create Date:"), mItem->GetDateCreated().toString());
-    addEntryInfo(tr("Attributes:"), mItem->createAttributeString());    
+    addEntryInfo(tr("Attributes:"), mItem->createAttributeString());
     addEntryInfo(tr("Path:"), mItem->getPath());
     addEntryInfo(tr("Size(Blocks):"), humanReadableSector(mItem->GetDataSize()));
     addEntryInfo(tr("Size(Bytes):"), QString::number(mItem->GetDataSize()));
@@ -175,7 +175,7 @@ void ZPropertyDialogFoxFile::fillFolders()
     //ui->tableWidget
     addEntryInfo(tr("Modified Date:"), mItem->GetDateModified().toString());
     addEntryInfo(tr("Create Date:"), mItem->GetDateCreated().toString());
-    addEntryInfo(tr("Attributes:"), mItem->createAttributeString());    
+    addEntryInfo(tr("Attributes:"), mItem->createAttributeString());
     addEntryInfo(tr("Path:"), mItem->getPath());
     addEntryInfo(tr("Folder count:"), QString::number(mItem->GetDataNodeCount()));
     addEntryInfo(tr("File count:"), QString::number(mItem->GetDataItemCount()));
@@ -240,59 +240,46 @@ void ZPropertyDialogFoxFile::fillISO()
     SISOVolumeInfo info = ISONode->GetISOInfo();
 
     QString strEffectiveTime = QString("%1.%2.%3 %4:%5:%6").arg(QString::number(info.sInfoEx.ISOEffectiveDateTime.nDay),
-                                                      QString::number(info.sInfoEx.ISOEffectiveDateTime.nMonth),
-                                                      QString::number(info.sInfoEx.ISOEffectiveDateTime.nYear+1900),
-                                                      QString::number(info.sInfoEx.ISOEffectiveDateTime.nHour),
-                                                      QString::number(info.sInfoEx.ISOEffectiveDateTime.nMinute),
-                                                      QString::number(info.sInfoEx.ISOEffectiveDateTime.nSecond));
+                                                                QString::number(info.sInfoEx.ISOEffectiveDateTime.nMonth),
+                                                                QString::number(info.sInfoEx.ISOEffectiveDateTime.nYear+1900),
+                                                                QString::number(info.sInfoEx.ISOEffectiveDateTime.nHour),
+                                                                QString::number(info.sInfoEx.ISOEffectiveDateTime.nMinute),
+                                                                QString::number(info.sInfoEx.ISOEffectiveDateTime.nSecond));
 
     QString strCreationTime = QString("%1.%2.%3 %4:%5:%6").arg(QString::number(info.sInfoEx.ISOCreationDateTime.nDay),
-                                                      QString::number(info.sInfoEx.ISOCreationDateTime.nMonth),
-                                                      QString::number(info.sInfoEx.ISOCreationDateTime.nYear+1900),
-                                                      QString::number(info.sInfoEx.ISOCreationDateTime.nHour),
-                                                      QString::number(info.sInfoEx.ISOCreationDateTime.nMinute),
-                                                      QString::number(info.sInfoEx.ISOCreationDateTime.nSecond));
+                                                               QString::number(info.sInfoEx.ISOCreationDateTime.nMonth),
+                                                               QString::number(info.sInfoEx.ISOCreationDateTime.nYear+1900),
+                                                               QString::number(info.sInfoEx.ISOCreationDateTime.nHour),
+                                                               QString::number(info.sInfoEx.ISOCreationDateTime.nMinute),
+                                                               QString::number(info.sInfoEx.ISOCreationDateTime.nSecond));
 
     QString strModificationTime = QString("%1.%2.%3 %4:%5:%6").arg(QString::number(info.sInfoEx.ISOModificationDateTime.nDay),
-                                                      QString::number(info.sInfoEx.ISOModificationDateTime.nMonth),
-                                                      QString::number(info.sInfoEx.ISOModificationDateTime.nYear+1900),
-                                                      QString::number(info.sInfoEx.ISOModificationDateTime.nHour),
-                                                      QString::number(info.sInfoEx.ISOModificationDateTime.nMinute),
-                                                      QString::number(info.sInfoEx.ISOModificationDateTime.nSecond));
+                                                                   QString::number(info.sInfoEx.ISOModificationDateTime.nMonth),
+                                                                   QString::number(info.sInfoEx.ISOModificationDateTime.nYear+1900),
+                                                                   QString::number(info.sInfoEx.ISOModificationDateTime.nHour),
+                                                                   QString::number(info.sInfoEx.ISOModificationDateTime.nMinute),
+                                                                   QString::number(info.sInfoEx.ISOModificationDateTime.nSecond));
 
     QString strExpirationTime = QString("%1.%2.%3 %4:%5:%6").arg(QString::number(info.sInfoEx.ISOExpirationDateTime.nDay),
-                                                      QString::number(info.sInfoEx.ISOExpirationDateTime.nMonth),
-                                                      QString::number(info.sInfoEx.ISOExpirationDateTime.nYear+1900),
-                                                      QString::number(info.sInfoEx.ISOExpirationDateTime.nHour),
-                                                      QString::number(info.sInfoEx.ISOExpirationDateTime.nMinute),
-                                                      QString::number(info.sInfoEx.ISOExpirationDateTime.nSecond));
+                                                                 QString::number(info.sInfoEx.ISOExpirationDateTime.nMonth),
+                                                                 QString::number(info.sInfoEx.ISOExpirationDateTime.nYear+1900),
+                                                                 QString::number(info.sInfoEx.ISOExpirationDateTime.nHour),
+                                                                 QString::number(info.sInfoEx.ISOExpirationDateTime.nMinute),
+                                                                 QString::number(info.sInfoEx.ISOExpirationDateTime.nSecond));
 
     addEntryInfo(tr("Effective Time:"), strEffectiveTime);
     addEntryInfo(tr("Expiration Time:"), strExpirationTime);
     addEntryInfo(tr("Modification Time:"), strModificationTime);
     addEntryInfo(tr("Creation Time:"), strCreationTime);
 
-#if defined (WIN32)
-    addEntryInfo(tr("System Identifier:"), QString::fromUtf16((const ushort*)info.sInfoEx.ISOSystemIdentifier));
-    addEntryInfo(tr("Volume Set Identifier:"), QString::fromUtf16((const ushort*)info.sInfoEx.ISOSetIdentifier));
-    addEntryInfo(tr("Publisher Identifier:"), QString::fromUtf16((const ushort*)info.sInfoEx.ISOPublisherIdentifier));
-    addEntryInfo(tr("Data Preparer Identifier:"), QString::fromUtf16((const ushort*)info.sInfoEx.ISODataPreparerIdentifier));
-    addEntryInfo(tr("Copyright Identifier:"), QString::fromUtf16((const ushort*)info.sInfoEx.ISOCopyrightFileIdentifier));
-    addEntryInfo(tr("Biblio Identifier:"), QString::fromUtf16((const ushort*)info.sInfoEx.ISOBiblioIdentifier));
-    addEntryInfo(tr("Application Identifier:"), QString::fromUtf16((const ushort*)info.sInfoEx.ISOApplicationIdentifier));
-    addEntryInfo(tr("Abstract Identifier:"), QString::fromUtf16((const ushort*)info.sInfoEx.ISOAbstractFileIdentifier));
-#else
-    addEntryInfo(tr("System Identifier:"), QString::fromUtf8(info.sInfoEx.ISOSystemIdentifier));
-    addEntryInfo(tr("Volume Set Identifier:"), QString::fromUtf8(info.sInfoEx.ISOSetIdentifier));
-    addEntryInfo(tr("Publisher Identifier:"), QString::fromUtf8(info.sInfoEx.ISOPublisherIdentifier));
-    addEntryInfo(tr("Data Preparer Identifier:"), QString::fromUtf8(info.sInfoEx.ISODataPreparerIdentifier));
-    addEntryInfo(tr("Copyright Identifier:"), QString::fromUtf8(info.sInfoEx.ISOCopyrightFileIdentifier));
-    addEntryInfo(tr("Biblio Identifier:"), QString::fromUtf8(info.sInfoEx.ISOBiblioIdentifier));
-    addEntryInfo(tr("Application Identifier:"), QString::fromUtf8(info.sInfoEx.ISOApplicationIdentifier));
-    addEntryInfo(tr("Abstract Identifier:"), QString::fromUtf8(info.sInfoEx.ISOAbstractFileIdentifier));
-#endif
-
-
+    addEntryInfo(tr("System Identifier:"), convertToQT(info.sInfoEx.ISOSystemIdentifier));
+    addEntryInfo(tr("Volume Set Identifier:"), convertToQT(info.sInfoEx.ISOSetIdentifier));
+    addEntryInfo(tr("Publisher Identifier:"), convertToQT(info.sInfoEx.ISOPublisherIdentifier));
+    addEntryInfo(tr("Data Preparer Identifier:"), convertToQT(info.sInfoEx.ISODataPreparerIdentifier));
+    addEntryInfo(tr("Copyright Identifier:"), convertToQT(info.sInfoEx.ISOCopyrightFileIdentifier));
+    addEntryInfo(tr("Biblio Identifier:"), convertToQT(info.sInfoEx.ISOBiblioIdentifier));
+    addEntryInfo(tr("Application Identifier:"), convertToQT(info.sInfoEx.ISOApplicationIdentifier));
+    addEntryInfo(tr("Abstract Identifier:"), convertToQT(info.sInfoEx.ISOAbstractFileIdentifier));
 
     addEntryInfo(tr("ISO Level:"), QString::number(info.sInfoEx.ISOLevel));
     addEntryInfo(tr("Path Table Size:"), QString::number(info.nPathTableSize));
@@ -326,13 +313,9 @@ void ZPropertyDialogFoxFile::fillUDF()
     addEntryInfo(tr("Folder Count:"), QString::number(info.nDirCount));
     addEntryInfo(tr("UDF Version:"), mItem->getUDFTypeString());
 
-#if defined (WIN32)
-    addEntryInfo(tr("Preparer:"), QString::fromUtf16((const ushort*)info.chPreparer));
-    addEntryInfo(tr("Volume Label:"), QString::fromUtf16((const ushort*)info.chVolumeLabel));
-#else
-    addEntryInfo(tr("Preparer:"), QString::fromUtf8(info.chPreparer));
-    addEntryInfo(tr("Volume Label:"), QString::fromUtf8(info.chVolumeLabel));
-#endif
+    addEntryInfo(tr("Preparer:"), convertToQT(info.chPreparer));
+    addEntryInfo(tr("Volume Label:"), convertToQT(info.chVolumeLabel));
+
     addEntryInfo(tr("Type:"), tr("UDF Filesystem"));
 
 }

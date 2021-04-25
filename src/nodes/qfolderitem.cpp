@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -24,85 +24,78 @@ QFolderItem* QFolderItem::create(QDataItem *parent, HSESSION hSession
                                  , const SFileEntry& entry
                                  , int &countFile, int &countFolder)
 {
-  return new QFolderItem(parent, hSession, entry, countFile, countFolder);
+    return new QFolderItem(parent, hSession, entry, countFile, countFolder);
 }
 
 QFolderItem::QFolderItem(QDataItem *parent, HSESSION hSession
                          , const SFileEntry& entry
                          , int &countFile, int &countFolder)
-  : QDataItem(parent)
-  , mHSession(hSession)
-  , mInfo(entry)
+    : QDataItem(parent)
+    , mHSession(hSession)
+    , mInfo(entry)
 {
-  SetType(QDataItem::Folder);
-  SetDefaultIcon();
-  ParseGenericInfo();
-  CreateAndLoadChildren(countFile, countFolder);
+    SetType(QDataItem::Folder);
+    SetDefaultIcon();
+    ParseGenericInfo();
+    CreateAndLoadChildren(countFile, countFolder);
 }
 
 void QFolderItem::ParseGenericInfo()
 {
-#if defined (WIN32)
-    SetName(QString::fromUtf16((const ushort*)mInfo.lpszFileName));
-#else
-    SetName(QString::fromUtf8(mInfo.lpszFileName));
-#endif
 
-  SetText0(GetName());
-  //info.lba = mInfo.nAddress;
-  qlonglong nTemp = (qlonglong)mInfo.nFileSize;
-  SetDataSize(nTemp,true);
-  nTemp = (qlonglong)mInfo.nAddress;
-  SetDataLBA(nTemp);
-  ParseAndSetDateTime(mInfo);
-#if defined (WIN32)
-  SetFullPath(QString::fromUtf16((const ushort*)mInfo.lpszFilePath)
-              + PATHSEPSTRING
-              + QString::fromUtf16((const ushort*)mInfo.lpszFileName));
-#else
-  SetFullPath(QString::fromUtf8(mInfo.lpszFilePath)
-              + PATHSEPSTRING
-              + QString::fromUtf8(mInfo.lpszFileName));
-#endif
+    SetName(convertToQT(mInfo.lpszFileName));
+
+    SetText0(GetName());
+    //info.lba = mInfo.nAddress;
+    qlonglong nTemp = (qlonglong)mInfo.nFileSize;
+    SetDataSize(nTemp,true);
+    nTemp = (qlonglong)mInfo.nAddress;
+    SetDataLBA(nTemp);
+    ParseAndSetDateTime(mInfo);
+
+    SetFullPath(convertToQT(mInfo.lpszFilePath)
+                + PATHSEPSTRING
+                + convertToQT(mInfo.lpszFileName));
+
 
 }
 
 void QFolderItem::CreateAndLoadChildren(int &countFile, int &countFolder)
 {
-  //setExpanded(true);
+    //setExpanded(true);
 
-  HDIR hDir = 0;
-#if defined (WIN32)
-    int res = ::OpenDirectory(mHSession, (const TCHAR*)GetFullPath().toUtf16(), &hDir);
-#else
-    int res = ::OpenDirectory(mHSession, (const TCHAR*)GetFullPath().toUtf8(), &hDir);
-#endif
-  if (res != BS_SDK_ERROR_NO) {
-    return;
-  }
+    HDIR hDir = 0;
 
-  countFile = 0;
-  countFolder = 0;
-  for (int i = 0; ; ++i) {
-    SFileEntry entry;
-    res = ::ReadDirectory(hDir, i, &entry);
-    if (res != BS_SDK_ERROR_NO)
-      break;
+    const TCHAR *pFullPath = convertToFoxValue(GetFullPath());
+    int res = ::OpenDirectory(mHSession, pFullPath, &hDir);
+    delete [] pFullPath;
 
-    if (entry.nAttrib & BS_FA_DIRECTORY) {
-      int tempCountFile = 0, tempCountFolder = 0;
-      QFolderItem::create(this, mHSession, entry, tempCountFile, tempCountFolder);
-      countFile += tempCountFile;
-      countFolder += tempCountFolder;
-    } else {
-      QFileItem::create(this, mHSession, entry);
-      countFile += 1;
+    if (res != BS_SDK_ERROR_NO) {
+        return;
     }
-  }
-  SetDataItemCount(countFile);
-  SetDataNodeCount(countFolder);
-  countFolder += 1;
-  ::CloseDirectory(hDir);
+
+    countFile = 0;
+    countFolder = 0;
+    for (int i = 0; ; ++i) {
+        SFileEntry entry;
+        res = ::ReadDirectory(hDir, i, &entry);
+        if (res != BS_SDK_ERROR_NO)
+            break;
+
+        if (entry.nAttrib & BS_FA_DIRECTORY) {
+            int tempCountFile = 0, tempCountFolder = 0;
+            QFolderItem::create(this, mHSession, entry, tempCountFile, tempCountFolder);
+            countFile += tempCountFile;
+            countFolder += tempCountFolder;
+        } else {
+            QFileItem::create(this, mHSession, entry);
+            countFile += 1;
+        }
+    }
+    SetDataItemCount(countFile);
+    SetDataNodeCount(countFolder);
+    countFolder += 1;
+    ::CloseDirectory(hDir);
 }
 
 QString QFolderItem::createAttributeString()

@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -21,18 +21,21 @@
 #include <QDateTime>
 #include <QCryptographicHash>
 #include <QFile>
-#include "mainwindow.h"
 #include "FoxSDKExport.h"
 
-extern QString humanReadableSize(const qint64 src_size, qint64 *dst_size = NULL);
+
+
 extern QString humanReadableSector(const qint64 src_size);
 extern QDateTime ConvertDateTime(const SFileDateTime &dateTime);
 extern QByteArray CalcChecksum(const QString &filePath);
-extern wchar_t* convertToFoxValue(QString strValue);
+extern const TCHAR* convertToFoxValue(const QString& strValue);
+extern QString convertToQT(const TCHAR * strValue);
+extern QString humanReadableSize(const qint64 src_size, qint64 *dst_size);
 
 extern int32 MSFToInt32(const int minutes, const int seconds, const int frames);
 extern QString MSFToStr(const int minutes, const int seconds, const int frames);
 extern QString MSFInt32ToStr(int32 index);
 extern int32 MSFStrToInt32(QString str);
 extern bool fileExists(QString strFile);
-extern MainWindow* getMainWindow();
+//extern QMainWindow* getMainWindow();
+extern wchar_t *machineString(QString input);

@@ -60,7 +60,7 @@ typedef void*	HSESSION;
 typedef void*	HDIR;
 
 #ifndef _MAX_PATH
-#	define _MAX_PATH			260
+#	define _MAX_PATH			0x8000
 #endif
 
 //// end (needed defines)
@@ -129,7 +129,7 @@ typedef void*	HDIR;
 		int32 nAspectRatio;
 		int32 nPlaytime;
 
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL - sizeof(int32))
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL - sizeof(int32));
 
 #	ifdef __cplusplus
 		SVideoFormat(void)
@@ -154,7 +154,7 @@ typedef void*	HDIR;
 		uint8 nMinute;	// Minutes [0, 59]
 		uint8 nSecond;	// Seconds [0, 59]
 					
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);
 		
 	};
 
@@ -163,7 +163,7 @@ typedef void*	HDIR;
 		float fSpeed;
 		int   nSpeedInKBPerSec;
 		
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);		
 		
 #   ifdef __cplusplus
 		SSpeed(void)
@@ -180,7 +180,7 @@ typedef void*	HDIR;
 		const TCHAR*	szLicenseURL;
 		const TCHAR*	szPostData;
 		
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL);
 				
 #	ifdef __cplusplus
 		SDRMLicenseInfo(void)
@@ -332,7 +332,7 @@ struct SFileEntry;
 			/// Max supported write speed declared by manufacturer.
 			float fMaxWriteSpeed;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_HUGE - sizeof(TCHAR [20]/*chVendorID*/) - sizeof(float/*fMaxWriteSpeed*/))
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_HUGE - sizeof(TCHAR [20]/*chVendorID*/) - sizeof(float/*fMaxWriteSpeed*/));
 
 #	ifdef __cplusplus
 			SMediumInfo(void)
@@ -386,7 +386,7 @@ struct SFileEntry;
 			//Add new fields here, subtracting their size from the padding amount.
 			//Use ( .. - sizeof(the_name_of_the_variable)) syntax.
 			//Don't use the type of the variable instead.
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - sizeof(int32/*nRegionCodeVendorResetsLeft*/) - sizeof(time_t/*FirmwareCreationDate*/) - sizeof(int32/*nIdeTransferMode*/))
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - sizeof(int32/*nRegionCodeVendorResetsLeft*/) - sizeof(time_t/*FirmwareCreationDate*/) - sizeof(int32/*nIdeTransferMode*/));
 			
 				
 			
@@ -413,7 +413,7 @@ struct SFileEntry;
 			/// Number of last track of session
 			long nLastTrack;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_BIG)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_BIG);
 
 #	ifdef __cplusplus
 			SSessionInfo(void)
@@ -442,7 +442,7 @@ struct SFileEntry;
 			/// Combination of BS_FS_* flags
 			int8	nFileSystem;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL);
 
 #	ifdef __cplusplus
 			STrackInfo(void)
@@ -674,7 +674,7 @@ struct SFileEntry;
 			const TCHAR* lpszDir;
 			const TCHAR* lpszDestinationPath;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);
 
 #	ifdef __cplusplus
 			SDirToCreate(void)
@@ -694,7 +694,7 @@ struct SFileEntry;
 			BS_BOOL bRecursive;
 			int32 nSavePath;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL);
 			
 #	ifdef __cplusplus
 			SDirToAdd(void)
@@ -713,7 +713,7 @@ struct SFileEntry;
 		{
 			const TCHAR* lpszDestinationPath;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);
 	
 #	ifdef __cplusplus
 			SDirToRemove(void)
@@ -731,7 +731,7 @@ struct SFileEntry;
 			BS_BOOL bVideoFile;
 			int32 nSavePath;
 
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);
 			
 #	ifdef __cplusplus
 			SFileToAdd(void)
@@ -754,7 +754,7 @@ struct SFileEntry;
 			int64 nFileOffset;
 			int64 nSegmentSize;
 
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);
 			
 #	ifdef __cplusplus
 			SFileToAddEx(void)
@@ -784,7 +784,7 @@ struct SFileEntry;
 			int32		 nIndexesLength;
 			BS_BOOL		bPauseInFrames;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_BIG - sizeof(BS_BOOL))
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_BIG - sizeof(BS_BOOL));
 			
 #	ifdef __cplusplus
 			SFileAudioProperty(void)
@@ -809,7 +809,7 @@ struct SFileEntry;
 			const TCHAR* lpszFile;
 			const TCHAR* lpszDestinationPath;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);
 			
 #	ifdef __cplusplus
 			SFileToRemove(void)
@@ -825,7 +825,7 @@ struct SFileEntry;
 			const TCHAR* lpszSourcePath;
 			const TCHAR* lpszDestinationPath;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);
 			
 #	ifdef __cplusplus
 			SFileToRename(void)
@@ -841,7 +841,7 @@ struct SFileEntry;
 			const TCHAR* lpszSourcePath;
 			const TCHAR* lpszDestinationPath;
 			
-            INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+			INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);
 			
 #	ifdef __cplusplus
 			SDirToRename(void)
@@ -887,7 +887,7 @@ struct SFileEntry;
 		int32	nLength;
 		int64	nOffset;			// Offset in image in bytes
 			
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL);
 		
 #ifdef __cplusplus
 		SRAWTrackToAdd()
@@ -947,7 +947,7 @@ struct SFileEntry;
 		BS_BOOL ISOUseEffectiveDateTime;
 		SFileDateTime ISOEffectiveDateTime;
 		
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - 6*sizeof(BS_BOOL) - 4*sizeof(SFileDateTime))
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - 6*sizeof(BS_BOOL) - 4*sizeof(SFileDateTime));
 		
 #	ifdef __cplusplus
 			SISOInfoEx(void)
@@ -982,7 +982,7 @@ struct SFileEntry;
 
 		BS_BOOL	AvchdDisc;
 
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL - sizeof(BS_BOOL/*AvchdDisc*/))
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL - sizeof(BS_BOOL/*AvchdDisc*/));
 
 #	ifdef __cplusplus
 		SUDFOptions(void)
@@ -1018,7 +1018,7 @@ struct SFileEntry;
 		BS_BOOL Padding;
 		BS_BOOL ForceUppercase;
 			
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL);
 
 #ifdef __cplusplus
 		SDVDVideoOptions()
@@ -1038,7 +1038,7 @@ struct SFileEntry;
 		int32 Emulation;
 		int32 SectorCount;
 			
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_HUGE)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_HUGE);
 
 #	ifdef __cplusplus
 			SBootInfoEx(void)
@@ -1100,7 +1100,7 @@ struct SFileEntry;
 
 		BS_BOOL bPadDataTracks;
 		
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - sizeof(BS_BOOL))
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - sizeof(BS_BOOL));
 
 #	ifdef __cplusplus
 		SOptions(void)
@@ -1142,7 +1142,7 @@ struct SFileEntry;
 		BS_BOOL		bEncryption;
 		const char* lpszPassword;
 
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_SMALL);
 
 #	ifdef __cplusplus
 		SCompressEncryptInfo()
@@ -1166,7 +1166,7 @@ struct SFileEntry;
 
 		struct SISOInfoEx sInfoEx;
 
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA);
 
 #	ifdef __cplusplus
 		SISOVolumeInfo()
@@ -1187,7 +1187,7 @@ struct SFileEntry;
 		int32   nVolumeDescriptorAddress;		
 		struct SBootInfoEx sInfoEx;
 		
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_HUGE)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_HUGE);
 
 #	ifdef __cplusplus
 		SBootVolumeInfo()
@@ -1218,7 +1218,7 @@ struct SFileEntry;
 		int32	nFileCount;
 		int32	nDirCount;
 		
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA);
 
 #	ifdef __cplusplus
 		SUDFVolumeInfo(void)
@@ -1258,7 +1258,7 @@ struct SFileEntry;
 		uint8	nHardwareRetryCount;
 		uint8	nSoftwareRetryCount;
 		
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL);
 
 #ifdef __cplusplus
 		SReadErrorCorrectionParams()
@@ -1280,7 +1280,7 @@ struct SFileEntry;
 		BS_BOOL	bFullCapacity;
 		SReadErrorCorrectionParams cErrorParams;
 					
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - sizeof(int32) - sizeof(BS_BOOL))
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - sizeof(int32) - sizeof(BS_BOOL));
 
 #ifdef __cplusplus
 		SCreateImageParams()
@@ -1297,13 +1297,16 @@ struct SFileEntry;
 
 
 #define BS_ET_MP3		0
-#define BS_ET_WMA		1
-#define BS_ET_AAC		2
-#define BS_ET_OGG		3
-#define BS_ET_MP4		4
+#define BS_ET_AAC		1
+#define BS_ET_OGG		2
+#define BS_ET_OPUS		3
+#define BS_ET_FLAC		4
+#define BS_ET_WMA		5
+#define BS_ET_MP4		6
 
 #define BS_BT_VARIABLE		0
 #define BS_BT_CONSTANT		1
+#define BS_BT_AVERAGE		2
 
 #define BS_TCH_NONE					0
 #define BS_TCH_CDTEXT				1
@@ -1320,28 +1323,29 @@ struct SFileEntry;
 		int32 nBitrate;
 		int32 nMinBitrate;
 		int32 nMaxBitrate;
+		int32 nQuality;
 		uint8 nBitrateType;
 		uint8 nEncoderType;
 		uint8 nTagChoice;
 
 		int32 nNetworkTagsHandle;
 		
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_HUGE)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_HUGE);
 
 #ifdef __cplusplus
 		SAudioGrabbingParams()
-            :nBitrate(128)
-            ,nMinBitrate(0)
-            ,nMaxBitrate(0)
-            ,nBitrateType(BS_BT_CONSTANT)
+			:nBitrateType(BS_BT_CONSTANT)
 			,nEncoderType(BS_ET_MP3)
-            ,nTagChoice(BS_TCH_NONE)
-
-            ,nNetworkTagsHandle(BS_INVALID_TAG_HANDLE)
+			,nBitrate(128)
+			,nMinBitrate(0)
+			,nMaxBitrate(0)	
+			,nNetworkTagsHandle(BS_INVALID_TAG_HANDLE)
 		{
 		}
 #endif
 	};
+
+
 
 	struct SDiskCopyOptions
 	{
@@ -1353,7 +1357,7 @@ struct SFileEntry;
 		int32	nVerifyBufferSectors;
 		BS_BOOL	bFullCapacity;
 
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL-sizeof(BS_BOOL) - sizeof(int32) - sizeof(BS_BOOL))
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_NORMAL-sizeof(BS_BOOL) - sizeof(int32) - sizeof(BS_BOOL));
 
 #ifdef __cplusplus
 		SDiskCopyOptions()
@@ -1384,7 +1388,7 @@ struct SFileEntry;
 		void			*pUserParam;
 				
 #if defined(__APPLE__) && defined(__x86_64__)
-        INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - sizeof(SFileDateTime/*cCreationTime*/) - sizeof(SFileDateTime/*cAccessTime*/) - sizeof(void*/*UserParam*/) - 8/*structure alignment?*/)
+		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - sizeof(SFileDateTime/*cCreationTime*/) - sizeof(SFileDateTime/*cAccessTime*/) - sizeof(void*/*UserParam*/) - 8/*structure alignment?*/);
 #else
 		INSERT_STRUCTURE_PADDING(STRUCTURE_PADDING_STRING_DATA - sizeof(SFileDateTime/*cCreationTime*/) - sizeof(SFileDateTime/*cAccessTime*/) - sizeof(void*/*UserParam*/));
 #endif

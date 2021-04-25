@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -21,128 +21,128 @@
 #include "utils_common.h"
 #include "settingspages.h"
 
-VDiskPropertyDialog::VDiskPropertyDialog(QWidget *parent, QDiskItem *item, bool existAudioTrack, bool existDataTrack) :
-  QDialog(parent),
-  ui(new Ui::VDiskPropertyDialog)
+VDiskPropertyDialog::VDiskPropertyDialog(QWidget *parent, QDiskItem *item, bool existAudioTrack, bool) :
+    QDialog(parent),
+    ui(new Ui::VDiskPropertyDialog)
 {
-  ui->setupUi(this);
-  setWindowTitle("Disk Properties");
+    ui->setupUi(this);
+    setWindowTitle("Disk Properties");
 
-  QFont font;
-  font.setFamily("Font Awesome 5 Free");
-  font.setPixelSize(16);
+    QFont font;
+    font.setFamily("Font Awesome 5 Free Solid");
+    font.setPixelSize(16);
 
-  mDiskItem = item;
+    mDiskItem = item;
 
-  ui->buttonAdd->setFont(font);
-  ui->buttonDel->setFont(font);
-  ui->buttonAdd->setText("\uf055");
-  ui->buttonDel->setText("\uf056");
+    ui->buttonAdd->setFont(font);
+    ui->buttonDel->setFont(font);
+    ui->buttonAdd->setText(QChar(0xf055));
+    ui->buttonDel->setText(QChar(0xf056));
 
-  ui->editName->setText(item->GetName());
-  ui->labelSize->setText(humanReadableSize(item->GetDataSize()));
-  ui->labelFiles->setText(QString::number(item->GetDataItemCount()));
+    ui->editName->setText(item->GetName());
+    ui->labelSize->setText(humanReadableSize(item->GetDataSize(),nullptr));
+    ui->labelFiles->setText(QString::number(item->GetDataItemCount()));
 
-  ui->dateTimeCreation->setDateTime(item->getDiskDateCreation());
-  ui->dateTimeMdification->setDateTime(item->getDiskDateMdification());
-  ui->dateTimeExpiration->setDateTime(item->getDiskDateExpiration());
-  ui->dateTimeEffective->setDateTime(item->getDiskDateEffective());
+    ui->dateTimeCreation->setDateTime(item->getDiskDateCreation());
+    ui->dateTimeMdification->setDateTime(item->getDiskDateMdification());
+    ui->dateTimeExpiration->setDateTime(item->getDiskDateExpiration());
+    ui->dateTimeEffective->setDateTime(item->getDiskDateEffective());
 
-  ui->editArranger->setText(item->getArranger());
-  ui->editComposer->setText(item->getComposer());
-  ui->editSongWriter->setText(item->getSongWriter());
-  ui->editPerformer->setText(item->getPerformer());
-  ui->editMessage->setText(item->getMessage());
-  ui->editTitle->setText(item->getTitle());
-  ui->editUPCEAN->setText(item->getUPCEAN());
+    ui->editArranger->setText(item->getArranger());
+    ui->editComposer->setText(item->getComposer());
+    ui->editSongWriter->setText(item->getSongWriter());
+    ui->editPerformer->setText(item->getPerformer());
+    ui->editMessage->setText(item->getMessage());
+    ui->editTitle->setText(item->getTitle());
+    ui->editUPCEAN->setText(item->getUPCEAN());
 
 
-  ui->dateUsage->setCheckState(item->getIsoExUseDates()==true?Qt::Checked:Qt::Unchecked);
-  ui->dateTimeCreation->setEnabled(item->getIsoExUseDates());
-  ui->dateTimeMdification->setEnabled(item->getIsoExUseDates());
-  ui->dateTimeExpiration->setEnabled(item->getIsoExUseDates());
-  ui->dateTimeEffective->setEnabled(item->getIsoExUseDates());
+    ui->dateUsage->setCheckState(item->getIsoExUseDates()==true?Qt::Checked:Qt::Unchecked);
+    ui->dateTimeCreation->setEnabled(item->getIsoExUseDates());
+    ui->dateTimeMdification->setEnabled(item->getIsoExUseDates());
+    ui->dateTimeExpiration->setEnabled(item->getIsoExUseDates());
+    ui->dateTimeEffective->setEnabled(item->getIsoExUseDates());
 
-  on_buttonResetFilter_clicked();
+    on_buttonResetFilter_clicked();
 
-  if (!existAudioTrack) {
-    ui->tabWidget->removeTab(ui->tabWidget->indexOf(ui->tabCDText));
-  }
+    if (!existAudioTrack) {
+        ui->tabWidget->removeTab(ui->tabWidget->indexOf(ui->tabCDText));
+    }
 }
 
 VDiskPropertyDialog::~VDiskPropertyDialog()
 {
-  delete ui;
+    delete ui;
 }
 
 void VDiskPropertyDialog::on_buttonAdd_clicked()
 {
-  //QListWidgetItem *item = new QListWidgetItem((ui->listWidget);
-  QListWidgetItem *item = new QListWidgetItem("");
-  ui->listWidget->insertItem(0,item);
-  item->setFlags(item->flags() | Qt::ItemIsEditable);
-  ui->listWidget->setCurrentItem(item);
-  ui->listWidget->editItem(item);
+    //QListWidgetItem *item = new QListWidgetItem((ui->listWidget);
+    QListWidgetItem *item = new QListWidgetItem("");
+    ui->listWidget->insertItem(0,item);
+    item->setFlags(item->flags() | Qt::ItemIsEditable);
+    ui->listWidget->setCurrentItem(item);
+    ui->listWidget->editItem(item);
 }
 
 void VDiskPropertyDialog::on_buttonDel_clicked()
 {
-  ui->listWidget->takeItem(ui->listWidget->currentRow());
+    ui->listWidget->takeItem(ui->listWidget->currentRow());
 }
 
 QStringList *VDiskPropertyDialog::getFilterList()
 {
-  QStringList *list = new QStringList();
-  for (int i=0; i<ui->listWidget->count(); i++) {
-    list->insert(i, ui->listWidget->item(i)->text());
-  }
-  return list;
+    QStringList *list = new QStringList();
+    for (int i=0; i<ui->listWidget->count(); i++) {
+        list->insert(i, ui->listWidget->item(i)->text());
+    }
+    return list;
 }
 
 void VDiskPropertyDialog::on_checkByDate_clicked(bool checked)
 {
-  ui->dateFrom->setEnabled(checked);
-  ui->dateTo->setEnabled(checked);
+    ui->dateFrom->setEnabled(checked);
+    ui->dateTo->setEnabled(checked);
 
-  ui->listWidget->setEnabled(!checked);
-  ui->buttonAdd->setEnabled(!checked);
-  ui->buttonDel->setEnabled(!checked);
+    ui->listWidget->setEnabled(!checked);
+    ui->buttonAdd->setEnabled(!checked);
+    ui->buttonDel->setEnabled(!checked);
 }
 
 void VDiskPropertyDialog::on_buttonImportSystemFilter_clicked()
 {
-  ui->checkByDate->setChecked(ConfigurationPage::mSettings.value("bydate", false).toBool());
-  ui->dateFrom->setDate(ConfigurationPage::mSettings.value("datefrom").toDate());
-  ui->dateTo->setDate(ConfigurationPage::mSettings.value("dateto").toDate());
+    ui->checkByDate->setChecked(ConfigurationPage::mSettings.value("bydate", false).toBool());
+    ui->dateFrom->setDate(ConfigurationPage::mSettings.value("datefrom").toDate());
+    ui->dateTo->setDate(ConfigurationPage::mSettings.value("dateto").toDate());
 
-  int filterCount = ConfigurationPage::mSettings.value("filtercount", 0).toInt();
-  ui->listWidget->clear();
-  for (int i=0; i<filterCount; i++) {
-    QListWidgetItem *item = new QListWidgetItem(ConfigurationPage::mSettings.value("filteritem"+i, "").toString());
-    ui->listWidget->addItem(item);
-    item->setFlags(item->flags() | Qt::ItemIsEditable);
-  }
+    int filterCount = ConfigurationPage::mSettings.value("filtercount", 0).toInt();
+    ui->listWidget->clear();
+    for (int i=0; i<filterCount; i++) {
+        QListWidgetItem *item = new QListWidgetItem(ConfigurationPage::mSettings.value("filteritem" + QString::number(i), "").toString());
+        ui->listWidget->addItem(item);
+        item->setFlags(item->flags() | Qt::ItemIsEditable);
+    }
 
-  on_checkByDate_clicked(ui->checkByDate->isChecked());
+    on_checkByDate_clicked(ui->checkByDate->isChecked());
 }
 
 
 
 void VDiskPropertyDialog::on_buttonResetFilter_clicked()
 {
-  ui->checkByDate->setChecked(mDiskItem->getByDate());
-  ui->dateFrom->setDate(QDate::fromString(mDiskItem->getDateFrom()));
-  ui->dateTo->setDate(QDate::fromString(mDiskItem->getDateTo()));
+    ui->checkByDate->setChecked(mDiskItem->getByDate());
+    ui->dateFrom->setDate(QDate::fromString(mDiskItem->getDateFrom()));
+    ui->dateTo->setDate(QDate::fromString(mDiskItem->getDateTo()));
 
-  QStringList *list = mDiskItem->getFilterList();
-  ui->listWidget->clear();
-  for (int i=0; i<list->count(); i++) {
-    QListWidgetItem *listItem = new QListWidgetItem(ui->listWidget);
-    listItem->setFlags(listItem->flags() | Qt::ItemIsEditable);
-    listItem->setText(list->at(i));
-  }
+    QStringList *list = mDiskItem->getFilterList();
+    ui->listWidget->clear();
+    for (int i=0; i<list->count(); i++) {
+        QListWidgetItem *listItem = new QListWidgetItem(ui->listWidget);
+        listItem->setFlags(listItem->flags() | Qt::ItemIsEditable);
+        listItem->setText(list->at(i));
+    }
 
-  on_checkByDate_clicked(ui->checkByDate->isChecked());
+    on_checkByDate_clicked(ui->checkByDate->isChecked());
 }
 
 void VDiskPropertyDialog::on_dateUsage_stateChanged(int arg1)

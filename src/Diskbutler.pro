@@ -4,16 +4,17 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core
+QT       += gui
 QT       += widgets
 QT       += xml
 QT       += network
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT       += core5compat
 
 VERSION = 2.3.0.3
 
 macx: ICON = diskbutler.icns
+macx: DEFINES += MAC
 TARGET = Diskbutler
 TEMPLATE = app
 
@@ -23,13 +24,13 @@ TEMPLATE = app
 # depend on your compiler). Please consult the documentation of the
 # deprecated API in order to know how to port your code away from it.
 DEFINES += QT_DEPRECATED_WARNINGS
-DEFINES += BS_GUI
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"
-DEFINES += MAC
-#DEFINES += UNICODE _UNICODE
+win32: DEFINES += WIN32 UNICODE _UNICODE
+unix:!macx {
+DEFINES += LINUX
+}
 
-
-
+DEFINES += _CRT_SECURE_NO_WARNINGS
 # You can also make your code fail to compile if you use deprecated APIs.
 # In order to do so, uncomment the following line.
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
@@ -38,76 +39,81 @@ DEFINES += MAC
 CONFIG += c++11
 
 HEADERS_CONTROLS = \
-  controls/QtWaitingSpinner.h
+    controls/devicecomboex.h \
+    controls/qtwaitingspinner.h
 SOURCES_CONTROLS = \
-  controls/QtWaitingSpinner.cpp
+    controls/devicecomboex.cpp \
+    controls/qtwaitingspinner.cpp
 HEADERS_FOXSDK = \
-  foxsdk/bass.h \
-  foxsdk/tchar.h \
-  foxsdk/FoxSDKBurningLib.h \
-  foxsdk/FoxSDKExport.h \
-  foxsdk/FoxSDKDefinitions.h \
-  foxsdk/FoxSDKUnicode.h
+    foxsdk/bass.h \
+    foxsdk/tchar.h \
+    foxsdk/FoxSDKBurningLib.h \
+    foxsdk/FoxSDKExport.h \
+    foxsdk/FoxSDKDefinitions.h \
+    foxsdk/FoxSDKUnicode.h
 HEADERS_NODES = \
-  nodes/QDataItem.h \
-  nodes/qdiskitem.h \
-  nodes/qaudiotrackitem.h \
-  nodes/qmediumitem.h \
-  nodes/qsessionitem.h \
-  nodes/qtrackitem.h \
-  nodes/qfilesysitem.h \
-  nodes/qfilesys_iso9660item.h \
-  nodes/qfilesys_udfitem.h \
-  nodes/qfolderitem.h \
-  nodes/qfileitem.h
+    nodes/qdataitem.h \
+    nodes/qdiskitem.h \
+    nodes/qaudiotrackitem.h \
+    nodes/qmediumitem.h \
+    nodes/qsessionitem.h \
+    nodes/qtrackitem.h \
+    nodes/qfilesysitem.h \
+    nodes/qfilesys_iso9660item.h \
+    nodes/qfilesys_udfitem.h \
+    nodes/qfolderitem.h \
+    nodes/qfileitem.h
 SOURCES_NODES = \
-  nodes/QDataItem.cpp \
-  nodes/qdiskitem.cpp \
-  nodes/qaudiotrackitem.cpp \
-  nodes/qmediumitem.cpp \
-  nodes/qsessionitem.cpp \
-  nodes/qtrackitem.cpp \
-  nodes/qfilesysitem.cpp \
-  nodes/qfilesys_iso9660item.cpp \
-  nodes/qfilesys_udfitem.cpp \
-  nodes/qfolderitem.cpp \
-  nodes/qfileitem.cpp
+    nodes/qdataitem.cpp \
+    nodes/qdiskitem.cpp \
+    nodes/qaudiotrackitem.cpp \
+    nodes/qmediumitem.cpp \
+    nodes/qsessionitem.cpp \
+    nodes/qtrackitem.cpp \
+    nodes/qfilesysitem.cpp \
+    nodes/qfilesys_iso9660item.cpp \
+    nodes/qfilesys_udfitem.cpp \
+    nodes/qfolderitem.cpp \
+    nodes/qfileitem.cpp
 HEADERS_UTILS = \
-  utils/utils_common.h \
-  utils/vrulemanager.h
+    utils/utils_common.h \
+    utils/messanger.h \
+    utils/vrulemanager.h
 SOURCES_UTIS = \
-  utils/utils_common.cpp \
-  utils/vrulemanager.cpp
+    utils/utils_common.cpp \
+    utils/messanger.cpp \
+    utils/vrulemanager.cpp
 HEADERS_RIBBON = \
-  ribbon/ribbon.h \
-  ribbon/ribbonbuttongroup.h \
-  ribbon/ribbontabcontent.h
+    ribbon/ribbon.h \
+    ribbon/ribbonbuttongroup.h \
+    ribbon/ribbonbuilder.h \
+    ribbon/ribbontabcontent.h
 SOURCES_RIBBON = \
-  ribbon/ribbon.cpp \
-  ribbon/ribbonbuttongroup.cpp \
-  ribbon/ribbontabcontent.cpp
+    ribbon/ribbon.cpp \
+    ribbon/ribbonbuttongroup.cpp \
+    ribbon/ribbontabcontent.cpp
 HEADERS_ZMODULES = \
-  zmodules/zfileiconprovider.h \
-  zmodules/zimageloader.h \
-  zmodules/zplaylistloader.h \
-  zmodules/zreplacefiledialog.h
+    zmodules/zfileiconprovider.h \
+    zmodules/zimageloader.h \
+    zmodules/zplaylistloader.h \
+    zmodules/zreplacefiledialog.h
 SOURCES_ZMODULES = \
-  zmodules/zfileiconprovider.cpp \
-  zmodules/zimageloader.cpp \
-  zmodules/zplaylistloader.cpp \
-  zmodules/zreplacefiledialog.cpp
+    zmodules/zfileiconprovider.cpp \
+    zmodules/zimageloader.cpp \
+    zmodules/zplaylistloader.cpp \
+    zmodules/zreplacefiledialog.cpp
 HEADERS_DIALOGS = \
-   dialogs/burndialog.h \
-   dialogs/vcddialog.h \
-   dialogs/vdiskpropertydialog.h \
-   dialogs/vpropertydialog.h \
-   dialogs/zpropertydialogfoxfile.h
+    dialogs/burndialog.h \
+    dialogs/vcddialog.h \
+    dialogs/vdiskpropertydialog.h \
+    dialogs/vpropertydialog.h \
+    dialogs/zpropertydialogfoxfile.h
 SOURCES_DIALOGS = \
-   dialogs/burndialog.cpp \
-   dialogs/vcddialog.cpp \
-   dialogs/vdiskpropertydialog.cpp \
-   dialogs/vpropertydialog.cpp \
-   dialogs/zpropertydialogfoxfile.cpp
+    dialogs/burndialog.cpp \
+    dialogs/vcddialog.cpp \
+    dialogs/vdiskpropertydialog.cpp \
+    dialogs/vpropertydialog.cpp \
+    dialogs/zpropertydialogfoxfile.cpp
 HEADERS_PROJECT = \
     project/zproject_bluray.h \
     project/zproject_explore.h \
@@ -126,17 +132,19 @@ SOURCES_STRATEGY = \
     strategy/zimport_strategy_nosubfolder.cpp \
     strategy/zimport_strategy_suffixallowed.cpp
 HEADERS_MODEL = \
-    model/zInfoTableModel.h \
+    model/zinfotablemodel.h \
     model/zallocation_table_model.h
 SOURCES_MODEL = \
-    model/zInfoTableModel.cpp \
+    model/zinfotablemodel.cpp \
     model/zallocation_table_model.cpp
 HEADERS_HEX = \
-    hex/QHexView.h \
-    hex/QScanBoard.h
+    hex/qhexview.h \
+    hex/qdummytexttree.h \
+    hex/qscanboard.h
 SOURCES_HEX = \
-    hex/QHexView.cpp \
-    hex/QScanBoard.cpp
+    hex/qhexview.cpp \
+    hex/qscanboard.cpp \
+    hex/qdummytexttree.cpp
 
 SOURCES += $${SOURCES_CONTROLS} \
         $${SOURCES_NODES} \
@@ -148,10 +156,9 @@ SOURCES += $${SOURCES_CONTROLS} \
         $${SOURCES_STRATEGY} \
         $${SOURCES_MODEL} \
         $${SOURCES_HEX} \
-        CommonTreeWidget.cpp \
+        commontreewidget.cpp \
         audiotaginfo.cpp \
-        configdialog.cpp \
-        hex/QDummyTextTree.cpp \
+        configdialog.cpp \        
         main.cpp \
         mainwindow.cpp \
         mdichild_base.cpp \
@@ -161,7 +168,6 @@ SOURCES += $${SOURCES_CONTROLS} \
         mdichild_hex.cpp \
         mdichild_scan.cpp \
         settingspages.cpp \
-        utils/messanger.cpp \
         xbelgenerator.cpp \
         xbelhandler.cpp
 
@@ -177,10 +183,9 @@ HEADERS += $${HEADERS_CONTROLS} \
         $${HEADERS_STRATEGY} \
         $${HEADERS_MODEL} \
         $${HEADERS_HEX} \
-        CommonTreeWidget.h \
+        commontreewidget.h \
         audiotaginfo.h \
         configdialog.h \
-        hex/QDummyTextTree.h \
         mainwindow.h \
         mdichild_base.h \
         mdichild_deviceinfo.h \
@@ -189,7 +194,6 @@ HEADERS += $${HEADERS_CONTROLS} \
         mdichild_hex.h \
         mdichild_scan.h \
         settingspages.h \
-        utils/messanger.h \
         xbelgenerator.h \
         xbelhandler.h
 
@@ -218,16 +222,21 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 RESOURCES += \
     diskbutler.qrc
 
-INCLUDEPATH += $$PWD $$PWD/project $$PWD/nodes $$PWD/strategy $$PWD/FoxSDK $$PWD/utils $$PWD/dialogs $$PWD/model
+INCLUDEPATH += $$PWD $$PWD/project $$PWD/nodes $$PWD/strategy $$PWD/foxsdk $$PWD/utils $$PWD/dialogs $$PWD/model
 INCLUDEPATH += $$PWD $$PWD/zmodules $$PWD/ribbon $$PWD/controls $$PWD/hex
-DEPENDPATH += $$PWD/FoxSDK
+DEPENDPATH += $$PWD/foxsdk
+
+win32: LIBS += -L$$PWD/foxsdk/ -lFoxSDKCore
+win32: PRE_TARGETDEPS += $$PWD/foxsdk/FoxSDKCore.lib
+
+unix:!macx {
+LIBS += -L$$PWD/foxsdk/ -lFoxSDKCore
+PRE_TARGETDEPS += $$PWD/foxsdk/libFoxSDKCore.so
+}
 
 macx:{
-LIBS += -L$$PWD/FoxSDK/ -lFoxSDK
-LIBS += -L$$PWD/FoxSDK/ -lbass
-MediaFiles.files += FoxSDK/libFoxSDK.dylib
-MediaFiles.files += FoxSDK/libFoxSDKFXToolkit.dylib
-MediaFiles.files += FoxSDK/libbass.dylib
+LIBS += -L$$PWD/foxsdk/ -lFoxSDKCore
+MediaFiles.files += FoxSDK/libFoxSDKCore.dylib
 MediaFiles.files += diskbutler_de.qm
 MediaFiles.path = Contents/MacOS
 QMAKE_BUNDLE_DATA += MediaFiles

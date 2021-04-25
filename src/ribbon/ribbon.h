@@ -41,6 +41,7 @@ public:
   void showTab(const QString &tabIcon, const QString &tabName);
   void currentTab(const QString &tabName);
   int getIndexByName(const QString &tabName);
+  void hideAll();
 
   QMap<QString, QWidget*> tabManager;
 

@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -18,6 +18,7 @@
  */
 
 #include <QtGui>
+#include <QStringConverter>
 
 #include "xbelgenerator.h"
 
@@ -29,7 +30,8 @@ XbelGenerator::XbelGenerator(CommonTreeWidget *treeWidget)
 bool XbelGenerator::write(QIODevice *device, bool isIndexFile)
 {
   out.setDevice(device);
-  out.setCodec("UTF-8");
+  out.setEncoding(QStringConverter::Utf8);
+
   QDate date = QDate::currentDate();
   QString info("<xbel name=\"project\" version=\"1.0\" date=\"%1\" size=\"%2\" item_count=\"%3\">\n");
   info = info

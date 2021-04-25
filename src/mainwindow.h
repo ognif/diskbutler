@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -31,7 +31,9 @@
 #include "mdichild_deviceinfo.h"
 #include "mdichild_hex.h"
 #include "mdichild_scan.h"
-#include "QtWaitingSpinner.h"
+#include "qtwaitingspinner.h"
+#include "devicecomboex.h"
+
 
 class QtWaitingSpinner;
 
@@ -83,6 +85,7 @@ private:
     bool hasProjectWindow();
     bool isCascaded();
     RuleManager::ProjectType actProject;
+    QString lastSelectedTab;
 
     CheckVersionThread *mCheckVersionThread;
 
@@ -90,13 +93,10 @@ private:
     QLabel *mStatusTextLabel;
     QLabel *mStatusInfoLabel;
 
-    void createOwnMenuBar();
-
-    bool isAudioTrack();
-
     void updateStatusBarText(const QString &text, bool isInfo);
-    void insertCustomRibbonTabs(bool isDifferentProject);
+    QString checkBurnDriveSelection();
 
+public:
     QToolButton *viewSwitchButton;
     QToolButton *viewBrowserButton;
     QToolButton *addFileEditButton;
@@ -104,6 +104,7 @@ private:
     QToolButton *createFolderEditButton;
     QToolButton *viewTileButton;
     QToolButton *viewCascadeButton;
+    QToolButton *viewCloseAllbutton;
     QToolButton *allSelectEditButton;
     QToolButton *inverseSelectEditButton;
     QToolButton *delEditButton;
@@ -143,32 +144,12 @@ private:
     QToolButton *startScanEditor;
     QToolButton *stopScanEditor;
     QToolButton *saveScanEditor;
-
-    QAction *menuNewISOProject;
-    QAction *menuNewISOUDFProject;
-    QAction *menuNewOpenProject;
-    QAction *menuNewSaveProject;
-    QAction *menuNewSaveAsProject;
-    QAction *menuNewExit;
-    QAction *menuEditAddFile;
-    QAction *menuEditAddFolder;
-    QAction *menuEditCreateFolder;
-    QAction *menuEditRenameItem;
-    QAction *menuEditDeleteItem;
-    QAction *menuEditDeleteAll;
-    QAction *menuEditUpdateProject;
-    QAction *menuActionBurn;
-    QAction *menuEditSettings;
-    QAction *menuActionErase;
-    QAction *menuViewNext;
-    QAction *menuMaximize;
-    QAction *menuViewTile;
-    QAction *menuViewCascade;
-    QAction *menuToggleExplorer;
+    QToolButton *burnDiskImage;
 
     QToolButton *appOpenButton;
     QToolButton *appSaveButton;
     QToolButton *appSaveAsButton;
+    QToolButton *appSettings;
     QToolButton *delBootImageButton;
     QToolButton *burnDeviceUpdateButton;
     QToolButton *readDeviceUpdateButton;
@@ -188,7 +169,6 @@ private:
     QDoubleSpinBox *scanStartOffset;
     QDoubleSpinBox *scanReadOffset;
 
-    QComboBox *burnDeviceGeneralCombo;
     QComboBox *speedGeneralCombo;
     QComboBox *copiesGeneralCombo;
     QComboBox *emulationTypeBootCombo;
@@ -203,11 +183,11 @@ private:
     QCheckBox *activeOPCGeneralCheck;
     QCheckBox *finishDiscGeneralCheck;
     QCheckBox *avchdGeneralCheck;
-    QCheckBox *isoLowerNamesFSCheck;
     QCheckBox *jolietLongNamesFSCheck;
     QCheckBox *useJolietFSCheck;
     QCheckBox *isoManyDirectoriesFSCheck;
     QCheckBox *isoExtent1FSCheck;
+    QCheckBox *isoLongPathFSCheck;
     QCheckBox *useRockRidgeFSCheck;
     QCheckBox *isoLongFileNamesFSCheck;
     QCheckBox *udfFileStreamFSCheck;
@@ -226,18 +206,23 @@ private:
     QLineEdit *loadSegmentBootEdit;
     QLineEdit *imagePathBootEdit;
 
-    QListWidget *listBurnDevicesWidget;
-    QListWidget *listReadDevicesWidget;
+    QComboBox *listBurnDevicesWidget;
+    QComboBox *listReadDevicesWidget;
 
     QMenu* m_diskInfoMenu;
+    QMenu* m_EjectTrayMenu;
+    QMenu* m_CloseTrayMenu;
     QMenu* m_windowMenu;
     QMenu* m_imagetMenu;
 
+private:
     void fillSourceDriveList();
+    void onHandleError( int32 res );
 
     void fillDriveList();
     bool isBurnDevice(QString toTest);
-    void updateDiskPage(RuleManager::ProjectType tProject);
+    void mdiAreaActivationTemplate();
+    void checkFileSystemNaming();
 
 private slots:
     MdiChildDialog *createMdiChild(const RuleManager::ProjectType project_type);
@@ -257,10 +242,10 @@ private slots:
     void addDataTrack();
     void addAudioTrack();
 
-    void setListWidget();
-    void getListWidget();
+    void closeTray(bool readDevice);
+    void ejectTray(bool readDevice);
+
     void setDefaults();
-    void getListWidgetInfo();
 
     void newDiskInfo();
     void openHexEditor();
@@ -269,11 +254,14 @@ private slots:
     void onCreateDiscImage();
 
     void release2ImageTab();
+    void changeReadSoftRetry(double nValue);
+    void changeReadHardRetry(double nValue);
 
     void burnDriveChanged(int index);
 
     void newProject(int type);
-    void onActiveChildChanged();
+    void onActiveChildChanged(QMdiSubWindow *activeSubWindow);
+    void onRibbonChanged(int nIndex);
     void setActiveSubWindow(QWidget *window);
     void updateDiskInfo();
     void toggleFileExplorer();
@@ -282,6 +270,8 @@ private slots:
     void updateDiskList();
 
     void doBurn();
+    void doErase();
+    void doBurnImage();
 
     //Checkversion
     void onNewVersionAvail(QString newVersion);
@@ -304,7 +294,6 @@ private slots:
     void fsIsoTypeChanged(int nIndex);
     void fsJolietChanged(int nState);
     void fsRockRidgeChanged(int nState);
-    void fsLowerCaseNamesChanged(int nState);
     void fsManyDirectories(int nState);
     void fsLongFileNamesChanged(int nState);
     void fsNotWriteISO1Extension(int nState);
@@ -358,20 +347,24 @@ private slots:
     void scanStartOffsetValue(double nValue);
     void scanReadOffsetValue(double nValue);
 
+    //View
+    void viewTileMdi();
+    void viewCascadeView();
 
+    //Show
+    void loadDefaultProject();
 
 
 public slots:
     void startWaitSpinner();
     void stopWaitSpinner();
-    void updateProjectRibbon();
     void statusbar_changed(const QString &text);
-    void updateBurnDeviceSel(QListWidgetItem *current);
-    void updateReadDeviceSel(QListWidgetItem *current);
+    void updateBurnDeviceSel(int index);
+    void updateReadDeviceSel(int index);
     void updatedHexData();
-    void onSubWindowChanged(RuleManager::ProjectType thisProject);
     void disableScanTabControls();
     void enableScanTabControls();
+    void onUpdateRibbonControls();
 
 protected Q_SLOTS:
     void updateWindowSwitchMenu();

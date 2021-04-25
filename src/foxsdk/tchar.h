@@ -41,6 +41,7 @@
 #ifndef RC_INVOKED
 typedef	wchar_t	TCHAR;
 typedef wchar_t _TCHAR;
+typedef wchar_t _TUCHAR;
 #endif	/* Not RC_INVOKED */
 #define _TCHAR_DEFINED
 #endif
@@ -227,8 +228,9 @@ typedef wchar_t _TCHAR;
  */
 #ifndef _TCHAR_DEFINED
 #ifndef RC_INVOKED
-typedef char	TCHAR;
-typedef char	_TCHAR;
+typedef char		TCHAR;
+typedef char		_TCHAR;
+typedef unsigned char	_TUCHAR;
 #endif
 #define _TCHAR_DEFINED
 #endif
@@ -244,7 +246,6 @@ typedef char	_TCHAR;
  * macro within your programs.  It's name and function could change without
  * notice.
  */
-//QT 5 Problem so commented out
 #define	__TEXT(q)	q
 
 /*  for porting from other Windows compilers */

@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -29,7 +29,7 @@
 #include "mdichild_base.h"
 #include "FoxSDKBurningLib.h"
 #include "vrulemanager.h"
-#include "QHexView.h"
+#include "qhexview.h"
 
 typedef std::vector<char> SectorData_t;
 class MdiChildHex;
@@ -56,13 +56,15 @@ class MdiChildHex : public MdiChildBase
       int mHasData;
       double maxSectors;
       int bufferSize;
+      QString strlastSelectedTab;
     };
 
 public:
     MdiChildHex(QWidget* parent, const QString &device);
     RuleManager::ProjectType GetProjectType() {return mProjectType;}
 
-
+    QString getlastSelectedTab(){ return thisData.strlastSelectedTab; }
+    void setlastSelectedTab( QString nValue ) { thisData.strlastSelectedTab = nValue; }
     QString getBurnDrive() {return strBurnDrive;}
     void setBurnDrive(QString strValue) {
       strBurnDrive=strValue;
@@ -71,7 +73,11 @@ public:
       wTitle += strBurnDrive;
       wTitle += ")";
       setWindowTitle(wTitle);
+      startUpdate();
     }
+    void setUIControls(Ribbon *baseRibbon, QWidget* parent);
+    void setBurnDeviceList(QWidget* parent);
+    void setRibbonTabs(Ribbon *baseRibbon, QWidget* parent);
 
     //I prefer to work with sturctures.
     int getSector() {return thisData.mSector;}

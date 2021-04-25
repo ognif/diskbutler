@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -24,28 +24,33 @@
 #include <QMdiSubWindow>
 #include <QPointer>
 #include "vrulemanager.h"
+#include "utils_common.h"
+#include "ribbon.h"
 
 class MdiChildBase : public QMdiSubWindow
 {
-  Q_OBJECT
+    Q_OBJECT
 
 public:
-  MdiChildBase();
-  virtual ~MdiChildBase() {}
-  virtual QString updateStatus() {return "";}
-  virtual QString getListViewRootPath() const {return "";}
-  virtual RuleManager::ProjectType GetProjectType() {return RuleManager::TYPE_PROJECT_OPEN;}
-  virtual QString getBurnDrive() {return "";}
-  virtual void setBurnDrive(QString strValue) {}
-Q_SIGNALS:
-    void subwindowchanged(RuleManager::ProjectType thisProject);
+    MdiChildBase();
+    virtual ~MdiChildBase() {}
+    virtual QString updateStatus() {return "";}
+    virtual QString getListViewRootPath() const {return "";}
+    virtual RuleManager::ProjectType GetProjectType() {return RuleManager::TYPE_PROJECT_OPEN;}
+    virtual QString getBurnDrive() {return "";}
+    virtual void setBurnDrive(QString) {};
+    virtual QString getlastSelectedTab(){ return "";}
+    virtual void setlastSelectedTab( QString) {};
+    virtual void setUIControls(Ribbon *, QWidget*) {};
+    virtual int hasDataChild() {return 0;};
+    virtual void setBurnDeviceList(QWidget*) {};
+
 protected:
-  QSize minimumSizeHint() const {
-      return QSize(555, 370);
-  }
+    QSize minimumSizeHint() const {
+        return QSize(555, 370);
+    }
 private:
-    virtual void changeEvent(QEvent * e);
-    virtual void windowStateChanged(Qt::WindowStates oldState, Qt::WindowStates newState);
+    void nonVirtualItems(QWidget* parent);
 };
 
 #endif

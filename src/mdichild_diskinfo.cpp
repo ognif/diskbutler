@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -31,88 +31,92 @@ void ThreadInfo::run()
 }
 
 
-MdiChildDiskInfo::MdiChildDiskInfo(QWidget* parent, const QString &device)
+MdiChildDiskInfo::MdiChildDiskInfo(QWidget*, const QString &device)
 {
-      setAttribute(Qt::WA_DeleteOnClose);
-      mProjectType = RuleManager::TYPE_PROJECT_DISKINFO;
-      setBurnDrive(device);
-      setEraseable(false);
-      setOpenDisk(false);
-      setHideEmptyFields(false);
-      setCopyVerify(0);
-      setImageVerify(0);
-      setImageJobVerify(0);
-      setImageJobCreate(0);
-      setCopyEject(false);
-      setUseErrorCorrection(ConfigurationPage::mSettings.value("ErrorCorrection", true).toBool());
-      setBlankBadSectors(false);
-      setEmptyDisk(false);
-      setIsIsoDisk(true);
-      setCopyReadMethod(0); //0=ISO;1=RAW;2=RAW+SUB
-      setCopyWriteMethod(0); //0=DAO;1=DAO96
-      setErrorHarwareRetry(ConfigurationPage::mSettings.value("HardwareRetryCount", 7).toInt());
-      setErrorSoftwareRetry(ConfigurationPage::mSettings.value("HardwareRetryCount", 1).toInt());
-      setEjectAfterErase(ConfigurationPage::mSettings.value("EjectAfterErase", true).toBool());
-      setFastErase(true);
-      setImagePath("");
-      setImageCreateMethod(0);
-      setImageCorrSwitch(2);
-      mWorkThread = nullptr;
+    setAttribute(Qt::WA_DeleteOnClose);
+    setWindowIcon(QIcon(":/icons/discinfo32.png"));
+    mProjectType = RuleManager::TYPE_PROJECT_DISKINFO;
+    setBurnDrive(device);
+    setEraseable(false);
+    setOpenDisk(false);
+    setHideEmptyFields(false);
+    setCopyVerify(0);
+    setImageVerify(0);
+    setImageJobVerify(ConfigurationPage::mSettings.value("ImageVerify", 0).toInt());
+    setImageJobCreate(ConfigurationPage::mSettings.value("ImageCreate", 1).toInt());
+    setCopyEject(false);
+    setUseErrorCorrection(ConfigurationPage::mSettings.value("ErrorCorrection", true).toBool());
+    setBlankBadSectors(false);
+    setEmptyDisk(false);
+    setIsIsoDisk(true);
+    setCopyReadMethod(0); //0=ISO;1=RAW;2=RAW+SUB
+    setCopyWriteMethod(0); //0=DAO;1=DAO96
+    setErrorHarwareRetry(ConfigurationPage::mSettings.value("HardwareRetryCount", 10).toInt());
+    setErrorSoftwareRetry(ConfigurationPage::mSettings.value("SoftwareRetryCount", 1).toInt());
+    setEjectAfterErase(ConfigurationPage::mSettings.value("EjectAfterErase", true).toBool());
+    setImageCreateSoftRetry(ConfigurationPage::mSettings.value("SoftwareRetryCount", 10).toInt());
+    setImageCreateHardRetry(ConfigurationPage::mSettings.value("HardwareRetryCount", 1).toInt());
+    setFastErase(true);
+    setImagePath("");
+    setImageCreateMethod(0);
+    setImageCorrSwitch(2);
+    mWorkThread = nullptr;
+    hasData=0;
 
-      QString wTitle = tr("Disk Info");
-      wTitle += " (";
-      wTitle += getBurnDrive();
-      wTitle += ")";
+    QString wTitle = tr("Disk Info");
+    wTitle += " (";
+    wTitle += getBurnDrive();
+    wTitle += ")";
 
-      setWindowTitle(wTitle);
+    setWindowTitle(wTitle);
 
-      diskInfoTable = new QTableWidget();
-      treeWidget = new  QDummyTextTree();
+    diskInfoTable = new QTableWidget();
+    treeWidget = new  QDummyTextTree();
 
-      QString style(
-          "QTableView:disabled {"
+    QString style(
+                "QTableView:disabled {"
               "gridline-color: #32414B;"
                   "border: 1px solid #32414B;"
                     "color: #32414B;"
           "}"
       );
-      diskInfoTable->setStyleSheet(style);
+    diskInfoTable->setStyleSheet(style);
 
-      splitter = new QSplitter;
-      splitter->addWidget(diskInfoTable);
-      splitter->addWidget(treeWidget);
-      //setCentralWidget(splitter);
-      setWidget(splitter);
+    splitter = new QSplitter;
+    splitter->addWidget(diskInfoTable);
+    splitter->addWidget(treeWidget);
+    //setCentralWidget(splitter);
+    setWidget(splitter);
 
-      diskInfoTable->setRowCount(50);
-      diskInfoTable->setColumnCount(2);
-      diskInfoTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
-      diskInfoTable->horizontalHeader()->setStretchLastSection(true);
-      diskInfoTable->horizontalHeader()->hide();
-      diskInfoTable->verticalHeader()->hide();
-      diskInfoTable->verticalHeader()->setDefaultSectionSize(21);
+    diskInfoTable->setRowCount(50);
+    diskInfoTable->setColumnCount(2);
+    diskInfoTable->setSizePolicy(QSizePolicy::Preferred,QSizePolicy::Preferred);
+    diskInfoTable->horizontalHeader()->setStretchLastSection(true);
+    diskInfoTable->horizontalHeader()->hide();
+    diskInfoTable->verticalHeader()->hide();
+    diskInfoTable->verticalHeader()->setDefaultSectionSize(21);
 
-      splitter->setStretchFactor(0, 1);
-      splitter->setStretchFactor(1, 2);
+    splitter->setStretchFactor(0, 1);
+    splitter->setStretchFactor(1, 2);
 
-      qRegisterMetaType<QVector<int> >("QVector<int>");
-      qRegisterMetaType<QVector<int> >("QList<QTreeWidgetItem*>");
-      qRegisterMetaType<QVector<int> >("QVector<pTableItem*>");
+    qRegisterMetaType<QVector<int> >("QVector<int>");
+    qRegisterMetaType<QVector<int> >("QList<QTreeWidgetItem*>");
+    qRegisterMetaType<QVector<int> >("QVector<pTableItem*>");
 
-      //emit StartWaitingSpinner still not works here.
-      QTimer::singleShot( 500, this, SLOT(startUpdateInfo()));
+    //emit StartWaitingSpinner still not works here.
+    QTimer::singleShot( 500, this, SLOT(startUpdateInfo()));
 
 }
 
 void MdiChildDiskInfo::updateDiskInfo()
 {
-  QTimer::singleShot( 500, this, SLOT(startUpdateInfo()));
+    QTimer::singleShot( 500, this, SLOT(startUpdateInfo()));
 
 }
 
 void MdiChildDiskInfo::closeEvent(QCloseEvent *event)
 {
-  event->accept();
+    event->accept();
 }
 
 int32 MdiChildDiskInfo::ExtractTextFromHandle(int32 handle,int32 nCDTCI, QString& rText)
@@ -143,11 +147,9 @@ int32 MdiChildDiskInfo::ExtractTextFromHandle(int32 handle,int32 nCDTCI, QString
     //LOOK HERE. Null termination, problem occour a couple of time from SDK.
 
     pBuf[nLen-1] = _T('\0');
-#if defined (WIN32)
-    rText = QString::fromUtf16(pBuf);
-#else
-    rText = QString::fromUtf8(pBuf);
-#endif
+
+    rText = convertToQT(pBuf);
+
     delete[] pBuf;
 
     return BS_SDK_ERROR_NO;
@@ -179,11 +181,8 @@ int32 MdiChildDiskInfo::ExtractTrackTextFromHandle(int32 handle, int32 nTrack, i
     }
 
     pBuf[nLen-1] = _T('\0');
-#if defined (WIN32)
-    rText = QString::fromUtf16(pBuf);
-#else
-    rText = QString::fromUtf8(pBuf);
-#endif
+
+    rText = convertToQT(pBuf);
 
     delete[] pBuf;
 
@@ -199,7 +198,9 @@ void MdiChildDiskInfo::qDebugAusgabeSDK(int32 errCode, const QString &customMess
 
     ::GetText(errCode,chError, &nLength);
     QString errDesc;
-    errDesc= QString::fromUtf8(chError);
+
+    errDesc= convertToQT(chError);
+
     qDebug("SDKError %s: %s", customMessage.toLatin1().constData(), errDesc.toLatin1().constData());
 }
 
@@ -233,7 +234,7 @@ void MdiChildDiskInfo::readDiskInfo()
     //We create now the items in a QList and then move to the main Thread.
     QTreeWidgetItem *treeItem = new QTreeWidgetItem();
     treeItem->setText(0, tr("Disk"));
-    treeItem->setIcon(0,QIcon(":/icons/disk_main.png"));
+    treeItem->setIcon(0,QIcon(":/icons/disk_main16.png"));
     treeItem->setExpanded(true);
 
     double nSectorSize = 0.0;
@@ -326,7 +327,7 @@ void MdiChildDiskInfo::readDiskInfo()
 
         QTreeWidgetItem *treechildItem = new QTreeWidgetItem();
         treechildItem->setText(0, tr("unknown"));
-        treechildItem->setIcon(0,QIcon(":/icons/disk_session.png"));
+        treechildItem->setIcon(0,QIcon(":/icons/disk_session16.png"));
         treeItem->addChild(treechildItem);
 
         double nDiskSize = 0.0;
@@ -344,20 +345,20 @@ void MdiChildDiskInfo::readDiskInfo()
 
             QString strInformation;
             switch(ti.nFormat)
-                {
-                case BS_TF_AUDIO:
-                  strInformation = tr("Audio ");
-                  nSectorSize = 2352.0;
-                  break;
-                case BS_TF_DATA_MODE1:
-                  nSectorSize = 2048.0;
-                  strInformation = tr("Mode 1 ");
-                  break;
-                case BS_TF_DATA_MODE2:
-                  strInformation = tr("Mode 2 ");
-                  nSectorSize = 2336.0;
-                  break;
-                }
+            {
+            case BS_TF_AUDIO:
+                strInformation = tr("Audio ");
+                nSectorSize = 2352.0;
+                break;
+            case BS_TF_DATA_MODE1:
+                nSectorSize = 2048.0;
+                strInformation = tr("Mode 1 ");
+                break;
+            case BS_TF_DATA_MODE2:
+                strInformation = tr("Mode 2 ");
+                nSectorSize = 2336.0;
+                break;
+            }
 
             if (ti.nFormat != BS_TF_AUDIO)
             {
@@ -393,49 +394,36 @@ void MdiChildDiskInfo::readDiskInfo()
                             return;
                         }
 
-#if defined (WIN32)
-    stISOInfo.strVolumeLabel = QString::fromUtf16(pISOVolumeInfo.chVolumeLabel);
-#else
-    stISOInfo.strVolumeLabel = QString::fromUtf8(pISOVolumeInfo.chVolumeLabel);
-#endif
+                        stISOInfo.strVolumeLabel = convertToQT(pISOVolumeInfo.chVolumeLabel);
+
                         switch(pISOVolumeInfo.sInfoEx.ISOLevel){
-                         case BS_ISO_LEVEL_1:
+                        case BS_ISO_LEVEL_1:
                             stISOInfo.strISOLevel = tr("Level 1");
                             break;
-                         case BS_ISO_LEVEL_2:
+                        case BS_ISO_LEVEL_2:
                             stISOInfo.strISOLevel = tr("Level 2");
                             break;
-                          case BS_ISO_LEVEL_3:
+                        case BS_ISO_LEVEL_3:
                             stISOInfo.strISOLevel = tr("Level 3");
                             break;
-                          case BS_ISO_LEVEL_ROMEO:
+                        case BS_ISO_LEVEL_ROMEO:
                             stISOInfo.strISOLevel = tr("Romeo");
                             break;
-                          default:
+                        default:
                             stISOInfo.strISOLevel = tr("Unknown");
 
 
                         }
 
-#if defined (WIN32)
-    stISOInfo.strAbstract = QString::fromUtf16(pISOVolumeInfo.sInfoEx.ISOAbstractFileIdentifier);
-    stISOInfo.strApplication = QString::fromUtf16(pISOVolumeInfo.sInfoEx.ISOApplicationIdentifier);
-    stISOInfo.strBiblio = QString::fromUtf16(pISOVolumeInfo.sInfoEx.ISOBiblioIdentifier);
-    stISOInfo.strCopyright = QString::fromUtf16(pISOVolumeInfo.sInfoEx.ISOCopyrightFileIdentifier);
-    stISOInfo.strDataPreparer = QString::fromUtf16(pISOVolumeInfo.sInfoEx.ISODataPreparerIdentifier);
-    stISOInfo.strPublisher = QString::fromUtf16(pISOVolumeInfo.sInfoEx.ISOPublisherIdentifier);
-    stISOInfo.strSet = QString::fromUtf16(pISOVolumeInfo.sInfoEx.ISOSetIdentifier);
-    stISOInfo.strSystem = QString::fromUtf16(pISOVolumeInfo.sInfoEx.ISOSystemIdentifier);
-#else
-    stISOInfo.strAbstract = QString::fromUtf8(pISOVolumeInfo.sInfoEx.ISOAbstractFileIdentifier);
-    stISOInfo.strApplication = QString::fromUtf8(pISOVolumeInfo.sInfoEx.ISOApplicationIdentifier);
-    stISOInfo.strBiblio = QString::fromUtf8(pISOVolumeInfo.sInfoEx.ISOBiblioIdentifier);
-    stISOInfo.strCopyright = QString::fromUtf8(pISOVolumeInfo.sInfoEx.ISOCopyrightFileIdentifier);
-    stISOInfo.strDataPreparer = QString::fromUtf8(pISOVolumeInfo.sInfoEx.ISODataPreparerIdentifier);
-    stISOInfo.strPublisher = QString::fromUtf8(pISOVolumeInfo.sInfoEx.ISOPublisherIdentifier);
-    stISOInfo.strSet = QString::fromUtf8(pISOVolumeInfo.sInfoEx.ISOSetIdentifier);
-    stISOInfo.strSystem = QString::fromUtf8(pISOVolumeInfo.sInfoEx.ISOSystemIdentifier);
-#endif
+
+                        stISOInfo.strAbstract = convertToQT(pISOVolumeInfo.sInfoEx.ISOAbstractFileIdentifier);
+                        stISOInfo.strApplication = convertToQT(pISOVolumeInfo.sInfoEx.ISOApplicationIdentifier);
+                        stISOInfo.strBiblio = convertToQT(pISOVolumeInfo.sInfoEx.ISOBiblioIdentifier);
+                        stISOInfo.strCopyright = convertToQT(pISOVolumeInfo.sInfoEx.ISOCopyrightFileIdentifier);
+                        stISOInfo.strDataPreparer = convertToQT(pISOVolumeInfo.sInfoEx.ISODataPreparerIdentifier);
+                        stISOInfo.strPublisher = convertToQT(pISOVolumeInfo.sInfoEx.ISOPublisherIdentifier);
+                        stISOInfo.strSet = convertToQT(pISOVolumeInfo.sInfoEx.ISOSetIdentifier);
+                        stISOInfo.strSystem = convertToQT(pISOVolumeInfo.sInfoEx.ISOSystemIdentifier);
 
                         stISOInfo.strRootAddress = QString::number(pISOVolumeInfo.nRootAddress);
 
@@ -496,53 +484,49 @@ void MdiChildDiskInfo::readDiskInfo()
                         SUDFVolumeInfo pUDFVolumeInfo;
                         ::GetUDFVolumeInformation(hSession, &pUDFVolumeInfo);
                         switch(pUDFVolumeInfo.nVersion){
-                          case BS_UDF_VERSION_102:
+                        case BS_UDF_VERSION_102:
                             strInformation += tr(" (1.02)");
                             stUDFInfo.strUDFVersion = tr("1.02");
                             break;
-                          case BS_UDF_VERSION_150:
+                        case BS_UDF_VERSION_150:
                             strInformation += tr(" (1.50)");
                             stUDFInfo.strUDFVersion = tr("1.50");
                             break;
-                          case BS_UDF_VERSION_200:
+                        case BS_UDF_VERSION_200:
                             strInformation += tr(" (2.00)");
                             stUDFInfo.strUDFVersion = tr("2.00");
                             break;
-                          case BS_UDF_VERSION_201:
+                        case BS_UDF_VERSION_201:
                             strInformation += tr(" (2.01)");
                             stUDFInfo.strUDFVersion = tr("2.01");
                             break;
-                          case BS_UDF_VERSION_250:
+                        case BS_UDF_VERSION_250:
                             strInformation += tr(" (2.50)");
                             stUDFInfo.strUDFVersion = tr("2.50");
                             break;
-                          case BS_UDF_VERSION_260:
+                        case BS_UDF_VERSION_260:
                             strInformation += tr(" (2.60)");
                             stUDFInfo.strUDFVersion = tr("2.60");
                             break;
-                          default:
+                        default:
                             stUDFInfo.strUDFVersion = tr("Unknown");
 
                         }
-#if defined (WIN32)
-    stUDFInfo.strPerparer = QString::fromUtf16(pUDFVolumeInfo.chPreparer);
-    stUDFInfo.strVolumeLabel = QString::fromUtf16(pUDFVolumeInfo.chVolumeLabel);
-#else
-    stUDFInfo.strPerparer = QString::fromUtf8(pUDFVolumeInfo.chPreparer);
-    stUDFInfo.strVolumeLabel = QString::fromUtf8(pUDFVolumeInfo.chVolumeLabel);
-#endif
+
+                        stUDFInfo.strPerparer = convertToQT(pUDFVolumeInfo.chPreparer);
+                        stUDFInfo.strVolumeLabel = convertToQT(pUDFVolumeInfo.chVolumeLabel);
 
                         stUDFInfo.strUDFFiles = QString::number(pUDFVolumeInfo.nFileCount);
                         stUDFInfo.strUDFFolders = QString::number(pUDFVolumeInfo.nDirCount);
                         stUDFInfo.strRootAddress = QString::number(pUDFVolumeInfo.nRootAddress);
                         switch(pUDFVolumeInfo.nPartitionType){
-                          case BS_UDF_PARTITION_PHYSICAL:
+                        case BS_UDF_PARTITION_PHYSICAL:
                             stUDFInfo.strUDFPartition  = tr("Physical");
                             break;
-                          case BS_UDF_PARTITION_VIRTUAL:
+                        case BS_UDF_PARTITION_VIRTUAL:
                             stUDFInfo.strUDFPartition  = tr("Virtual");
                             break;
-                          case BS_UDF_PARTITION_SPARABLE:
+                        case BS_UDF_PARTITION_SPARABLE:
                             stUDFInfo.strUDFPartition  = tr("Sparable");
                             break;
                         }
@@ -561,17 +545,17 @@ void MdiChildDiskInfo::readDiskInfo()
 
             QString trackInformation;
             if(ti.nSize>0){
-              nDiskSize += (ti.nSize*nSectorSize)/MEGABYTE;
-              trackInformation = QString("Track %1 LBA:%2 (%3 MB) %4").arg(QString::number(j),QString::number(ti.nStartLBA),QString::number((ti.nSize*nSectorSize)/MEGABYTE),strInformation);
+                nDiskSize += (ti.nSize*nSectorSize)/MEGABYTE;
+                trackInformation = QString("Track %1 LBA:%2 (%3 MB) %4").arg(QString::number(j),QString::number(ti.nStartLBA),QString::number((ti.nSize*nSectorSize)/MEGABYTE),strInformation);
             }else{
-              trackInformation = QString("Track %1 LBA:%2 %3").arg(QString::number(j),QString::number(ti.nStartLBA),strInformation);
+                trackInformation = QString("Track %1 LBA:%2 %3").arg(QString::number(j),QString::number(ti.nStartLBA),strInformation);
             }
 
             //Hier müssen wir noch unterscheiden zwischen AudioTrack, VideoTrack oder Datatrack. Zur Zeit nur Datatrack.
 
             QTreeWidgetItem *treeTrackItem = new QTreeWidgetItem(treechildItem);
             treeTrackItem->setText(0, trackInformation);
-            treeTrackItem->setIcon(0,QIcon(":/icons/disk_data_table.png"));
+            treeTrackItem->setIcon(0,QIcon(":/icons/disk_data_table16.png"));
             treechildItem->setExpanded(true);
 
             //Now we add the Audio Infos. We have: CDTExt and Indexes
@@ -610,9 +594,9 @@ void MdiChildDiskInfo::readDiskInfo()
 
                 }
                 if(!ExtractTrackTextFromHandle(hCdText, j, BS_CDTCI_ARRANGER, cdTextString)){
-                  cdTextString = tr("CDText Arranger: ")+cdTextString;
-                  QTreeWidgetItem *treeCDTextItem5 = new QTreeWidgetItem(treeCDTextMain);
-                  treeCDTextItem5->setText(0, cdTextString);
+                    cdTextString = tr("CDText Arranger: ")+cdTextString;
+                    QTreeWidgetItem *treeCDTextItem5 = new QTreeWidgetItem(treeCDTextMain);
+                    treeCDTextItem5->setText(0, cdTextString);
 
                 }
                 if(!ExtractTrackTextFromHandle(hCdText, j, BS_CDTCI_MESSAGE, cdTextString)){
@@ -653,9 +637,9 @@ void MdiChildDiskInfo::readDiskInfo()
         }
         QString strSession;
         if(si.dSessionSize>0){ //Protect against a crash
-          strSession = QString("Session %1 (%2 MB)").arg(QString::number(i),QString::number(nDiskSize));
+            strSession = QString("Session %1 (%2 MB)").arg(QString::number(i),QString::number(nDiskSize));
         }else{
-          strSession = QString("Session %1").arg(QString::number(i));
+            strSession = QString("Session %1").arg(QString::number(i));
         }
         treechildItem->setText(0,strSession);
     }
@@ -669,68 +653,68 @@ void MdiChildDiskInfo::readDiskInfo()
     setOpenDisk(false);
 
     switch (mi.nMediumStatus) {
-          case BS_MS_EMPTY_DISK:
-              setEmptyDisk(true);
-              stDiskInfo.strMediaStatus = tr("Empty Disk");
-          break;
-          case BS_MS_INCOMPLETE_DISK:
-              setOpenDisk(true);
-              stDiskInfo.strMediaStatus = tr("Incomplete Disk");
-          break;
-          case BS_MS_COMPLETE_DISK:
-              stDiskInfo.strMediaStatus = tr("Complete Disk");
-              stDiskInfo.strMediaFreeSpace = tr("n/a");
-          break;
+    case BS_MS_EMPTY_DISK:
+        setEmptyDisk(true);
+        stDiskInfo.strMediaStatus = tr("Empty Disk");
+        break;
+    case BS_MS_INCOMPLETE_DISK:
+        setOpenDisk(true);
+        stDiskInfo.strMediaStatus = tr("Incomplete Disk");
+        break;
+    case BS_MS_COMPLETE_DISK:
+        stDiskInfo.strMediaStatus = tr("Complete Disk");
+        stDiskInfo.strMediaFreeSpace = tr("n/a");
+        break;
 
     }
 
     switch(mi.nExtendedMediumType){
-        case BS_EMT_CD_ROM:
-          setIsIsoDisk(true); //We can read a CD with ISO and RAW
-          setIsBinDisk(true);
-          stDiskInfo.strMediaExType = tr("CD-ROM");
-          break;
-        case BS_EMT_CD_ROM_XA:
-          setIsIsoDisk(false);
-          setIsBinDisk(true);
-          stDiskInfo.strMediaExType = tr("CD-ROM XA");
-          break;
-        case BS_EMT_CD_AUDIO:
-          setIsIsoDisk(false);
-          setIsBinDisk(true);
-          stDiskInfo.strMediaExType = tr("Audio CD");
-          break;
-        case BS_EMT_CD_MIXED_MODE:
-          setIsIsoDisk(false);
-          setIsBinDisk(true);
-          stDiskInfo.strMediaExType = tr("Mixed Mode CD");
-          break;
-        case BS_EMT_CD_ENHANCED:
-          setIsIsoDisk(false);
-          setIsBinDisk(true);
-          stDiskInfo.strMediaExType = tr("Enhanced CD");
-          break;
-        case BS_EMT_CD_MULTISESSION:
-          setIsIsoDisk(true);
-          setIsBinDisk(false);
-          stDiskInfo.strMediaExType = tr("Multisession CD");
-          break;
-        case BS_EMT_DVD:
-          setIsIsoDisk(true);
-          setIsBinDisk(false);
-          stDiskInfo.strMediaExType = tr("DVD");
-          break;
-        case BS_EMT_BD:
-          setIsIsoDisk(true);
-          setIsBinDisk(false);
-          stDiskInfo.strMediaExType = tr("BD");
-          break;
-        case BS_EMT_HDDVD:
-          setIsIsoDisk(true);
-          setIsBinDisk(false);
-          stDiskInfo.strMediaExType = tr("HDDVD");
-          break;
-        default: break;
+    case BS_EMT_CD_ROM:
+        setIsIsoDisk(true); //We can read a CD with ISO and RAW
+        setIsBinDisk(true);
+        stDiskInfo.strMediaExType = tr("CD-ROM");
+        break;
+    case BS_EMT_CD_ROM_XA:
+        setIsIsoDisk(false);
+        setIsBinDisk(true);
+        stDiskInfo.strMediaExType = tr("CD-ROM XA");
+        break;
+    case BS_EMT_CD_AUDIO:
+        setIsIsoDisk(false);
+        setIsBinDisk(true);
+        stDiskInfo.strMediaExType = tr("Audio CD");
+        break;
+    case BS_EMT_CD_MIXED_MODE:
+        setIsIsoDisk(false);
+        setIsBinDisk(true);
+        stDiskInfo.strMediaExType = tr("Mixed Mode CD");
+        break;
+    case BS_EMT_CD_ENHANCED:
+        setIsIsoDisk(false);
+        setIsBinDisk(true);
+        stDiskInfo.strMediaExType = tr("Enhanced CD");
+        break;
+    case BS_EMT_CD_MULTISESSION:
+        setIsIsoDisk(true);
+        setIsBinDisk(false);
+        stDiskInfo.strMediaExType = tr("Multisession CD");
+        break;
+    case BS_EMT_DVD:
+        setIsIsoDisk(true);
+        setIsBinDisk(false);
+        stDiskInfo.strMediaExType = tr("DVD");
+        break;
+    case BS_EMT_BD:
+        setIsIsoDisk(true);
+        setIsBinDisk(false);
+        stDiskInfo.strMediaExType = tr("BD");
+        break;
+    case BS_EMT_HDDVD:
+        setIsIsoDisk(true);
+        setIsBinDisk(false);
+        stDiskInfo.strMediaExType = tr("HDDVD");
+        break;
+    default: break;
     }
 
     if(mi.nExtendedMediumType==BS_EMT_CD_AUDIO){
@@ -742,28 +726,28 @@ void MdiChildDiskInfo::readDiskInfo()
 
             QString cdTextString = tr("");
             if(!ExtractTextFromHandle(hCdText, BS_CDTCI_ARRANGER, cdTextString)){
-              stAudioInfo.strArranger = cdTextString;
-              cdTextString = tr("");
+                stAudioInfo.strArranger = cdTextString;
+                cdTextString = tr("");
             }
             if(!ExtractTextFromHandle(hCdText, BS_CDTCI_COMPOSER, cdTextString)){
-              stAudioInfo.strComposer = cdTextString;
-              cdTextString = tr("");
+                stAudioInfo.strComposer = cdTextString;
+                cdTextString = tr("");
             }
             if(!ExtractTextFromHandle(hCdText, BS_CDTCI_MESSAGE, cdTextString)){
-              stAudioInfo.strMessage = cdTextString;
-              cdTextString = tr("");
+                stAudioInfo.strMessage = cdTextString;
+                cdTextString = tr("");
             }
             if(!ExtractTextFromHandle(hCdText, BS_CDTCI_PERFORMER, cdTextString)){
-              stAudioInfo.strPerformer = cdTextString;
-              cdTextString = tr("");
+                stAudioInfo.strPerformer = cdTextString;
+                cdTextString = tr("");
             }
             if(!ExtractTextFromHandle(hCdText, BS_CDTCI_SONG_WRITER, cdTextString)){
-              stAudioInfo.strSongWriter = cdTextString;
-              cdTextString = tr("");
+                stAudioInfo.strSongWriter = cdTextString;
+                cdTextString = tr("");
             }
             if(!ExtractTextFromHandle(hCdText, BS_CDTCI_TITLE , cdTextString)){
-              stAudioInfo.strTitle = cdTextString;
-              cdTextString = tr("");
+                stAudioInfo.strTitle = cdTextString;
+                cdTextString = tr("");
             }
 
         }
@@ -771,17 +755,13 @@ void MdiChildDiskInfo::readDiskInfo()
 
 
     if(mi.fMaxWriteSpeed==-1){
-      stDiskInfo.strMediaMaxWSpeed = tr("Unknown");
+        stDiskInfo.strMediaMaxWSpeed = tr("Unknown");
     }else{
-      stDiskInfo.strMediaMaxWSpeed = QString("%1").arg(QString::number(mi.fMaxWriteSpeed));
+        stDiskInfo.strMediaMaxWSpeed = QString("%1").arg(QString::number(mi.fMaxWriteSpeed));
     }
-#if defined (WIN32)
-    stDiskInfo.strMediaUPC = QString::fromUtf16(mi.chUPCEANCode);
-    stDiskInfo.strMediaType = QString::fromUtf16(mi.chMediumType);
-#else
-    stDiskInfo.strMediaUPC = QString::fromUtf8(mi.chUPCEANCode);
-    stDiskInfo.strMediaType = QString::fromUtf8(mi.chMediumType);
-#endif
+
+    stDiskInfo.strMediaUPC = convertToQT(mi.chUPCEANCode);
+    stDiskInfo.strMediaType = convertToQT(mi.chMediumType);
 
     stDiskInfo.strBridgeFileSystem = tr("n/a");
     if(stISOInfo.isISO == 1 && stUDFInfo.isUDF == 1){
@@ -1705,8 +1685,79 @@ void MdiChildDiskInfo::on_thread_completed(QList<QTreeWidgetItem *> items, QVect
     splitter->setStretchFactor(1, 2);
 
     emit stopSpinner();
-    emit subwindowchanged(GetProjectType());
+    //emit subwindowchanged(GetProjectType());
+    emit datatrack_changed();
 }
 
+void MdiChildDiskInfo::setUIControls(Ribbon *, QWidget* parent)
+{
+    MainWindow *ribbonOwner = qobject_cast<MainWindow *>(parent);
 
+    ribbonOwner->delEditButton->setEnabled(false);
+    ribbonOwner->renameEditButton->setEnabled(false);
+    ribbonOwner->viewBrowserButton->setEnabled(false);
+    ribbonOwner->delAllEditButton->setEnabled(false);
+    ribbonOwner->updtEditButton->setEnabled(false);
+    ribbonOwner->inverseSelectEditButton->setEnabled(false);
+    ribbonOwner->allSelectEditButton->setEnabled(false);
+    ribbonOwner->addFolderEditButton->setEnabled(false);
+    ribbonOwner->addFileEditButton->setEnabled(false);
+    ribbonOwner->dataTrackEditButton->setEnabled(false);
+    ribbonOwner->audioTrackEditButton->setEnabled(false);
+    ribbonOwner->appSaveButton->setEnabled(false);
+    ribbonOwner->appSaveAsButton->setEnabled(false);
+    ribbonOwner->createFolderEditButton->setEnabled(false);
+
+    ribbonOwner->imageMediaButton->setEnabled( hasData == 1 ? true : false );
+    ribbonOwner->grabAudioMediaButton->setEnabled(false);
+
+
+}
+
+//SetBurnDevice List ist in den pDevice Projekten dann das ReadDevice.
+void MdiChildDiskInfo::setBurnDeviceList(QWidget* parent)
+{
+    MainWindow *ribbonOwner = qobject_cast<MainWindow *>(parent);
+
+    for(int i = 0; i < ribbonOwner->listReadDevicesWidget->count(); ++i)
+    {
+        if(ribbonOwner->listReadDevicesWidget->itemText(i) == getBurnDrive()){
+            ribbonOwner->listReadDevicesWidget->setCurrentIndex(i);
+        }
+    }
+}
 //MixedMode oder AudioCD oder ISO
+//emit subwindowchanged(GetProjectType());
+void MdiChildDiskInfo::setRibbonTabs(Ribbon *baseRibbon, QWidget* parent)
+{
+
+    //Für morgen
+    //IM Child wird das letzte aktive Tab gespeichert.
+    //Bei DiskInfo wird gespeichert ob 2Image aktiv wwar.
+    baseRibbon->blockSignals(true);
+    QString lastTab = getlastSelectedTab();
+
+    baseRibbon->hideAll();
+    //WEnn last selekted "Create Image" ist, dann
+    //müssen wir den auch anezigen,
+    if( lastTab == "Create image" && hasDataChild() == 1 ){
+        if(!baseRibbon->isTabVisible( lastTab )){
+            baseRibbon->showTab( ":/icons/create_image32.png", "Create image" );
+        }
+    }
+    if(baseRibbon->isTabVisible(lastTab)){
+        baseRibbon->currentTab(lastTab);
+    }else{
+        baseRibbon->currentTab("Device");
+    }
+
+    if(parent!=nullptr){
+        setUIControls(baseRibbon, parent);
+        setBurnDeviceList(parent);
+    }
+
+    baseRibbon->blockSignals(false);
+
+
+
+}

@@ -1,6 +1,6 @@
 /*
  *  DiskButler - a powerful CD/DVD/BD recording software tool for Linux, macOS and Windows.
- *  Copyright (c) 20019 Ingo Foerster (pixbytesl@gmail.com).
+ *  Copyright (c) 2021 Ingo Foerster (pixbytesl@gmail.com).
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License 3 as published by
@@ -20,7 +20,7 @@
 #include <QMdiArea>
 #include <QtWidgets>
 #include "mdichild_base.h"
-
+#include "mainwindow.h"
 
 MdiChildBase::MdiChildBase()
 {
@@ -34,34 +34,21 @@ MdiChildBase::MdiChildBase()
  * QEvent::WindowStateChange, QEvent::LanguageChange, QEvent::LocaleChange, QEvent::LayoutDirectionChange.
  */
 
-//emit subwindowchanged(GetProjectType());
 
 
-void MdiChildBase::windowStateChanged(Qt::WindowStates oldState, Qt::WindowStates newState)
+void MdiChildBase::nonVirtualItems( QWidget* parent )
 {
-    qDebug("StateChanged");
-    if(newState & Qt::WindowActive){
-        qDebug("ich bin aktiv");
-    }
-}
+    MainWindow *ribbonOwner = qobject_cast<MainWindow *>( parent );
 
-void MdiChildBase::changeEvent(QEvent * e) {
-
-    //QMdiSubWindow::changeEvent(e);
-    //Das Problem ist, er geht auf Hidden und der andere auf sichbar Wir müssen also nur activvieren sehen.
-    if (e->type() == QEvent::WindowStateChange) {
-      if (this->windowState() & Qt::WindowActive) {
-        emit subwindowchanged(GetProjectType());
-      }
-      QMdiSubWindow::changeEvent(e);
+    switch( GetProjectType() ){
+        case RuleManager::TYPE_PROJECT_DISKINFO:
+        case RuleManager::TYPE_PROJECT_HEX:
+        case RuleManager::TYPE_PROJECT_SCAN:
+        case RuleManager::TYPE_PROJECT_DEVICEINFO:
+        ribbonOwner->burnGeneralButton->setEnabled( false );
+        break;
+    default:
+        ribbonOwner->burnGeneralButton->setEnabled( true );
     }
-    /*
-    if(e->type() == QEvent::WindowStateChange && this->isActiveWindow()) {
-       // .. this is now the active window
-        //qDebug("Iam active now");
-        emit subwindowchanged(GetProjectType());
-    }
-    */
 
 }
-
