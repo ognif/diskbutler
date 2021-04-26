@@ -1,3 +1,4 @@
+
 #ifndef RIBBONBUILDER_H
 #define RIBBONBUILDER_H
 
@@ -189,18 +190,38 @@ extern void ribbonBuilderProject(Ribbon *baseRibbon, MainWindow *baseWindow){
 
 extern void ribbonBuilderDevice(Ribbon *baseRibbon, MainWindow *baseWindow){
 
-    QHBoxLayout *readdevices = new QHBoxLayout();
-    QWidget * wdgReadDiskWidget = new QWidget();
+    //GridLayout
+    QHBoxLayout *test = new QHBoxLayout();
+
+
+
+    QGridLayout *devicesGroup = new QGridLayout();
+
+    QLabel *wdReadDevice = new QLabel();
+    wdReadDevice->setText(QObject::tr("Read:"));
+    devicesGroup->addWidget(wdReadDevice,1,0);
+    QLabel *wdBurnDevice = new QLabel();
+    wdBurnDevice->setText(QObject::tr("Burn:"));
+    devicesGroup->addWidget(wdBurnDevice,0,0);
 
     baseWindow->listReadDevicesWidget = new QComboBox();
-    //listReadDevicesWidget = new QListWidget();
-    //listReadDevicesWidget->setSelectionMode(QAbstractItemView::SingleSelection);
     baseWindow->listReadDevicesWidget->setMinimumWidth(250);
     baseWindow->listReadDevicesWidget->setMaximumWidth(250);
     baseWindow->listReadDevicesWidget->setMaxVisibleItems(4);
-    readdevices->addWidget(baseWindow->listReadDevicesWidget, 0, Qt::AlignTop);
-    readdevices->setContentsMargins(3,3,3,0);
-    wdgReadDiskWidget->setLayout(readdevices);
+    //readdevices->addWidget(baseWindow->listReadDevicesWidget, 0, Qt::AlignTop);
+    devicesGroup->addWidget(baseWindow->listReadDevicesWidget,1,1);
+
+    baseWindow->listBurnDevicesWidget = new QComboBox();
+    baseWindow->listBurnDevicesWidget->setMinimumWidth(250);
+    baseWindow->listBurnDevicesWidget->setMaximumWidth(250);
+    baseWindow->listBurnDevicesWidget->setMaxVisibleItems(4);
+    //burndevices->addWidget(baseWindow->listBurnDevicesWidget, 0, Qt::AlignTop);
+    devicesGroup->addWidget(baseWindow->listBurnDevicesWidget,0,1);
+
+    QWidget * wdgReadDiskWidget = new QWidget();
+
+    test->setContentsMargins(3,0,0,0);
+    wdgReadDiskWidget->setLayout(devicesGroup);
     wdgReadDiskWidget->setFixedHeight(80);
     baseRibbon->addWidgetGroup(QObject::tr("Device"), QObject::tr("Read Device"), wdgReadDiskWidget);
 
@@ -277,25 +298,6 @@ extern void ribbonBuilderDevice(Ribbon *baseRibbon, MainWindow *baseWindow){
 
 extern void ribbonBuilderGeneral(Ribbon *baseRibbon, MainWindow *baseWindow){
 
-    QHBoxLayout *burndevices = new QHBoxLayout();
-    QWidget * wdgDisk1Widget = new QWidget();
-
-    baseWindow->listBurnDevicesWidget = new QComboBox();
-    //listBurnDevicesWidget->setSelectionMode(QAbstractItemView::SingleSelection);
-    baseWindow->listBurnDevicesWidget->setMinimumWidth(250);
-    baseWindow->listBurnDevicesWidget->setMaximumWidth(250);
-    burndevices->addWidget(baseWindow->listBurnDevicesWidget, 0, Qt::AlignTop);
-    burndevices->setContentsMargins(3,3,3,0);
-    wdgDisk1Widget->setLayout(burndevices);
-    wdgDisk1Widget->setFixedHeight(80);
-    baseRibbon->addWidgetGroup(QObject::tr("General"), QObject::tr("Burn Device(s)"), wdgDisk1Widget);
-
-    baseWindow->burnDeviceUpdateButton = new QToolButton;
-    baseWindow->burnDeviceUpdateButton->setText(QObject::tr("Refresh"));
-    baseWindow->burnDeviceUpdateButton->setToolTip(QObject::tr("Refresh device list"));
-    baseWindow->burnDeviceUpdateButton->setIcon(QIcon(":/icons/refresh32.png"));
-    baseWindow->burnDeviceUpdateButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Burn Device(s)"), baseWindow->burnDeviceUpdateButton,nullptr);
 
     QGridLayout *gridLayoutGeneral = new QGridLayout();
     QWidget * wdgGeneralFeatues = new QWidget();
@@ -348,28 +350,78 @@ extern void ribbonBuilderGeneral(Ribbon *baseRibbon, MainWindow *baseWindow){
     gridLayoutGeneral->setContentsMargins(3,0,0,0);
     wdgGeneralFeatues->setLayout(gridLayoutGeneral);
     wdgGeneralFeatues->setFixedHeight(80);
-    baseRibbon->addWidgetGroup(QObject::tr("General"), QObject::tr("Features"), wdgGeneralFeatues);
+    baseRibbon->addWidgetGroup(QObject::tr("General"), QObject::tr("Burn features"), wdgGeneralFeatues);
+
+
+
+    QGridLayout *gridLayoutErase = new QGridLayout();
+    QWidget * wdgEraseFeatues = new QWidget();
+
+    baseWindow->eraseFast = new QCheckBox(QObject::tr("Fast erase"));
+    baseWindow->eraseFast->setToolTip(QObject::tr("Activate this to just remove the TOC"));
+    baseWindow->eraseFast->setCheckState(Qt::Checked);
+    gridLayoutErase->addWidget(baseWindow->eraseFast,0,0);
+
+    baseWindow->ejectAfterErase = new QCheckBox(QObject::tr("Eject after erase"));
+    baseWindow->ejectAfterErase->setToolTip(QObject::tr("Eject the disk or tray after erase process is finsihed or aborted."));
+    baseWindow->ejectAfterErase->setCheckState(Qt::Checked);
+    gridLayoutErase->addWidget(baseWindow->ejectAfterErase,1,0);
+
+
+
+    gridLayoutErase->setContentsMargins(3,0,0,0);
+    wdgEraseFeatues->setLayout(gridLayoutErase);
+    wdgEraseFeatues->setFixedHeight(80);
+    baseRibbon->addWidgetGroup(QObject::tr("General"), QObject::tr("Erase features"), wdgEraseFeatues);
+
+
+
+    QGridLayout *gridLayoutImage = new QGridLayout();
+    QWidget * wdgImageFeatues = new QWidget();
+
+    baseWindow->burnISOAutoErase = new QCheckBox(QObject::tr("Auto erase"));
+    baseWindow->burnISOAutoErase->setToolTip(QObject::tr("Activate this to just remove the TOC"));
+    baseWindow->burnISOAutoErase->setCheckState(Qt::Checked);
+    gridLayoutImage->addWidget(baseWindow->burnISOAutoErase,0,0);
+    baseWindow->burnISOEjectAfterBurn = new QCheckBox(QObject::tr("Eject after burn"));
+    baseWindow->burnISOEjectAfterBurn->setToolTip(QObject::tr("Activate this to just remove the TOC"));
+    baseWindow->burnISOEjectAfterBurn->setCheckState(Qt::Checked);
+    gridLayoutImage->addWidget(baseWindow->burnISOEjectAfterBurn,1,0);
+    baseWindow->burnISOUnderrunProtection = new QCheckBox(QObject::tr("Underrun Protection"));
+    baseWindow->burnISOUnderrunProtection->setToolTip(QObject::tr("Activate this to just remove the TOC"));
+    baseWindow->burnISOUnderrunProtection->setCheckState(Qt::Checked);
+    gridLayoutImage->addWidget(baseWindow->burnISOUnderrunProtection,2,0);
+
+    gridLayoutImage->setContentsMargins(3,0,0,0);
+    wdgImageFeatues->setLayout(gridLayoutImage);
+    wdgImageFeatues->setFixedHeight(80);
+    baseRibbon->addWidgetGroup(QObject::tr("General"), QObject::tr("Burn image features"), wdgImageFeatues);
 
     baseWindow->burnGeneralButton = new QToolButton;
     baseWindow->burnGeneralButton->setText(QObject::tr("Burn"));
     baseWindow->burnGeneralButton->setToolTip(QObject::tr("Burn selected Project"));
     baseWindow->burnGeneralButton->setIcon(QIcon(":/icons/burn32.png"));
     baseWindow->burnGeneralButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Execute"), baseWindow->burnGeneralButton,nullptr);
+    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->burnGeneralButton,nullptr);
 
     baseWindow->eraseGeneralButton = new QToolButton;
     baseWindow->eraseGeneralButton->setText(QObject::tr("Erase"));
     baseWindow->eraseGeneralButton->setToolTip(QObject::tr("Erase RW disk"));
     baseWindow->eraseGeneralButton->setIcon(QIcon(":/icons/erase32.png"));
     baseWindow->eraseGeneralButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Execute"), baseWindow->eraseGeneralButton,nullptr);
+    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->eraseGeneralButton,nullptr);
 
     baseWindow->burnDiskImage = new QToolButton;
     baseWindow->burnDiskImage->setText(QObject::tr("Burn image"));
     baseWindow->burnDiskImage->setToolTip(QObject::tr("Burn disc image to disk"));
     baseWindow->burnDiskImage->setIcon(QIcon(":/icons/burnimage32.png"));
     baseWindow->burnDiskImage->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Execute"), baseWindow->burnDiskImage,nullptr);
+    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->burnDiskImage,nullptr);
+
+
+
+
+
 
 
 

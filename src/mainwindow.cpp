@@ -146,7 +146,7 @@ MainWindow::MainWindow(QWidget *parent) :
      connect( addFileEditButton, SIGNAL( clicked() ), this, SLOT( insertItem() ) );
      connect( addFolderEditButton, SIGNAL( clicked() ), this, SLOT( insertNode() ) );
      connect( createFolderEditButton, SIGNAL( clicked() ), this, SLOT( addNode() ) );
-     connect( delEditButton, SIGNAL( clicked() ), this, SLOT( deleteItem( )) );
+     connect( delEditButton, SIGNAL( clicked() ), this, SLOT( deleteItem()) );
      connect( renameEditButton, SIGNAL( clicked() ), this, SLOT( renameItemEx() ) );
      connect( delAllEditButton, SIGNAL( clicked() ), this, SLOT( resetFiles() ) );
      connect( updtEditButton, SIGNAL( clicked() ), this, SLOT( updateProject() ));
@@ -156,49 +156,10 @@ MainWindow::MainWindow(QWidget *parent) :
      connect( inverseSelectEditButton, SIGNAL( clicked() ), this, SLOT( reverseSelection() ) );
 
      //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-     //Start Device Tab
-     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-     ribbonBuilderDevice( ui->ribbonTabWidget, this );
-
-     connect(listReadDevicesWidget, QOverload<int>::of(&QComboBox::currentIndexChanged),
-         [=](int index){ updateReadDeviceSel(index);});
-     fillReadDriveList();
-
-     QAction* actionEjectReadDevice  = m_EjectTrayMenu->addAction( tr("Read device") );
-     actionEjectReadDevice->setCheckable( false );
-     connect( actionEjectReadDevice, &QAction::triggered, [=] { ejectTray(true); } );
-     QAction* actionEjectBurnDevice  = m_EjectTrayMenu->addAction( tr("Burn device") );
-     actionEjectBurnDevice->setCheckable( false );
-     connect( actionEjectBurnDevice, &QAction::triggered, [=] { ejectTray(false); } );
-
-     QAction* actionCloseReadDevice  = m_CloseTrayMenu->addAction( tr("Read device") );
-     actionCloseReadDevice->setCheckable( false );
-     connect( actionCloseReadDevice, &QAction::triggered, [=] { closeTray(true); } );
-     QAction* actionCloseBurnDevice  = m_CloseTrayMenu->addAction( tr("Burn device") );
-     actionCloseBurnDevice->setCheckable( false );
-     connect( actionCloseBurnDevice, &QAction::triggered, [=] { closeTray(false); } );
-
-     //connect(openDeviceButton, SIGNAL(clicked()), this, SLOT(ejectTray()));
-     //connect(closeDeviceButton, SIGNAL(clicked()), this, SLOT(closeTray()));
-     connect(readDeviceUpdateButton, SIGNAL(clicked()), this, SLOT(fillReadDriveList()));
-     connect(infoDeviceButton, SIGNAL(clicked()), this, SLOT(newDeviceInfo()));
-     connect(m_diskInfoMenu, SIGNAL(aboutToShow()), this, SLOT(updateDiskInfoMenu()));
-     connect(infoMediaButton, SIGNAL(clicked()), this, SLOT(newDiskInfo()));
-     connect(imageMediaButton, SIGNAL(clicked()), this, SLOT(release2ImageTab()));
-     //connect(grabAudioediaButton, SIGNAL(clicked()), this, SLOT(reverseSelection()));
-     connect(scanMediaButton, SIGNAL(clicked()), this, SLOT(openScanDialog()));
-     connect(hexMediaButton, SIGNAL(clicked()), this, SLOT(openHexEditor()));
-
-     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
      //Start General Tab
      //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
      ribbonBuilderGeneral( ui->ribbonTabWidget, this );
-     connect(listBurnDevicesWidget, QOverload<int>::of(&QComboBox::currentIndexChanged),
-         [=](int index){ updateBurnDeviceSel(index);});
 
-     fillBurnDriveList();
-
-     connect(burnDeviceUpdateButton, SIGNAL(clicked()), this, SLOT(fillBurnDriveList()));
      connect(simulateBurnGeneralCheck, SIGNAL(stateChanged(int)), this, SLOT(projectSimulateBurnChanged(int)));
      connect(ejectAfterGeneralCheck, SIGNAL(stateChanged(int)), this, SLOT(projectEjectChanged(int)));
      connect(autoEraseGeneralCheck, SIGNAL(stateChanged(int)), this, SLOT(projectAutoEraseChanged(int)));
@@ -211,6 +172,37 @@ MainWindow::MainWindow(QWidget *parent) :
      connect(burnGeneralButton, &QToolButton::clicked,  [=] { doBurn(); });
      connect(eraseGeneralButton, &QToolButton::clicked,  [=] { doErase(); });
      connect(burnDiskImage, &QToolButton::clicked,  [=] { doBurnImage(); });
+
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     //Start Device Tab
+     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+     ribbonBuilderDevice( ui->ribbonTabWidget, this );
+
+     connect(listReadDevicesWidget, QOverload<int>::of(&QComboBox::currentIndexChanged),
+         [=](int index){ updateReadDeviceSel(index);});
+     fillReadDriveList();
+     connect(listBurnDevicesWidget, QOverload<int>::of(&QComboBox::currentIndexChanged),
+         [=](int index){ updateBurnDeviceSel(index);});
+     fillBurnDriveList();
+
+     connect(readDeviceUpdateButton, SIGNAL(clicked()), this, SLOT(fillReadDriveList()));
+
+     QAction* actionEjectReadDevice  = m_EjectTrayMenu->addAction( tr("Read device") );
+     actionEjectReadDevice->setCheckable( false );
+     connect( actionEjectReadDevice, &QAction::triggered, [=] { ejectTray(true); } );
+
+     QAction* actionCloseReadDevice  = m_CloseTrayMenu->addAction( tr("Read device") );
+     actionCloseReadDevice->setCheckable( false );
+     connect( actionCloseReadDevice, &QAction::triggered, [=] { closeTray(true); } );
+     connect(openDeviceButton, SIGNAL(clicked()), this, SLOT(ejectTray()));
+     connect(closeDeviceButton, SIGNAL(clicked()), this, SLOT(closeTray()));
+     connect(infoDeviceButton, SIGNAL(clicked()), this, SLOT(newDeviceInfo()));
+     connect(m_diskInfoMenu, SIGNAL(aboutToShow()), this, SLOT(updateDiskInfoMenu()));
+     connect(infoMediaButton, SIGNAL(clicked()), this, SLOT(newDiskInfo()));
+     connect(imageMediaButton, SIGNAL(clicked()), this, SLOT(release2ImageTab()));
+     //connect(grabAudioediaButton, SIGNAL(clicked()), this, SLOT(reverseSelection()));
+     connect(scanMediaButton, SIGNAL(clicked()), this, SLOT(openScanDialog()));
+     connect(hexMediaButton, SIGNAL(clicked()), this, SLOT(openHexEditor()));
 
      //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
      //Start View Tab
@@ -912,6 +904,8 @@ void MainWindow::burnDriveChanged(int)
 void MainWindow::fillReadDriveList()
 {
 
+    fillBurnDriveList();
+
     mBurnDriveList.clear();
     ::EnableImageDevice(BS_FALSE);
     ::RescanDevices();
@@ -1360,9 +1354,10 @@ void MainWindow::doErase()
 {
 
     DBJobCommands eraseCommands;
-    eraseCommands.ejectErase = true;
-    eraseCommands.eraseFast = true;
+    eraseCommands.ejectErase = ejectAfterErase->isChecked();
+    eraseCommands.eraseFast = eraseFast->isChecked();
     eraseCommands.burnDevice = checkBurnDriveSelection();
+
 
     burnDialog *dialog = new burnDialog( DB_JOB_ERASE, &eraseCommands, nullptr, this );
     dialog->exec();
@@ -2684,4 +2679,13 @@ void MainWindow::mdiAreaActivationTemplate()
  *Irgendwie hinbekommen, wenn letztes Devices ar und dann kein Fenster mehr, dass er dann in Devices bleibt.
  *
  *Project geladen, Diskbutler icon
+ *
+ *EraseDone Event und BurnDone Event werden gleichzeitig  ausgelöset.
+ *Also je nach durchgang Deaktiviern und aktivieren
+ *
+ *Brenndialog: Current file wie bei vpropertywindow machen. Also elipsis
+ *
+ *Open/Eject TRay
+ *Hauptbutton burn device, Menu Readdevice
+ *
  */

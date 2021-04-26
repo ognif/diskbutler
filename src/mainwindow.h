@@ -191,6 +191,12 @@ public:
     QCheckBox *useRockRidgeFSCheck;
     QCheckBox *isoLongFileNamesFSCheck;
     QCheckBox *udfFileStreamFSCheck;
+    QCheckBox *eraseFast;
+    QCheckBox *ejectAfterErase;
+    QCheckBox *burnISOAutoErase;
+    QCheckBox *burnISOEjectAfterBurn;
+    QCheckBox *burnISOUnderrunProtection;
+
     QPushButton *burnDeviceUpdateGeneralButton;
     QPushButton *speedUpdateGeneralButton;
     QLineEdit *edIsoExSystemIdValue;
@@ -214,6 +220,7 @@ public:
     QMenu* m_CloseTrayMenu;
     QMenu* m_windowMenu;
     QMenu* m_imagetMenu;
+
 
 private:
     void fillSourceDriveList();
@@ -242,8 +249,8 @@ private slots:
     void addDataTrack();
     void addAudioTrack();
 
-    void closeTray(bool readDevice);
-    void ejectTray(bool readDevice);
+    void closeTray(bool readDevice = false);
+    void ejectTray(bool readDevice = false);
 
     void setDefaults();
 

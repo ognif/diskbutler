@@ -211,6 +211,7 @@ bool MdiChildDialog::loadFile(const QString &fileName)
   }
 
   RuleManager::ProjectType project_type;
+  setWindowIcon(QIcon(":/icons/diskbutler32.png"));
 
   QDomDocument doc;
   doc.setContent(&domFile);
