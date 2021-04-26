@@ -652,149 +652,176 @@ void MainWindow::checkFileSystemNaming()
      * Lange ISO Namen: 207
      * QDataItem *tempItem = GetSelectedTreeItem();
      *
-     * An welchem Punkt? Eigentlich überall dort wo das FS geändert wird
-     * Und eine Datei hinzugefügt wird.
-     * Aber auch wenn ein Ordner hinzugefügt wird oder ein Ordner gelöscht wird (Tiefe)
+     * What todo with UDF
+     * UDF is 255 file/folder
+     * pathlength 1023
+     * pathdepth = 99
      */
 
-
-    //We need to differ the Joliet and ISO NAming check
     int borderDir = 8;
     int borderISO = 11;
     int borderJoliet = 64;
     int bordeRockridge = 255;
     bool checkJoliet = false;
     bool checkRockRidge = false;
+    int borderLength = 255;
+    bool checkFSBorders = false;
 
-    if(useJolietFSCheck->isChecked()==true){
-        checkJoliet = true;
-    }
-    if(useRockRidgeFSCheck->isChecked()==true){
-        checkRockRidge = true;
-    }
+    RuleManager::ProjectType tProject = activeMdiChild()->GetProjectType();
+    if(RuleManager::IsOptionAllowed(tProject, RuleManager::OPTION_FILESYSTEMS_ISO9660)){
 
-    int isoLevel = isoLevelFSCombo->itemData(isoLevelFSCombo->currentIndex()).toInt();
-    switch(isoLevel){
-        case BS_ISO_LEVEL_1:
-            if(isoManyDirectoriesFSCheck->isChecked()==true){
-                borderDir = 120; //More than 999 is crazy
-            }
-            if(isoLongFileNamesFSCheck->isChecked()==true){
-                borderISO = 207;
-            }
-            if(jolietLongNamesFSCheck->isChecked()==true){
-                borderJoliet = 103;
-            }
-            if(useRockRidgeFSCheck->isChecked()==true){
-                bordeRockridge = 255;
+        checkFSBorders = true;
+
+        if(useJolietFSCheck->isChecked()==true){
+            checkJoliet = true;
+        }
+        if(useRockRidgeFSCheck->isChecked()==true){
+            checkRockRidge = true;
+        }
+
+        int isoLevel = isoLevelFSCombo->itemData(isoLevelFSCombo->currentIndex()).toInt();
+        switch(isoLevel){
+            case BS_ISO_LEVEL_1:
+                if(isoManyDirectoriesFSCheck->isChecked()==true){
+                    borderDir = 120; //More than 999 is crazy
+                }
+                if(isoLongFileNamesFSCheck->isChecked()==true){
+                    borderISO = 207;
+                }
+                if(jolietLongNamesFSCheck->isChecked()==true){
+                    borderJoliet = 103;
+                }
+                if(useRockRidgeFSCheck->isChecked()==true){
+                    bordeRockridge = 255;
+                    borderDir = 120;
+                }
+            break;
+            case BS_ISO_LEVEL_2:
+                borderISO = 31;
+                if(isoManyDirectoriesFSCheck->isChecked()==true){
+                    borderDir = 120; //More than 999 is crazy
+                }
+                if(isoLongFileNamesFSCheck->isChecked()==true){
+                    borderISO = 207;
+                }
+                if(jolietLongNamesFSCheck->isChecked()==true){
+                    borderJoliet = 103;
+                }
+                if(useRockRidgeFSCheck->isChecked()==true){
+                    bordeRockridge = 255;
+                    borderDir = 120;
+                }
+            break;
+            case BS_ISO_LEVEL_3:
                 borderDir = 120;
-            }
-        break;
-        case BS_ISO_LEVEL_2:
-            borderISO = 31;
-            if(isoManyDirectoriesFSCheck->isChecked()==true){
-                borderDir = 120; //More than 999 is crazy
-            }
-            if(isoLongFileNamesFSCheck->isChecked()==true){
                 borderISO = 207;
-            }
-            if(jolietLongNamesFSCheck->isChecked()==true){
                 borderJoliet = 103;
-            }
-            if(useRockRidgeFSCheck->isChecked()==true){
                 bordeRockridge = 255;
-                borderDir = 120;
-            }
-        break;
-        case BS_ISO_LEVEL_3:
+            break;
+            case BS_ISO_LEVEL_ROMEO:
+                borderDir = 8;
+                borderISO = 128;
+                //No Extension allowed
+                checkJoliet = false;
+                checkRockRidge = false;
+            break;
+        }
+
+    }else{
+        if(RuleManager::IsOptionAllowed(tProject, RuleManager::OPTION_FILESYSTEMS_UDF)){
+
+            checkFSBorders = true;
+
             borderDir = 120;
-            borderISO = 207;
-            borderJoliet = 103;
+            borderISO = 255;
+            borderJoliet = 64;
             bordeRockridge = 255;
-        break;
-        case BS_ISO_LEVEL_ROMEO:
-            borderDir = 8;
-            borderISO = 128;
-            //No Extension allowed
+            borderLength = 1023;
             checkJoliet = false;
             checkRockRidge = false;
-        break;
+
+        }
     }
 
 
-    QTreeWidgetItemIterator it( activeMdiChild()->getTreeWidget() );
-    while ( *it ) {
+    if(checkFSBorders == true){
 
-        /*
-         * Romeo und Joliet gehen nicht zusammen
-         * Rockridge und Joliet gehen da Rockridge nur das ISO erweitert
-         */
+        QTreeWidgetItemIterator it( activeMdiChild()->getTreeWidget() );
+        while ( *it ) {
 
-        int borderLength = 255;
-        //((QDataItem*)(*it))->setIconWarning(false,"");
-        QString strWarning = "";
+            /*
+             * Romeo und Joliet gehen nicht zusammen
+             * Rockridge und Joliet gehen da Rockridge nur das ISO erweitert
+             */
 
-        if( ((QDataItem*)(*it))->GetType()==QDataItem::File ){
-            int fileLength = ((QDataItem*)(*it))->GetName().length();
-            if( fileLength > borderISO ){
-                strWarning = QString( "File lenght exceed limit: %1 " ).arg( borderISO );
-            }
-            if( checkJoliet == true ){
-                if( fileLength > borderJoliet ){
-                   strWarning = QString( "Jolie file lenght exceed limit: %1 " ).arg( borderJoliet );
+
+            //((QDataItem*)(*it))->setIconWarning(false,"");
+            QString strWarning = "";
+
+            if( ((QDataItem*)(*it))->GetType()==QDataItem::File ){
+                int fileLength = ((QDataItem*)(*it))->GetName().length();
+                if( fileLength > borderISO ){
+                    strWarning = QString( "File lenght exceed limit: %1 " ).arg( borderISO );
                 }
-            }
-            if( checkRockRidge == true ){
-                if( fileLength > bordeRockridge ){
-                   strWarning = QString( "Rockridge file lenght exceed limit: %1 " ).arg( bordeRockridge );
+                if( checkJoliet == true ){
+                    if( fileLength > borderJoliet ){
+                       strWarning = QString( "Jolie file lenght exceed limit: %1 " ).arg( borderJoliet );
+                    }
                 }
-            }
-            //Pathmax
-            int fileMaxLength = ((QDataItem*)(*it))->GetDiskFilePath().length();
-            if( fileMaxLength > borderLength ){
-                strWarning = QString( "Max path lenght exceed limit: %1 " ).arg( borderLength );
-            }
-            //Path depth
-            QStringList dirList = ((QDataItem*)(*it))->GetDiskPath().split( PATHSEPSTRING );
-            if( dirList.size() > borderDir ){
-                strWarning += "; ";
-                strWarning += QString( "Border dir level exceed limit: %1 " ).arg( borderDir );
-            }
-         }
-
-        if ( ((QDataItem*)(*it))->GetType()==QDataItem::Folder ){
-
-            int folderLength = ((QDataItem*)(*it))->GetName().length();
-            if( folderLength > borderISO ){
-                strWarning = QString( "Folder lenght exceed limit: %1 " ).arg( borderISO );
-            }
-            if( checkJoliet == true ){
-                if( folderLength > borderJoliet ){
-                   strWarning = QString( "Joliet folder lenght exceed limit: %1 " ).arg( borderJoliet );
+                if( checkRockRidge == true ){
+                    if( fileLength > bordeRockridge ){
+                       strWarning = QString( "Rockridge file lenght exceed limit: %1 " ).arg( bordeRockridge );
+                    }
                 }
-            }
-            if( checkRockRidge == true ){
-                if( folderLength > bordeRockridge ){
-                   strWarning = QString( "Rockridge folder lenght exceed limit: %1 " ).arg( bordeRockridge );
+                //Pathmax
+                int fileMaxLength = ((QDataItem*)(*it))->GetDiskFilePath().length();
+                if( fileMaxLength > borderLength ){
+                    strWarning = QString( "Max path lenght exceed limit: %1 " ).arg( borderLength );
                 }
-            }
-            QStringList dirList = ((QDataItem*)(*it))->GetDiskFilePath().split( PATHSEPSTRING );
-            if( dirList.size() > borderDir ){
-                strWarning += "; ";
-                strWarning += QString( "Border dir level exceed limit: %1 " ).arg( borderDir );
+                //Path depth
+                QStringList dirList = ((QDataItem*)(*it))->GetDiskPath().split( PATHSEPSTRING );
+                if( dirList.size() > borderDir ){
+                    strWarning += "; ";
+                    strWarning += QString( "Border dir level exceed limit: %1 " ).arg( borderDir );
+                }
+             }
+
+            if ( ((QDataItem*)(*it))->GetType()==QDataItem::Folder ){
+
+                int folderLength = ((QDataItem*)(*it))->GetName().length();
+                if( folderLength > borderISO ){
+                    strWarning = QString( "Folder lenght exceed limit: %1 " ).arg( borderISO );
+                }
+                if( checkJoliet == true ){
+                    if( folderLength > borderJoliet ){
+                       strWarning = QString( "Joliet folder lenght exceed limit: %1 " ).arg( borderJoliet );
+                    }
+                }
+                if( checkRockRidge == true ){
+                    if( folderLength > bordeRockridge ){
+                       strWarning = QString( "Rockridge folder lenght exceed limit: %1 " ).arg( bordeRockridge );
+                    }
+                }
+                QStringList dirList = ((QDataItem*)(*it))->GetDiskFilePath().split( PATHSEPSTRING );
+                if( dirList.size() > borderDir ){
+                    strWarning += "; ";
+                    strWarning += QString( "Border dir level exceed limit: %1 " ).arg( borderDir );
+                }
+
             }
 
+            if(strWarning.length()>0){
+                ((QDataItem*)(*it))->setIconWarning( true, strWarning );
+            }else{
+                ((QDataItem*)(*it))->setIconWarning( false, strWarning );
+            }
+
+
+            ++it;
         }
 
-        if(strWarning.length()>0){
-            ((QDataItem*)(*it))->setIconWarning( true, strWarning );
-        }else{
-            ((QDataItem*)(*it))->setIconWarning( false, strWarning );
-        }
-
-
-        ++it;
     }
+
 
     //What is the best way to autocorrect? The lowest possible filename.
     //Unblocksignals

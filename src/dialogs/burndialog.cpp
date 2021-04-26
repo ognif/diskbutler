@@ -434,6 +434,7 @@ burnDialog::burnDialog( int sdkJobType, DBJobCommands *jobCommands, CommonTreeWi
 
 
 
+
     if( thisJobType == DB_JOB_BURN )
     {
 
@@ -585,11 +586,10 @@ void burnDialog::buildCommonDialog()
     QAction *testAction = new QAction( "Change burning device" , this );
     menu->addAction( testAction );
 
-
-
-
     ui->testmenu->setText( "New burn" );
     ui->testmenu->setMenu( menu );
+
+
 
     /*
 
@@ -1366,15 +1366,15 @@ void burnDialog::startBurnProject(QString burnDrive)
             isoInfo.ISOEffectiveDateTime = tEffective;
         }
 
-
+        res = ::SetISOInfoEx( isoInfo );
+        if ( res != BS_SDK_ERROR_NO )
+        {
+            onHandleError( res );
+            return;
+        }
     }
 
-    res = ::SetISOInfoEx( isoInfo );
-    if ( res != BS_SDK_ERROR_NO )
-    {
-        onHandleError( res );
-        return;
-    }
+
 
     //return;
 
@@ -1397,6 +1397,7 @@ void burnDialog::startBurnProject(QString burnDrive)
         addLogItem(tr("Set boot platform ID: ")+QString::number(diskItem->getBootPlatformID()),1);
         info.SectorCount	= diskItem->getBootSectors().toInt();
         addLogItem(tr("Set boot sectors: ")+diskItem->getBootSectors(),1);
+
         res = ::SetBootInfoEx(info);
         if (res != BS_SDK_ERROR_NO)
         {
@@ -1534,6 +1535,7 @@ void burnDialog::startBurnProject(QString burnDrive)
         addLogItem(tr("Set UDF parition: ")+QString::number(diskItem->getUDFPartition()),1);
         cUDFOptions.WriteFileStreams = diskItem->getUDFWriteStream();
         addLogItem(tr("Set UDF write file streams: ")+QString::number(diskItem->getUDFWriteStream()),1);
+
         res = ::SetUDFOptions( cUDFOptions );
         if ( res != BS_SDK_ERROR_NO )
         {
@@ -1862,9 +1864,14 @@ void burnDialog::myPostMessage(QString msg)
 
 void burnDialog::myPostFileEvent(QString file)
 {
-    //addLogItem(strFile); //We will not log here because it is overlapped and some files are missed.
-    ui->currentTask->setText(file);
+    //addLogItem(strFile); //We will not log here because it is overlapped and some files are missed.    QFontMetrics fm;
+    QFont f = ui->currentTask->font();
+    QFontMetrics fm = QFontMetrics(f);
+    int max_w = ui->currentTask->width();
+    QString elided_text = fm.elidedText(file, Qt::ElideMiddle, max_w);
+    ui->currentTask->setText(elided_text); //need change
     qDebug() << file;
+    qDebug() << elided_text;
 }
 
 void burnDialog::myActionAfterBurn(QString msg, bool isError)
