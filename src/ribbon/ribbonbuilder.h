@@ -353,7 +353,6 @@ extern void ribbonBuilderGeneral(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseRibbon->addWidgetGroup(QObject::tr("General"), QObject::tr("Burn features"), wdgGeneralFeatues);
 
 
-
     QGridLayout *gridLayoutErase = new QGridLayout();
     QWidget * wdgEraseFeatues = new QWidget();
 
@@ -367,13 +366,16 @@ extern void ribbonBuilderGeneral(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->ejectAfterErase->setCheckState(Qt::Checked);
     gridLayoutErase->addWidget(baseWindow->ejectAfterErase,1,0);
 
-
+    //Why size height + 7
 
     gridLayoutErase->setContentsMargins(3,0,0,0);
     wdgEraseFeatues->setLayout(gridLayoutErase);
     wdgEraseFeatues->setFixedHeight(80);
     baseRibbon->addWidgetGroup(QObject::tr("General"), QObject::tr("Erase features"), wdgEraseFeatues);
 
+    //Spacer is Checkbox + spacing of gridlayout
+    QSpacerItem *spacerItem = new QSpacerItem(10,baseWindow->avchdGeneralCheck->sizeHint().height()+gridLayoutErase->layout()->spacing(), QSizePolicy::Fixed, QSizePolicy::Fixed);
+    gridLayoutErase->addItem(spacerItem,2,0);
 
 
     QGridLayout *gridLayoutImage = new QGridLayout();

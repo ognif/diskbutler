@@ -1891,7 +1891,6 @@ void MainWindow::saveAs()
 
 void MainWindow::openSettings()
 {
-
     ConfigDialog *dialog = new ConfigDialog;
     dialog->exec();
 

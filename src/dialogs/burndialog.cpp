@@ -467,10 +467,7 @@ burnDialog::burnDialog( int sdkJobType, DBJobCommands *jobCommands, CommonTreeWi
         addLogItem( tr( "Set fast erase option: " ) + QString( controlParams->eraseFast ? "true" : "false" ), 0 );
         addLogItem( tr( "Set eject after erase option: " ) + QString( controlParams->ejectErase ? "true" : "false" ), 0 );
 
-        m_enState = ST_BURN;
-        ui->logLevel->setEnabled( false );
-        ui->saveLog->setEnabled( false );
-        ui->testmenu->setEnabled( false );
+        switchControls(false);
 
         res = ::Erase( controlParams->eraseFast, controlParams->ejectErase );
         if ( res != BS_SDK_ERROR_NO )
@@ -480,9 +477,6 @@ burnDialog::burnDialog( int sdkJobType, DBJobCommands *jobCommands, CommonTreeWi
         }
 
     }
-
-
-
 
 }
 
@@ -570,6 +564,8 @@ void burnDialog::buildCommonDialog()
 
     SetAddFileEventCallback( ( AddFileEvent ) burnDialog::OnAddFileEvent, this );
     SetCreateDirEventCallback( ( CreateDirEvent ) burnDialog::OnCreateDirEvent, this );
+
+    //if(thisJobType==DB_JOB_ERASE)
     SetBurnDoneEventCallback( ( BurnDoneEvent ) burnDialog::OnBurnDoneEvent, this );
     SetBurnFileEventCallback( ( BurnFileEvent ) burnDialog::OnBurnFileEvent, this );
     SetEraseDoneEventCallback( ( EraseDoneEvent ) burnDialog::OnEraseDoneEvent, this );
@@ -627,7 +623,6 @@ void burnDialog::buildCommonDialog()
 
 burnDialog::~burnDialog()
 {
-    qDebug("End Dialog");
     SetAddFileEventCallback(nullptr, nullptr);
     SetCreateDirEventCallback(nullptr, nullptr);
     SetBurnDoneEventCallback(nullptr, nullptr);
@@ -641,7 +636,6 @@ burnDialog::~burnDialog()
     SetVerifyDoneEventCallback(nullptr, nullptr);
     SetVerifyErrorEventCallback(nullptr, nullptr);
     SetVerifyFileEventCallback(nullptr, nullptr);
-    qDebug("killTimer");
     killTimer(timerId);
     delete ui;
 }
@@ -686,15 +680,8 @@ void burnDialog::step9Project()
         }
     }
 
-
-
-
-
-
     QTrackItem *track = dynamic_cast<QTrackItem*>(tSelected);
     STrackInfo info = track->GetTrackInfo();
-
-
 
     SAudioGrabbingParams params;
     //params.nNetworkTagsHandle = tagInfo.getHandle();
@@ -723,10 +710,7 @@ void burnDialog::step9Project()
         return;
     }
 
-    m_enState = ST_BURN;
-    ui->logLevel->setEnabled(false);
-    ui->saveLog->setEnabled(false);
-    ui->testmenu->setEnabled(false);
+    switchControls(false);
 }
 
 //Creat Image
@@ -794,10 +778,7 @@ void burnDialog::extractAudioTrack()
                                    pSavePath, nFormat);
         delete [] pSavePath;
 
-        m_enState = ST_BURN;
-        ui->logLevel->setEnabled(false);
-        ui->saveLog->setEnabled(false);
-        ui->testmenu->setEnabled(false);
+        switchControls(false);
     }
 
     if(tSelected->GetType()==QDataItem::DataTrack){
@@ -819,16 +800,10 @@ void burnDialog::extractAudioTrack()
                                    pSavePath, nFormat);
         delete [] pSavePath;
 
-
-        m_enState = ST_BURN;
-        ui->logLevel->setEnabled(false);
-        ui->saveLog->setEnabled(false);
-        ui->testmenu->setEnabled(false);
+        switchControls(false);
 
 
     }
-
-
 
 }
 
@@ -842,13 +817,10 @@ void burnDialog::step6Project()
     int nTRack = 0;
     int32 nFSSystem = 0;
 
-
     QDataItem *tSelected = projectTree->GetSelectedItem();
 
     //Es ist zwingend notwendig auch SetImage zu setzen weil das ja schon aus sein kann.
     //strSource
-
-
 
     QString strSourceX = dlgSource->currentFile();
     QString strSource = QDir::toNativeSeparators(strSourceX);
@@ -947,10 +919,7 @@ void burnDialog::step6Project()
         ::CloseDiskSession(hSession);
         //And it continue
 
-        m_enState = ST_BURN;
-        ui->logLevel->setEnabled(false);
-        ui->saveLog->setEnabled(false);
-        ui->testmenu->setEnabled(false);
+        switchControls(false);
     }
 
 }
@@ -977,7 +946,6 @@ void burnDialog::burnDiskImage()
         return;
     }
 
-
     addLogItem(tr("Set burn device: ")+strDriveName,0);
     res = ::SetBurnDevice(strDriveName.at(0).toLatin1());
     if (res != BS_SDK_ERROR_NO)
@@ -1000,27 +968,21 @@ void burnDialog::burnDiskImage()
         //ISO Options
         SOptions opt;
 
-
         ::GetOptions(&opt);
 
         addLogItem(tr("Start BurnISO process now (::BurnISO(stringPath, SOptions))"),0);
 
-        m_enState = ST_BURN;
-        ui->logLevel->setEnabled(false);
-        ui->saveLog->setEnabled(false);
-        ui->testmenu->setEnabled(false);
+        switchControls(false);
 
         const TCHAR *pFilePath = convertToFoxValue(strSavePath);
         res = ::BurnISO(pFilePath, opt);
         delete [] pFilePath;
-
 
         if (res != BS_SDK_ERROR_NO)
         {
             onHandleError(res);
             return;
         }
-
 
     }else{
         //CUE
@@ -1054,10 +1016,7 @@ void burnDialog::burnDiskImage()
             return;
         }
 
-        m_enState = ST_BURN;
-        ui->logLevel->setEnabled(false);
-        ui->saveLog->setEnabled(false);
-        ui->testmenu->setEnabled(false);
+        switchControls(false);
 
         addLogItem(tr("Start Burn process now (::Burn())"),0);
         res = ::Burn();
@@ -1127,10 +1086,7 @@ void burnDialog::step3Project()
         return;
     }
 
-    m_enState = ST_BURN;
-    ui->logLevel->setEnabled(false);
-    ui->saveLog->setEnabled(false);
-    ui->testmenu->setEnabled(false);
+    switchControls(false);
 }
 
 void burnDialog::startBurnProject(QString burnDrive)
@@ -1210,8 +1166,6 @@ void burnDialog::startBurnProject(QString burnDrive)
         onHandleError( res );
         return;
     }
-
-
 
     addLogItem( tr( "Set burn device: " ) + strDriveName, 0 );
 
@@ -1373,10 +1327,6 @@ void burnDialog::startBurnProject(QString burnDrive)
             return;
         }
     }
-
-
-
-    //return;
 
     if( diskItem->getDoBootDisk() == true ){
         addLogItem( tr( "Set options SBootInfoEx" ), 0 );
@@ -1632,11 +1582,7 @@ void burnDialog::createImageJob()
         return;
     }
 
-
-    m_enState = ST_BURN;
-    ui->logLevel->setEnabled( false );
-    ui->saveLog->setEnabled( false );
-    ui->testmenu->setEnabled( false );
+    switchControls(false);
 
 }
 
@@ -1699,10 +1645,7 @@ void burnDialog::startBurnNow()
     ui->currentSpeed->setText(QString("%1 KB/s").arg(QString::number(nSpeed)));
 
     addLogItem(tr("Start Burn process now (::Burn())"),0);
-    m_enState = ST_BURN;
-    ui->logLevel->setEnabled(false);
-    ui->saveLog->setEnabled(false);
-    ui->testmenu->setEnabled(false);
+    switchControls(false);
 
     res = ::Burn();
     if (res != BS_SDK_ERROR_NO)
@@ -1720,7 +1663,6 @@ void burnDialog::addLogItem(QString strText, int logLevel)
         QListWidgetItem *item = new QListWidgetItem(strAusgabe);
         ui->listWidget->insertItem(0,item);
     }
-
 
 }
 
@@ -1742,6 +1684,7 @@ void burnDialog::onHandleError( int32 res )
 
     addLogItem( strError, 0 );
     qDebug("Error: %s",strError.toLatin1().constData());
+    switchControls(true);
 }
 
 void burnDialog::debugStateChanged(int nState)
@@ -1757,6 +1700,7 @@ void burnDialog::checkBluRayProject()
     if (res != BS_SDK_ERROR_NO)
     {
         onHandleError(res);
+        return;
     }
 
     SUDFOptions mOptions;
@@ -1778,6 +1722,7 @@ void burnDialog::checkBluRayProject()
     if (res != BS_SDK_ERROR_NO)
     {
         onHandleError(res);
+        return;
     }
 
     SOptions cOptions;
@@ -1788,6 +1733,7 @@ void burnDialog::checkBluRayProject()
     if (res != BS_SDK_ERROR_NO)
     {
         onHandleError(res);
+        return;
     }
 
 }
@@ -1850,10 +1796,7 @@ void burnDialog::UpdateMyUI(int percent, int cache)
 
 void burnDialog::myJobDoneEvent(QString msg)
 {
-    ui->logLevel->setEnabled(true);
-    ui->saveLog->setEnabled(true);
-    if(thisJobType==1 || thisJobType==5)ui->testmenu->setEnabled(true);
-    m_enState = ST_NONE;
+    switchControls(true);
     addLogItem(msg,0);
 }
 
@@ -1878,11 +1821,6 @@ void burnDialog::myActionAfterBurn(QString msg, bool isError)
     qDebug() << msg;
     if(isError==false){ //isok
         if(ConfigurationPage::mSettings.value("AutoSaveProjects", false).toBool()==true){
-            //Enumerate Paths
-            //Build from EAN Code
-            //WRite
-            //Title
-            qDebug() << "start";
             QDateTime dt = QDateTime::currentDateTime();
             QString strDateTime = dt.toString("hhmmssyyyyMMdd");
             QString strSave = QString("%1(%2).xml").arg(strDateTime, diskItem->getDisktitle());
@@ -2045,4 +1983,23 @@ void burnDialog::on_testmenu_clicked()
 
     addLogItem(tr("Check writeable media now."),0);
     timerId = startTimer(1000);
+}
+
+void burnDialog::switchControls(bool restore)
+{
+
+    if(restore==true){
+        m_enState = ST_NONE;
+        ui->cancel->setText(tr("Close"));
+        ui->logLevel->setEnabled(true);
+        ui->saveLog->setEnabled(true);
+        if(thisJobType==1 || thisJobType==5)ui->testmenu->setEnabled(true);
+    }else{
+        m_enState = ST_BURN;
+        ui->cancel->setText(tr("Stop"));
+        ui->logLevel->setEnabled(false);
+        ui->saveLog->setEnabled(false);
+        ui->testmenu->setEnabled(false);
+    }
+
 }

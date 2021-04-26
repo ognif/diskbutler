@@ -141,6 +141,7 @@ private:
     SAudioGrabbingParams *projectParams;
     QDiskItem *diskItem;
     void addLogItem(QString strText, int logLevel);
+    void switchControls(bool restore);
 
     void buildCommonDialog();
     MdiChildDiskInfo *jobSource;
