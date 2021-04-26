@@ -749,11 +749,6 @@ void MainWindow::checkFileSystemNaming()
         QTreeWidgetItemIterator it( activeMdiChild()->getTreeWidget() );
         while ( *it ) {
 
-            /*
-             * Romeo und Joliet gehen nicht zusammen
-             * Rockridge und Joliet gehen da Rockridge nur das ISO erweitert
-             */
-
 
             //((QDataItem*)(*it))->setIconWarning(false,"");
             QString strWarning = "";
@@ -2692,27 +2687,23 @@ void MainWindow::mdiAreaActivationTemplate()
  *Tab General bleibt als Dauerbrenner und nur Die Optionen werden an usn aus geschaltet.
  *Ebenso die Buttons.
  *
- *Level 3 ist Standard / IMGBurn wohl Level 2
- *Heisst also wir prüfen nur nach den Levels und dan nnach den Einstellungen
- *
  *Import von Dateien aus einem anderen Projekt
  *
  *
+ *###################################
  *Usage of Read and Burn Devices
  *The FoxSDK delivers an array of drives.
  *ReadDevices and BurnDevices are an different array but currently the same inside the SDK
  *So we need to set the drive names for each Interaction.
  *
- *Irgendwie hinbekommen, wenn letztes Devices ar und dann kein Fenster mehr, dass er dann in Devices bleibt.
+ *###################################
+ *ISO9660 - > Diskbutler is using Level3 as default until the community chaneg it.
+ *In all it makes more sense for modern systems to use Level3.
  *
- *Project geladen, Diskbutler icon
+ *Irgendwie hinbekommen, wenn letztes Devices ar und dann kein Fenster mehr, dass er dann in Devices bleibt.
  *
  *EraseDone Event und BurnDone Event werden gleichzeitig  ausgelöset.
  *Also je nach durchgang Deaktiviern und aktivieren
  *
- *Brenndialog: Current file wie bei vpropertywindow machen. Also elipsis
- *
- *Open/Eject TRay
- *Hauptbutton burn device, Menu Readdevice
  *
  */

@@ -1870,8 +1870,6 @@ void burnDialog::myPostFileEvent(QString file)
     int max_w = ui->currentTask->width();
     QString elided_text = fm.elidedText(file, Qt::ElideMiddle, max_w);
     ui->currentTask->setText(elided_text); //need change
-    qDebug() << file;
-    qDebug() << elided_text;
 }
 
 void burnDialog::myActionAfterBurn(QString msg, bool isError)
