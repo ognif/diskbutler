@@ -21,7 +21,7 @@
  * Todo: Internal Drag & Drop inside the TreeWidegt
  */
 
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 #include "qdataitem.h"
 #include "qdiskitem.h"
 #include "qaudiotrackitem.h"
@@ -89,6 +89,7 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
     setAcceptDrops( true );
     setDragEnabled( false );
     setOverwriteFlag( true );
+    g_BassHandle = 0;
 
     setDefaultDropAction( Qt::MoveAction );
     setDropIndicatorShown( true );
@@ -270,7 +271,6 @@ void CommonTreeWidget::slot_insert_item_from_dialog()
     QString path = QFileDialog::getOpenFileName(this);
     if (path != "") {
         InsertItem(path);
-        //qDebug("Insert item from Dialog");
         emit datatrackChanged();
     }
 }
@@ -318,7 +318,7 @@ void CommonTreeWidget::slot_handle_itemSelectChanged()
     if (mSelectedItem == nullptr)
         return;
 
-    if (QDataItem::AudioTrack == mSelectedItem->GetType() && mAudioCount > 1) {
+    if (QDataItem::AudioTrack == mSelectedItem->GetType() && getAudioTrackCount() > 1) {
         emit audiotrackChanged(true);
     } else {
         emit audiotrackChanged(false);
@@ -820,11 +820,9 @@ void CommonTreeWidget::DeleteItem()
             QDataItem *selected = mSelectedItem;
 
             if (QDataItem::AudioTrack == mSelectedItem->GetType()) {
-                mAudioCount--;
                 parentItem->removeChild(selected);
                 updateAudioTrackName();
             }else if(QDataItem::AudioTrack == ((QDataItem*)parentItem)->GetType()){
-                mAudioCount--;
                 parentItem->removeChild(selected);
                 QAudioTrackItem *audio_track = (QAudioTrackItem*)mSelectedItem;
                 audio_track->resetAll();
@@ -1569,8 +1567,11 @@ QDataItem* CommonTreeWidget::getDataTrackItem() {
     return mDataTrackItem;
 }
 
-QDataItem* CommonTreeWidget::addAudioTrack() {
+QDataItem* CommonTreeWidget::addAudioTrack()
+{
     QDataItem *audiotrack = nullptr;
+
+    mAudioCount = getAudioTrackCount();
 
     if (getIsFSSyncAvailable()) {
         QMessageBox::about(this, tr("Information"),
@@ -1603,7 +1604,7 @@ QDataItem* CommonTreeWidget::addAudioTrack() {
 
 QDataItem* CommonTreeWidget::addAudioToNewAudioTrack(const QString &path)
 {
-    if (!isAudioFile(path) || mAudioCount >= 99)
+    if (!isAudioFile(path) || getAudioTrackCount() >= 99)
         return nullptr;
 
     // Add new audio track
@@ -1625,35 +1626,45 @@ QDataItem* CommonTreeWidget::replaceAudioInAudioTrack(QDataItem *audio_track, co
     return addAudioToEmptyAudioTrack(audio_track, path);
 }
 
-QDataItem* CommonTreeWidget::addAudioToEmptyAudioTrack(QDataItem *, const QString &)
+QDataItem* CommonTreeWidget::addAudioToEmptyAudioTrack(QDataItem *audio_track, const QString &path)
 {
-    return nullptr;
-    /*
+
   if (audio_track->childCount() != 0)
     return nullptr;
+
   QFileInfo file_info(path);
   QDataItem *audioItem;
   audioItem = new QDataItem(audio_track);
   audioItem->setFlags((audioItem->flags() & (~Qt::ItemIsDropEnabled)));
   audioItem->SetType(QDataItem::File);
 
-
-
   //CDTEXT
-  if(BASS_GetDevice()==-1){
+  DWORD deviceValue = -1;
+  if(BASS_GetDevice() == deviceValue){
       if (!BASS_Init(-1, 44100, 0, NULL, NULL)){
           QMessageBox::about(this, tr("Information"), tr("Error Init Bass"));
       }
       BASS_SetConfig(BASS_CONFIG_GVOL_STREAM, 100 * 100);
   }
 
-  BASS_StreamFree(str);
-  str= BASS_StreamCreateFile(FALSE,path.toLatin1().data(),0,0,0);
+  if (g_BassHandle)
+  {
+      BASS_ChannelStop(g_BassHandle);
+      BASS_StreamFree(g_BassHandle);
+      g_BassHandle = 0;
+  }
+
+#ifdef WIN32
+  g_BassHandle = BASS_StreamCreateFile(false, (const WCHAR*)convertToFoxValue(path), 0, 0, BASS_UNICODE);
+#else
+  g_BassHandle = BASS_StreamCreateFile(false, convertToFoxValue(path), 0, 0, 0);
+#endif
 
   //Now we read the tags with the bass.dll and tag.dll
-
+  //This is important for Umlauts
+  TAGS_SetUTF8(true);
   const char* fmt = "[%TITL|%ARTI|%ALBM|%GNRE|%YEAR|%CMNT|%TRCK|%COMP|%COPY|%SUBT|%AART]";
-  const char* tags = TAGS_Read( str, fmt );
+  const char* tags = TAGS_Read( g_BassHandle, fmt );
 
   QString tmpComment = "";
 
@@ -1684,9 +1695,9 @@ QDataItem* CommonTreeWidget::addAudioToEmptyAudioTrack(QDataItem *, const QStrin
 
   double realAudioLength = 0;
 
-  int audioLength = BASS_ChannelGetLength(str,BASS_POS_BYTE);
+  int audioLength = BASS_ChannelGetLength(g_BassHandle,BASS_POS_BYTE);
   if(audioLength!=-1){
-    realAudioLength = BASS_ChannelBytes2Seconds(str, audioLength);
+    realAudioLength = BASS_ChannelBytes2Seconds(g_BassHandle, audioLength);
     //QMessageBox::about(this, tr("Information"), QDateTime::fromTime_t(audioLength).toUTC().toString("hh:mm:ss"));
   }
 
@@ -1697,10 +1708,10 @@ QDataItem* CommonTreeWidget::addAudioToEmptyAudioTrack(QDataItem *, const QStrin
   audio_track->SetDataSize(realAudioLength*176400);
   audio_track->SetDataTime(realAudioLength);
 
-  BASS_StreamFree(str);
+  BASS_StreamFree(g_BassHandle);
 
   return audio_track;
-  */
+
 }
 
 void CommonTreeWidget::updateAudioTrackName()
@@ -1725,6 +1736,8 @@ void CommonTreeWidget::clearAudio()
     }
 
     mSelectedItem->removeChild(mSelectedItem->child(0));
+    mSelectedItem->SetDataSize(0);
+    mSelectedItem->SetDataTime(0);
     QAudioTrackItem *audio_track = (QAudioTrackItem*)mSelectedItem;
     audio_track->resetAll();
 
@@ -1824,10 +1837,10 @@ void CommonTreeWidget::showProperty_Disk() {
     }
     QDiskItem *item = (QDiskItem*)selected;
 
-    VDiskPropertyDialog dialog(this, (QDiskItem*)mHeadItem, mAudioCount, mDataTrackItem != nullptr);
+    VDiskPropertyDialog dialog(this, (QDiskItem*)mHeadItem, getAudioTrackCount(), mDataTrackItem != nullptr);
     if (dialog.exec() == QDialog::Accepted) {
         item->SetName(dialog.getDiskName());
-        if (mAudioCount){
+        if (getAudioTrackCount()){
             item->setArranger(dialog.getArranger());
             item->setComposer(dialog.getComposer());
             item->setSongWriter(dialog.getSongWriter());
@@ -1876,16 +1889,42 @@ void CommonTreeWidget::showPlay() {
         }
     }
 
-    const TCHAR *pAudioFile = convertToFoxValue(mFile);
-    ::PlayAudioFile(pAudioFile);
-    delete [] pAudioFile;
+    if (g_BassHandle)
+    {
+        BASS_ChannelStop(g_BassHandle);
+        BASS_StreamFree(g_BassHandle);
+        g_BassHandle = 0;
+    }
+
+    if (!BASS_Init(-1,44100, BASS_DEVICE_STEREO,NULL,NULL)) {
+        if(BASS_ErrorGetCode()!=BASS_ERROR_ALREADY) {
+            return;
+        }
+    }
+
+#ifdef WIN32
+        g_BassHandle = BASS_StreamCreateFile(false, (const WCHAR*)convertToFoxValue(mFile), 0, 0, BASS_SAMPLE_LOOP | BASS_UNICODE);
+#else
+        g_BassHandle = BASS_StreamCreateFile(false, convertToFoxValue(mFile), 0, 0, BASS_SAMPLE_LOOP);
+#endif
+        BASS_ChannelPlay(g_BassHandle,true);
 
 }
 
-void CommonTreeWidget::showStop() {
+void CommonTreeWidget::stopFromExternal()
+{
+    showStop();
+}
 
-    //BASS_ChannelStop(str);
-    //BASS_StreamFree(str);
+void CommonTreeWidget::showStop()
+{
+
+    if (g_BassHandle)
+    {
+        BASS_ChannelStop(g_BassHandle);
+        BASS_StreamFree(g_BassHandle);
+        g_BassHandle = 0;
+    }
 }
 
 void CommonTreeWidget::dataTrackMode1() {
@@ -1908,8 +1947,8 @@ void CommonTreeWidget::on_add_tree_completed(QDataItem *parent, QDataItem *item)
         item->setExpanded(true);
     }
 
-    disconnect(this, SIGNAL(testMessage(QString, bool*)), nullptr, nullptr);
-    connect(this, SIGNAL(testMessage(QString, bool*)), this, SLOT(on_add_tree(QString, bool*)));
+    disconnect(this, SIGNAL(testMessage(QString,bool*)), nullptr, nullptr);
+    connect(this, SIGNAL(testMessage(QString,bool*)), this, SLOT(on_add_tree(QString,bool*)));
 
     resetQueryAddAudioTrack();
     resetQueryReplaceFile();
@@ -2049,7 +2088,7 @@ bool CommonTreeWidget::getIsFSSyncAvailable()
     if (mProjectType != RuleManager::TYPE_PROJECT_OPEN && mProjectType != RuleManager::TYPE_PROJECT_ISOUDF)
         return false;
 
-    if (mDataTrackItem == nullptr || 0 != mAudioCount)
+    if (mDataTrackItem == nullptr || 0 != getAudioTrackCount())
         return false;
 
     if (mDataTrackItem->childCount() == 0)
@@ -2068,7 +2107,7 @@ bool CommonTreeWidget::getIsFSUnsyncAvailable()
     if (mProjectType != RuleManager::TYPE_PROJECT_OPEN && mProjectType != RuleManager::TYPE_PROJECT_ISOUDF)
         return false;
 
-    if (mDataTrackItem == nullptr || 0 != mAudioCount)
+    if (mDataTrackItem == nullptr || 0 != getAudioTrackCount())
         return false;
 
     if (mDataTrackItem->childCount() == 2) {
@@ -2403,7 +2442,7 @@ void CommonTreeWidget::ResetFiles()
     }
 
 
-    if(mSelectedItem->GetType() == QDataItem::AudioTrack) mAudioCount = 0;
+    //if(mSelectedItem->GetType() == QDataItem::AudioTrack) mAudioCount = 0;
 
     if (getIsFSSyncAvailable() && mSelectedItem == mDataTrackItem) {
         for (int i=0; i<mSelectedItem->childCount(); i++) {
@@ -2419,7 +2458,6 @@ void CommonTreeWidget::ResetFiles()
             takeChildrenWithUpdatedInfo(mSelectedItem);
             if (mSelectedItem == mSessionItem) {
                 mDataTrackItem = nullptr;
-                mAudioCount = 0;
             }
         }
     }
@@ -2804,4 +2842,20 @@ void CommonTreeWidget::setSizes()
 
         ++it;
     }
+}
+
+int CommonTreeWidget::getAudioTrackCount()
+{
+    int audioCount = 0;
+    QTreeWidgetItemIterator it(topLevelItem(0));
+    while (*it) {
+
+        if(((QDataItem*)(*it))->GetType()==QDataItem::AudioTrack){
+            audioCount++;
+        }
+
+        ++it;
+    }
+
+    return audioCount;
 }

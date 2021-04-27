@@ -60,8 +60,10 @@ void ContentThread::run()
 
             SFileAudioProperty data;
 
+            QString trackId = QString("%1").arg(nAudioTrack, 2, 10, QLatin1Char('0'));
+
             const TCHAR *pAudioTrack = nullptr;
-            pAudioTrack = convertToFoxValue(QString::number( nAudioTrack ));
+            pAudioTrack = convertToFoxValue(trackId);
             data.lpszSourceFilePath = pAudioTrack;
 
             const TCHAR *pTitle = nullptr;
@@ -115,7 +117,7 @@ void ContentThread::run()
             if(((QDataItem*)(*it))->GetType()==QDataItem::File){
 
                 SFileToAdd file;
-                const TCHAR *pFullPath = convertToFoxValue(((QDataItem*)(*it))->GetFullPath());
+                const TCHAR *pFullPath = convertToFoxValue(QDir::toNativeSeparators(((QDataItem*)(*it))->GetFullPath()));
                 file.lpszSourceFilePath = pFullPath;
 
                 /*
@@ -127,6 +129,7 @@ void ContentThread::run()
                 if( myTree->GetProjectType()==RuleManager::TYPE_PROJECT_MIXEDMODE ){
                     diskRoot += "audio";
                 }
+
                 const TCHAR *pRootPath = convertToFoxValue(diskRoot);
                 file.lpszDestinationPath = pRootPath;
 

@@ -48,7 +48,8 @@ public:
         DataTrack,
         AudioTrack,
         Session,
-        Disk
+        Disk,
+        AudioFile
     };
 public:
     explicit QDataItem(CommonTreeWidget *view);
@@ -115,6 +116,8 @@ public:
     void SetDataWithName(const QString &name);
     void SetData(const QString &path);
     void SetDataAudio(const QString &path, qint64 data_time, const QString &comment);
+    void SetDataAudioTrack(ValueType type, const QString &path, const QString &name,
+                                      qint64 size, int item_count, qint64 length);
     void SetData(ValueType type, const QString &path, const QString &name,
                  qint64 size, int item_count, int node_count);
     void SetData(ValueType type, const QString &path, const QString &name,
@@ -122,11 +125,18 @@ public:
                  bool bHidden, bool bHiddenExt, int priority,
                  QDateTime date_added, QDateTime date_created, QDateTime date_modified,
                  const QString &checksum, const QString &comment);
+    void SetData(ValueType type, const QString &path, const QString &name,
+                 qint64 size, qint64 length, int item_count, int node_count,
+                 bool bHidden, bool bHiddenExt, int priority,
+                 QDateTime date_added, QDateTime date_created, QDateTime date_modified,
+                 const QString &checksum, const QString &comment);
     void SetDataSize(const qint64 data_size,bool isExplorer=false);
     void SetDataLBA(const qint64 data_size);
-
     void SetDataTime(const qint64 data_time);
+
+    qint64 GetDataTime() {return mPlayTime;}
     qint64 GetDataSize() {return mSize;}
+
     void SetFullPath(const QString &path) {mFullPath = path;}
     QString GetFullPath() {return mFullPath;}
     QString GetDiskPath();

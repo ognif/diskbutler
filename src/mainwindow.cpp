@@ -2704,5 +2704,7 @@ void MainWindow::mdiAreaActivationTemplate()
  *EraseDone Event und BurnDone Event werden gleichzeitig  ausgelöset.
  *Also je nach durchgang Deaktiviern und aktivieren
  *
+ *Wenn ich ein audio aus einem audiotrack hole ist der TRack noch mit der Größenangabe
+ *Tags Umlaute?
  *
  */

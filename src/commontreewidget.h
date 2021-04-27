@@ -29,6 +29,7 @@
 #include "vrulemanager.h"
 #include "zimport_strategy.h"
 #include "bass.h"
+#include "tags.h"
 #include "qtwaitingspinner.h"
 
 class QtWaitingSpinner;
@@ -70,6 +71,7 @@ public:
   int getTotalTime();
   void setRootItem();
   void calculateRealSizes();
+  DWORD	g_BassHandle;
 
 Q_SIGNALS:
   void contentsChanged( bool changed );
@@ -118,6 +120,7 @@ public:
   void randomizeAudioTracks();
   void getTags(int32 sourceTags);
   int getTotalTimeExplorer();
+  void stopFromExternal();
 
 protected:
   void dragEnterEvent( QDragEnterEvent *event );
@@ -224,6 +227,7 @@ protected:
   int mItemCount;
   int mNodeCount;
   int mAudioCount;
+  int getAudioTrackCount();
   bool addTRackCDTextToDisc;
   ThreadAddTree *mThreadAddTree;
   QtWaitingSpinner *mBlockSpinner;

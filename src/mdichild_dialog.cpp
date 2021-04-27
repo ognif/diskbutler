@@ -439,6 +439,8 @@ QString MdiChildDialog::userFriendlyCurrentFile()
 
 void MdiChildDialog::closeEvent(QCloseEvent *event)
 {
+  treeWidget->stopFromExternal();
+
   if (maybeSave()) {
     event->accept();
   } else {

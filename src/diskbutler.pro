@@ -227,7 +227,11 @@ INCLUDEPATH += $$PWD $$PWD/zmodules $$PWD/ribbon $$PWD/controls $$PWD/hex
 DEPENDPATH += $$PWD/foxsdk
 
 win32: LIBS += -L$$PWD/foxsdk/ -lFoxSDKCore
+win32: LIBS += -L$$PWD/foxsdk/ -lbass
+win32: LIBS += -L$$PWD/foxsdk/ -ltags
 win32: PRE_TARGETDEPS += $$PWD/foxsdk/FoxSDKCore.lib
+win32: PRE_TARGETDEPS += $$PWD/foxsdk/bass.lib
+win32: PRE_TARGETDEPS += $$PWD/foxsdk/tags.lib
 
 unix:!macx {
 LIBS += -L$$PWD/foxsdk/ -lFoxSDKCore
