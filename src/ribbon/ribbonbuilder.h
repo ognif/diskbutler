@@ -352,7 +352,6 @@ extern void ribbonBuilderGeneral(Ribbon *baseRibbon, MainWindow *baseWindow){
     wdgGeneralFeatues->setFixedHeight(80);
     baseRibbon->addWidgetGroup(QObject::tr("General"), QObject::tr("Burn features"), wdgGeneralFeatues);
 
-
     QGridLayout *gridLayoutErase = new QGridLayout();
     QWidget * wdgEraseFeatues = new QWidget();
 
@@ -376,7 +375,6 @@ extern void ribbonBuilderGeneral(Ribbon *baseRibbon, MainWindow *baseWindow){
     //Spacer is Checkbox + spacing of gridlayout
     QSpacerItem *spacerItem = new QSpacerItem(10,baseWindow->avchdGeneralCheck->sizeHint().height()+gridLayoutErase->layout()->spacing(), QSizePolicy::Fixed, QSizePolicy::Fixed);
     gridLayoutErase->addItem(spacerItem,2,0);
-
 
     QGridLayout *gridLayoutImage = new QGridLayout();
     QWidget * wdgImageFeatues = new QWidget();
@@ -419,13 +417,6 @@ extern void ribbonBuilderGeneral(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->burnDiskImage->setIcon(QIcon(":/icons/burnimage32.png"));
     baseWindow->burnDiskImage->setEnabled(true);
     baseRibbon->addButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->burnDiskImage,nullptr);
-
-
-
-
-
-
-
 
 }
 

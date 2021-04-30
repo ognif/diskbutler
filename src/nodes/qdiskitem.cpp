@@ -272,7 +272,7 @@ void QDiskItem::FromXMLElement(const QString &qName, const QXmlAttributes &attri
     setBibliographicFile(attributes.value("bibliographicfile"));
   }
 
-  if ("boot" == qName) {
+  if ("Boot" == qName) {
     setDoBootDisk((attributes.value("bootUse")=="true")?true:false);
     setBootDiskFile(attributes.value("bootDiskFile"));
     setBootDeveloperID(attributes.value("bootDeveloperID"));

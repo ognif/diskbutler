@@ -180,10 +180,10 @@ MainWindow::MainWindow(QWidget *parent) :
 
      connect(listReadDevicesWidget, QOverload<int>::of(&QComboBox::currentIndexChanged),
          [=](int index){ updateReadDeviceSel(index);});
-     fillReadDriveList();
+     fillReadDriveList(true);
      connect(listBurnDevicesWidget, QOverload<int>::of(&QComboBox::currentIndexChanged),
          [=](int index){ updateBurnDeviceSel(index);});
-     fillBurnDriveList();
+     fillBurnDriveList(true);
 
      connect(readDeviceUpdateButton, SIGNAL(clicked()), this, SLOT(fillReadDriveList()));
 
@@ -885,6 +885,7 @@ void MainWindow::fillSourceDriveList()
 QString MainWindow::checkBurnDriveSelection()
 {
     QString strDriveName = listBurnDevicesWidget->currentText();
+
     if(activeMdiChild() != nullptr){
         QDiskItem *diskItem = (QDiskItem *)activeMdiChild()->getTreeWidget()->topLevelItem(0);
         if( diskItem->getBurnDevice() == "" ){
@@ -894,36 +895,10 @@ QString MainWindow::checkBurnDriveSelection()
         }
     }
     return strDriveName;
-}
-
-void MainWindow::burnDriveChanged(int)
-{
-
-    QString strDriveName = listBurnDevicesWidget->currentText();
-    ConfigurationPage::mSettings.setValue("CurrentBurnDevice", strDriveName);
-
-    if(listBurnDevicesWidget->count()==0){
-        eraseGeneralButton->setEnabled(false);
-        burnDiskImage->setEnabled(false);
-    }else{
-        if(strDriveName.at(0) == '#'){
-            eraseGeneralButton->setEnabled(false);
-            burnDiskImage->setEnabled(false);
-        }else{
-            eraseGeneralButton->setEnabled(true);
-            burnDiskImage->setEnabled(true);
-        }
-    }
-
-    //If project we need to send to project and return
-    if(activeMdiChild() != nullptr){
-        QDiskItem *diskItem = (QDiskItem *)activeMdiChild()->getTreeWidget()->topLevelItem(0);
-        diskItem->setBurnDevice(strDriveName);
-    }
 
 }
 
-void MainWindow::fillReadDriveList()
+void MainWindow::fillReadDriveList(bool configCheck)
 {
 
     fillBurnDriveList();
@@ -940,33 +915,35 @@ void MainWindow::fillReadDriveList()
       }
     }
 
+    listReadDevicesWidget->blockSignals(true);
+
     listReadDevicesWidget->clear();
 
     for (int i = 0; i < mBurnDriveList.count(); i++) {
 
         listReadDevicesWidget->addItem(QIcon(":/icons/readdevice16.png"),mBurnDriveList[i]);
-        /*
-        QListWidgetItem *item = new QListWidgetItem();
-        item->setText(mBurnDriveList[i]);
-
-        if(isBurnDevice(mBurnDriveList[i])){
-             item->setIcon(QIcon(":/icons/burndrive16.png"));
-        }else{
-             item->setIcon(QIcon(":/icons/readdevice16.png"));
-        }
-
-        listReadDevicesWidget->addItem(item);
-        */
 
     }
 
-    //listReadDevicesWidget->setCurrentRow(0);
+    if(configCheck == true){
+        QString startUpDevice = ConfigurationPage::mSettings.value("CurrentReadDevice", tr("")).toString();
+        int driveIndex = 0;
+        if(startUpDevice.length()>0){
+            driveIndex = listReadDevicesWidget->findText(startUpDevice, Qt::MatchExactly);
+            if(driveIndex == -1){
+                driveIndex = 0;
+            }
+        }
+        listReadDevicesWidget->setCurrentIndex(driveIndex);
+    }else{
+        listReadDevicesWidget->setCurrentIndex(0);
+    }
 
-    listReadDevicesWidget->setCurrentIndex(0);
+    listReadDevicesWidget->blockSignals(false);
 
 }
 
-void MainWindow::fillBurnDriveList()
+void MainWindow::fillBurnDriveList(bool configCheck)
 {
     mBurnDriveList.clear();
     ::EnableImageDevice(BS_TRUE);
@@ -980,49 +957,34 @@ void MainWindow::fillBurnDriveList()
       }
     }
 
+    listBurnDevicesWidget->blockSignals(true);
+
     listBurnDevicesWidget->clear();
     //QStandardItemModel *mod = new QStandardItemModel();
 
     for (int i = 0; i < mBurnDriveList.count(); i++) {
 
         listBurnDevicesWidget->addItem(QIcon(":/icons/burndrive16.png"),mBurnDriveList[i]);
-        //QVariant data(Qt::Unchecked, Qt::CheckStateRole);
-        //QStandardItem *item = listBurnDevicesWidget->addCheckItem(mBurnDriveList[i], Qt::CheckStateRole, Qt::Unchecked)   ;
-        //QStandardItem *item;
-        //item = new QStandardItem();
-        //item->setCheckable(true);
-        //item->setCheckState(Qt::Unchecked);
-        //item->setIcon(QIcon(":/icons/burndrive16.png"));
-        //item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-
-        //Qt::ItemIsUserCheckable
-        // | Qt::ItemIsUserCheckable
-        //item->setFlags(Qt::ItemIsEnabled| Qt::ItemIsUserCheckable);
-        //item->setData(Qt::Unchecked, Qt::CheckStateRole);
-
-
-        //mod->setItem(i,item);
-        /*
-        QListWidgetItem *item = new QListWidgetItem();
-        item->setText();
-        item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-
-        item->setCheckState(Qt::Unchecked);
-
-        if(isBurnDevice(mBurnDriveList[i])){
-             item->setIcon(QIcon(":/icons/burndrive16.png"));
-        }else{
-             item->setIcon(QIcon(":/icons/readdevice16.png"));
-        }
-
-        listBurnDevicesWidget->addItem(item);
-        */
     }
-    //listBurnDevicesWidget->setModel(mod);
 
     //Set Burning Device(es) from project.
     //GetBurnDevices count = 0, den ersten selectieren
-    listBurnDevicesWidget->setCurrentIndex(0);
+    if(configCheck == true){
+        QString startUpDevice = ConfigurationPage::mSettings.value("CurrentBurnDevice", tr("")).toString();
+        int driveIndex = 0;
+        if(startUpDevice.length()>0){
+            driveIndex = listBurnDevicesWidget->findText(startUpDevice, Qt::MatchExactly);
+            if(driveIndex == -1){
+                driveIndex = 0;
+            }
+        }
+        listBurnDevicesWidget->setCurrentIndex(driveIndex);
+    }else{
+        listBurnDevicesWidget->setCurrentIndex(0);
+    }
+
+    listBurnDevicesWidget->blockSignals(false);
+
 }
 
 void MainWindow::updateReadDeviceSel(int index)
@@ -1039,6 +1001,8 @@ void MainWindow::updateReadDeviceSel(int index)
     //MEdiaInfo und DeviceInfos senden keine Daten an die Childs
 
     QString strDriveName = listReadDevicesWidget->itemText(index);
+    ConfigurationPage::mSettings.setValue("CurrentReadDevice", strDriveName);
+    ConfigurationPage::mSettings.sync();
 
     if( activeMdiHexChild() != nullptr ){
         activeMdiHexChild()->setBurnDrive(strDriveName);
@@ -1052,6 +1016,9 @@ void MainWindow::updateReadDeviceSel(int index)
 void MainWindow::updateBurnDeviceSel(int index)
 {
     QString strDriveName = listBurnDevicesWidget->itemText(index);
+    ConfigurationPage::mSettings.setValue("CurrentBurnDevice", strDriveName);
+    ConfigurationPage::mSettings.sync();
+
     if(activeMdiChild() != nullptr){
         QDiskItem *diskItem = (QDiskItem *)activeMdiChild()->getTreeWidget()->topLevelItem(0);
         if(diskItem != nullptr)
@@ -1069,6 +1036,11 @@ void MainWindow::updateBurnDeviceSel(int index)
             eraseGeneralButton->setEnabled(true);
             burnDiskImage->setEnabled(true);
         }
+    }
+
+    if(activeMdiChild() != nullptr){
+        QDiskItem *diskItem = (QDiskItem *)activeMdiChild()->getTreeWidget()->topLevelItem(0);
+        diskItem->setBurnDevice(strDriveName);
     }
 
 }
@@ -1675,15 +1647,6 @@ void MainWindow::projectAVCHDChanged(int nState)
 //Boot Functions
 //##############################################################################################################
 
-void MainWindow::updateBootDisk(bool bState)
-{
-    QDiskItem *diskItem = nullptr;
-    if(activeMdiChild() != nullptr){
-        diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
-    }
-
-    if(diskItem!=nullptr) diskItem->setDoBootDisk(bState);
-}
 
 void MainWindow::bootEmulationTypeChanged(int iIndex)
 {
@@ -1743,7 +1706,7 @@ void MainWindow::deleteBootImage()
             imagePathBootEdit->setText("");
             diskItem->setBootDiskFile("");
             diskItem->setDoBootDisk(false); //Trigger update
-            //updateProjectRibbon();
+            emit onActiveChildChanged( activeMdiChild() );
         }
 
 
@@ -1759,20 +1722,21 @@ void MainWindow::clickedSelBootImagePath()
 
         diskItem = static_cast<QDiskItem *>(activeMdiChild()->getTreeWidget()->topLevelItem(0));
 
-    }
+        QString fileName = QFileDialog::getOpenFileName(
+                   this,
+                   tr("Open Boot Image"),
+                   QDir::currentPath(),
+                   tr("Boot Image (*.img *.ima)") );
 
-    QString fileName = QFileDialog::getOpenFileName(
-               this,
-               tr("Open Boot Image"),
-               QDir::currentPath(),
-               tr("Boot Image (*.img)") );
+        if (fileName.isEmpty())return;
 
-    if (fileName.isEmpty())return;
+        if(diskItem!=nullptr){
+            imagePathBootEdit->setText(fileName);
+            diskItem->setBootDiskFile(fileName);
+            diskItem->setDoBootDisk(true); //Trigger update
+            emit onActiveChildChanged( activeMdiChild() );
+        }
 
-    if(diskItem!=nullptr){
-        imagePathBootEdit->setText(fileName);
-        diskItem->setBootDiskFile(fileName);
-        diskItem->setDoBootDisk(true); //Trigger update
     }
 
 }
@@ -2704,7 +2668,12 @@ void MainWindow::mdiAreaActivationTemplate()
  *EraseDone Event und BurnDone Event werden gleichzeitig  ausgelöset.
  *Also je nach durchgang Deaktiviern und aktivieren
  *
- *Wenn ich ein audio aus einem audiotrack hole ist der TRack noch mit der Größenangabe
- *Tags Umlaute?
+ *Bisher sieht es so aus als wenn der IMGBurn 4 Sektoren lädt und dass er auch bei Boot Level3 nimmt.
+ *
+ *Zuletzt gewähltes Laufwerk speichern.
+ *
+ *Unlock Drive Funktion falls abschuss
+ *
+ *
  *
  */

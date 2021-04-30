@@ -237,8 +237,8 @@ private slots:
 
     void selectAll();
     void reverseSelection();
-    void fillBurnDriveList();
-    void fillReadDriveList();
+    void fillBurnDriveList(bool configCheck = false);
+    void fillReadDriveList(bool configCheck = false);
     void insertNode();
     void insertItem();
     void addNode();
@@ -263,8 +263,6 @@ private slots:
     void release2ImageTab();
     void changeReadSoftRetry(double nValue);
     void changeReadHardRetry(double nValue);
-
-    void burnDriveChanged(int index);
 
     void newProject(int type);
     void onActiveChildChanged(QMdiSubWindow *activeSubWindow);
@@ -322,7 +320,6 @@ private slots:
     void jobCreateChanged(int nState);
     void jobVerifyChanged(int nState);
     //Update Bootdisk
-    void updateBootDisk(bool bState);
     void bootEmulationTypeChanged(int iIndex);
     void imageCreateMethod(int iIndex);
     void bootPlatformChanged(int iIndex);
