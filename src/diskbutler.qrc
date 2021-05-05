@@ -78,5 +78,7 @@
         <file>icons/burnimage32.png</file>
         <file>icons/burnaction32.png</file>
         <file>icons/warning16.png</file>
+        <file>icons/plugin32.png</file>
+        <file>icons/unlock32.png</file>
     </qresource>
 </RCC>

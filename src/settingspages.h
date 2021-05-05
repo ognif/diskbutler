@@ -139,4 +139,22 @@ private slots:
   void on_checkByDate_clicked(bool checked);
 };
 
+class PluginPage : public QWidget
+{
+  Q_OBJECT
+
+
+public:
+  PluginPage(QWidget *parent = 0);
+  void saveSettings();
+  bool readPlugins();
+
+public:
+  QListWidget *mListWidget;
+
+private:
+  void pluginsSub(QString strName, QString strPath, QStringList excludeList);
+
+};
+
 #endif // SETTINGSPAGES_H

@@ -59,7 +59,7 @@ extern void ribbonBuilderAll(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->vidSVCDProjectButton->setText(QObject::tr("SVCD"));
     baseWindow->vidSVCDProjectButton->setToolTip(QObject::tr("Create SVCD Video Project"));
     baseWindow->vidSVCDProjectButton->setIcon(QIcon(":/icons/svideocd32.png"));
-    baseWindow->vidSVCDProjectButton->setEnabled(true);
+    baseWindow->vidSVCDProjectButton->setEnabled(false);
     baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Video"), baseWindow->vidSVCDProjectButton,nullptr);
 
     baseWindow->vidDVDProjectButton = new QToolButton;
@@ -249,6 +249,13 @@ extern void ribbonBuilderDevice(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->closeDeviceButton->setEnabled(true);
     baseWindow->closeDeviceButton->setMenu(baseWindow->m_CloseTrayMenu);
     baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->closeDeviceButton,nullptr);
+
+    baseWindow->unLockDevice = new QToolButton;
+    baseWindow->unLockDevice->setText(QObject::tr("Unlock"));
+    baseWindow->unLockDevice->setToolTip(QObject::tr("This will try to unlock an locked burning device"));
+    baseWindow->unLockDevice->setIcon(QIcon(":/icons/unlock32.png"));
+    baseWindow->unLockDevice->setEnabled(true);
+    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->unLockDevice,nullptr);
 
     baseWindow->infoDeviceButton = new QToolButton;
     baseWindow->infoDeviceButton->setText(QObject::tr("Device Info"));

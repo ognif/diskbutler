@@ -26,7 +26,7 @@
 #include <QListView>
 #include <QFileSystemModel>
 #include <QSplitter>
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 #include "qdataitem.h"
 #include "qdiskitem.h"
 #include "vrulemanager.h"
@@ -96,12 +96,13 @@ public:
   void setRibbonTabs(Ribbon *baseRibbon, QWidget* parent);
 
 Q_SIGNALS:
-  void status_changed(const QString &text);
+  void status_changed(QString text, bool isRight);
   void list_view_root_changed(QString &root_path);
   void datatrack_changed();
   void audiotrack_changed(bool bEnable);
   void extract_item();
   void grab_item();
+
 
 protected:
   void closeEvent(QCloseEvent *event);
@@ -128,6 +129,7 @@ private slots:
   void on_audiotrack_changed(bool);
   void on_extract_item();
   void on_grab_item();
+  void on_status_message(QString msg, bool isRight);
 
 private:
   RuleManager::ProjectType mProjectType;

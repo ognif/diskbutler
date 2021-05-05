@@ -33,6 +33,7 @@
 #include "mdichild_scan.h"
 #include "qtwaitingspinner.h"
 #include "devicecomboex.h"
+#include "dynbasslib.h"
 
 
 class QtWaitingSpinner;
@@ -145,6 +146,7 @@ public:
     QToolButton *stopScanEditor;
     QToolButton *saveScanEditor;
     QToolButton *burnDiskImage;
+    QToolButton *unLockDevice;
 
     QToolButton *appOpenButton;
     QToolButton *appSaveButton;
@@ -225,11 +227,13 @@ public:
 private:
     void fillSourceDriveList();
     void onHandleError( int32 res );
+    void checkButtonsSelBurnDevice();
 
     void fillDriveList();
     bool isBurnDevice(QString toTest);
     void mdiAreaActivationTemplate();
     void checkFileSystemNaming();
+    void loadPlugins();
 
 private slots:
     MdiChildDialog *createMdiChild(const RuleManager::ProjectType project_type);
@@ -249,6 +253,7 @@ private slots:
     void addDataTrack();
     void addAudioTrack();
 
+    void unLockBurnDevice();
     void closeTray(bool readDevice = false);
     void ejectTray(bool readDevice = false);
 
@@ -362,7 +367,7 @@ private slots:
 public slots:
     void startWaitSpinner();
     void stopWaitSpinner();
-    void statusbar_changed(const QString &text);
+    void statusbar_changed(QString text, bool isRight);
     void updateBurnDeviceSel(int index);
     void updateReadDeviceSel(int index);
     void updatedHexData();

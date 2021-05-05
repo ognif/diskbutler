@@ -39,6 +39,7 @@
 #include "qtrackitem.h"
 #include "qmediumitem.h"
 #include "utils_common.h"
+#include "dynbasslib.h"
 #include "vcddialog.h"
 #include "vpropertydialog.h"
 #include "vdiskpropertydialog.h"
@@ -89,17 +90,16 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
     setAcceptDrops( true );
     setDragEnabled( false );
     setOverwriteFlag( true );
-    g_BassHandle = 0;
 
     setDefaultDropAction( Qt::MoveAction );
     setDropIndicatorShown( true );
     //setDragDropMode(QAbstractItemView::InternalMove);
 
     QDataItem::AddDefaultIcon( style()->standardPixmap( QStyle::SP_DirClosedIcon ),
-                              style()->standardPixmap( QStyle::SP_DirOpenIcon ),
-                              QPixmap( ":/icons/folderred1_16.png" ),
-                              QPixmap( ":/icons/folderred2_16.png" ),
-                              style()->standardPixmap( QStyle::SP_FileIcon ) );
+                               style()->standardPixmap( QStyle::SP_DirOpenIcon ),
+                               QPixmap( ":/icons/folderred1_16.png" ),
+                               QPixmap( ":/icons/folderred2_16.png" ),
+                               style()->standardPixmap( QStyle::SP_FileIcon ) );
 
     QDataItem *diskItem;
     diskItem = new QDiskItem( this );
@@ -185,8 +185,10 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
     mCDTextAct = new QAction( tr("CDText"), this );
     connect( mCDTextAct, SIGNAL( triggered() ), this, SLOT( showCDText() ) );
 
+
+
     mSignalMapper = new QSignalMapper( this );
-    connect(mSignalMapper, SIGNAL(mapped(int)), this, SLOT(MoveAudioTrack(int)));
+    connect(mSignalMapper, SIGNAL(mappedInt(int)), this, SLOT(MoveAudioTrack(int)));
     mAudioUp = new QAction( tr("Move up"), this );
     connect( mAudioUp, SIGNAL( triggered() ), mSignalMapper, SLOT( map() ) );
 
@@ -213,11 +215,11 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
     connect( mImportAct, SIGNAL( triggered() ), this, SLOT( slot_import_from_dialog() ) );
 
     //connect(this, SIGNAL(itemCollapsed(QTreeWidgetItem *)), this, SLOT(slot_handle_collapse(QTreeWidgetItem *)));
-    connect( this, SIGNAL( itemChanged( QTreeWidgetItem*,int ) ), this, SLOT( slot_handle_itemChanged( QTreeWidgetItem*,int ) ) );
+    connect( this, SIGNAL(itemChanged(QTreeWidgetItem*,int)), this, SLOT(slot_handle_itemChanged(QTreeWidgetItem*,int)));
     //connect(this, SIGNAL(currentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)), this, SLOT(slot_handle_currentItemChanged(QTreeWidgetItem *, QTreeWidgetItem *)));
-    connect( this, SIGNAL( itemSelectionChanged() ), this, SLOT(slot_handle_itemSelectChanged()));
-    connect( this, SIGNAL( itemDoubleClicked( QTreeWidgetItem*, int ) ), this, SLOT(slot_handle_itemDoubleClicked(QTreeWidgetItem*,int)));
-    connect( this, SIGNAL( testMessage( QString, bool* ) ), this, SLOT( on_add_tree( QString, bool* ) ) );
+    connect( this, SIGNAL(itemSelectionChanged()), this, SLOT(slot_handle_itemSelectChanged()));
+    connect( this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(slot_handle_itemDoubleClicked(QTreeWidgetItem*,int)));
+    connect( this, SIGNAL(testMessage(QString,bool*)), this, SLOT(on_add_tree(QString,bool*)));
 }
 
 //void CommonTreeWidget::slot_handle_collapse(QTreeWidgetItem *item)
@@ -1537,6 +1539,12 @@ bool CommonTreeWidget::isAudioFile(const QFileInfo &file)
             || 0 == QString::compare(suffix, "m4a")
             || 0 == QString::compare(suffix, "mp2")
             || 0 == QString::compare(suffix, "mp1")
+            || 0 == QString::compare(suffix, "ape")
+            || 0 == QString::compare(suffix, "wv")
+            || 0 == QString::compare(suffix, "wma")
+            || 0 == QString::compare(suffix, "flac")
+            || 0 == QString::compare(suffix, "oga")
+            || 0 == QString::compare(suffix, "opus")
             || 0 == QString::compare(suffix, "aiff")) {
         return true;
     }
@@ -1629,88 +1637,59 @@ QDataItem* CommonTreeWidget::replaceAudioInAudioTrack(QDataItem *audio_track, co
 QDataItem* CommonTreeWidget::addAudioToEmptyAudioTrack(QDataItem *audio_track, const QString &path)
 {
 
-  if (audio_track->childCount() != 0)
+    if (audio_track->childCount() != 0)
+        return nullptr;
+
+    QString tmpComment = "";
+
+    if(!gBassLib::IsLibLoaded()){
+        //return BS_SDK_ERROR_MP3LIB_NOT_FOUND;
+        QMessageBox::about(this, tr("Information"), tr("Error Init Bass"));
+    }
+
+    double realAudioLength = 0.0;
+    gBassLib::GetPrecisePlayTime(path, realAudioLength);
+
+    if(realAudioLength > 0){
+
+        QFileInfo file_info(path);
+        QDataItem *audioItem;
+        audioItem = new QDataItem(audio_track);
+        audioItem->setFlags((audioItem->flags() & (~Qt::ItemIsDropEnabled)));
+        audioItem->SetType(QDataItem::File);
+
+        QStringList tagsList = gBassLib::TryTags(path);
+
+        if(tagsList.count() > 0)
+        {
+            QAudioTrackItem *audioTrack = (QAudioTrackItem*)audio_track;
+            audioTrack->setPerformer(tagsList.at(1)); //ARTIST
+            audioTrack->setTitle(tagsList.at(0)); //TITLE
+            audioTrack->setMessage(tagsList.at(5)); //COMMENT
+            audioTrack->setComposer(tagsList.at(7)); //COMPOSER
+
+            if(addTRackCDTextToDisc==true){
+                QDiskItem *diskItem = (QDiskItem*)mHeadItem;
+                diskItem->setTitle(tagsList.at(2)); //ALBUM NAME
+                diskItem->setPerformer(tagsList.at(10)); //ALBUM ARTIST
+            }
+
+            tmpComment += tagsList.at(1);
+            if(tmpComment.length()>0) tmpComment += " - ";
+            tmpComment += tagsList.at(0);
+        }
+
+        audioItem->SetDataAudio(file_info.absoluteFilePath(),realAudioLength,tmpComment);
+
+        audio_track->SetDataSize(realAudioLength*176400);
+        audio_track->SetDataTime(realAudioLength);
+
+        return audio_track;
+    }
+
+    emit statusMessage("Error loading audio file. Maybe plugin not available", false);
+
     return nullptr;
-
-  QFileInfo file_info(path);
-  QDataItem *audioItem;
-  audioItem = new QDataItem(audio_track);
-  audioItem->setFlags((audioItem->flags() & (~Qt::ItemIsDropEnabled)));
-  audioItem->SetType(QDataItem::File);
-
-  //CDTEXT
-  DWORD deviceValue = -1;
-  if(BASS_GetDevice() == deviceValue){
-      if (!BASS_Init(-1, 44100, 0, NULL, NULL)){
-          QMessageBox::about(this, tr("Information"), tr("Error Init Bass"));
-      }
-      BASS_SetConfig(BASS_CONFIG_GVOL_STREAM, 100 * 100);
-  }
-
-  if (g_BassHandle)
-  {
-      BASS_ChannelStop(g_BassHandle);
-      BASS_StreamFree(g_BassHandle);
-      g_BassHandle = 0;
-  }
-
-#ifdef WIN32
-  g_BassHandle = BASS_StreamCreateFile(false, (const WCHAR*)convertToFoxValue(path), 0, 0, BASS_UNICODE);
-#else
-  g_BassHandle = BASS_StreamCreateFile(false, convertToFoxValue(path), 0, 0, 0);
-#endif
-
-  //Now we read the tags with the bass.dll and tag.dll
-  //This is important for Umlauts
-  TAGS_SetUTF8(true);
-  const char* fmt = "[%TITL|%ARTI|%ALBM|%GNRE|%YEAR|%CMNT|%TRCK|%COMP|%COPY|%SUBT|%AART]";
-  const char* tags = TAGS_Read( g_BassHandle, fmt );
-
-  QString tmpComment = "";
-
-  if( *tags  )
-  {
-      QString tagsString (tags);
-      tagsString.remove('[');
-      tagsString.remove(']');
-      QStringList tagsList = tagsString.split("|");
-
-      QAudioTrackItem *audioTrack = (QAudioTrackItem*)audio_track;
-      audioTrack->setPerformer(tagsList.at(1)); //ARTIST
-      audioTrack->setTitle(tagsList.at(0)); //TITLE
-      audioTrack->setMessage(tagsList.at(5)); //COMMENT
-      audioTrack->setComposer(tagsList.at(7)); //COMPOSER
-
-      if(addTRackCDTextToDisc==true){
-        QDiskItem *diskItem = (QDiskItem*)mHeadItem;
-        diskItem->setTitle(tagsList.at(2)); //ALBUM NAME
-        diskItem->setPerformer(tagsList.at(10)); //ALBUM ARTIST
-      }
-
-      tmpComment += tagsList.at(1);
-      if(tmpComment.length()>0) tmpComment += " - ";
-      tmpComment += tagsList.at(0);
-
-  }
-
-  double realAudioLength = 0;
-
-  int audioLength = BASS_ChannelGetLength(g_BassHandle,BASS_POS_BYTE);
-  if(audioLength!=-1){
-    realAudioLength = BASS_ChannelBytes2Seconds(g_BassHandle, audioLength);
-    //QMessageBox::about(this, tr("Information"), QDateTime::fromTime_t(audioLength).toUTC().toString("hh:mm:ss"));
-  }
-
-  audioItem->SetDataAudio(file_info.absoluteFilePath(),realAudioLength,tmpComment);
-
-  //A Track on an audio CD has 44100 and 16 bits so we need to calculate the seconds with 176400 to get the size on CD
-
-  audio_track->SetDataSize(realAudioLength*176400);
-  audio_track->SetDataTime(realAudioLength);
-
-  BASS_StreamFree(g_BassHandle);
-
-  return audio_track;
 
 }
 
@@ -1747,7 +1726,7 @@ void CommonTreeWidget::clearAudio()
 void CommonTreeWidget::insertAudio()
 {
     QString path = QFileDialog::getOpenFileName(this, QString(), QString(),
-                                                tr("Audios (*.aac *.mp3 *.ogg *.wav *.m4a *.mp2 *.mp1 *.aiff)"));
+                                                tr("Audios (*.aac *.mp3 *.ogg *.ape *.wma *.wav *.m4a *.mp2 *.mp1 *.aiff *.opus *.oga *.wv *.flac )"));
     if (path != "") {
         InsertItem(path);
         emit datatrackChanged();
@@ -1889,25 +1868,8 @@ void CommonTreeWidget::showPlay() {
         }
     }
 
-    if (g_BassHandle)
-    {
-        BASS_ChannelStop(g_BassHandle);
-        BASS_StreamFree(g_BassHandle);
-        g_BassHandle = 0;
-    }
 
-    if (!BASS_Init(-1,44100, BASS_DEVICE_STEREO,NULL,NULL)) {
-        if(BASS_ErrorGetCode()!=BASS_ERROR_ALREADY) {
-            return;
-        }
-    }
-
-#ifdef WIN32
-        g_BassHandle = BASS_StreamCreateFile(false, (const WCHAR*)convertToFoxValue(mFile), 0, 0, BASS_SAMPLE_LOOP | BASS_UNICODE);
-#else
-        g_BassHandle = BASS_StreamCreateFile(false, convertToFoxValue(mFile), 0, 0, BASS_SAMPLE_LOOP);
-#endif
-        BASS_ChannelPlay(g_BassHandle,true);
+    gBassLib::PlayToCard(mFile);
 
 }
 
@@ -1918,13 +1880,7 @@ void CommonTreeWidget::stopFromExternal()
 
 void CommonTreeWidget::showStop()
 {
-
-    if (g_BassHandle)
-    {
-        BASS_ChannelStop(g_BassHandle);
-        BASS_StreamFree(g_BassHandle);
-        g_BassHandle = 0;
-    }
+    gBassLib::StopPlayToCard();
 }
 
 void CommonTreeWidget::dataTrackMode1() {
@@ -2533,7 +2489,7 @@ void CommonTreeWidget::randomizeAudioTracks()
     int start = IsDataTrackExist() ? 1 : 0;
     auto *generator = QRandomGenerator::global();
 
-   for (int i = start; i < start+maxCount; i++) {
+    for (int i = start; i < start+maxCount; i++) {
         int randomValue = generator->bounded(((maxCount) - start) + start);
         //qDebug() << QString::number(i) + " // " + QString::number(randomValue);
         QTreeWidgetItem *child = mSessionItem->takeChild(i);

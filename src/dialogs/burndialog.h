@@ -21,7 +21,7 @@
 #define BURNDIALOG_H
 
 #include <QDialog>
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 #include "qdiskitem.h"
 #include "mdichild_diskinfo.h"
 #include "mdichild_dialog.h"

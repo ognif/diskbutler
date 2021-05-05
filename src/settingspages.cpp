@@ -544,6 +544,87 @@ void FilterPage::on_checkByDate_clicked(bool checked) {
   mButtonRemove->setEnabled(!checked);
 }
 
+PluginPage::PluginPage(QWidget *parent)
+    : QWidget(parent)
+{
+    QGroupBox *groupPlugins = new QGroupBox("Plugins:");
+    QVBoxLayout *listLayout = new QVBoxLayout;
+    mListWidget = new QListWidget();
+    listLayout->addWidget(mListWidget);
+    groupPlugins->setLayout(listLayout);
+
+    QVBoxLayout *mainlayout = new QVBoxLayout;
+    mainlayout->addWidget(groupPlugins);
+    setLayout(mainlayout); // listLayout
+
+    readPlugins();
+}
+
+void PluginPage::pluginsSub(QString strName, QString strPath, QStringList excludeList)
+{
+    QListWidgetItem *item = new QListWidgetItem(strName);
+    mListWidget->addItem(item);
+    if(excludeList.contains(strPath, Qt::CaseInsensitive) == false){
+        item->setCheckState(Qt::Checked);
+    }else{
+        item->setCheckState(Qt::Unchecked);
+    }
+    item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+}
+
+bool PluginPage::readPlugins()
+{
+
+    QStringList excludeList = ConfigurationPage::mSettings.value("excludeplugins",0).toStringList();
+    //Pluginhandler
+    //Wir lesen alle Plugins
+    //Es werden nur Daten vom Typ DLL oder SO oder DynLib genommen, keine Mischung
+    //Wir prüfen die Exclude Liste
+    //Exlude wird nicht gealden oder angezeigt.
+    //Problem ist FIlename und FIlepath
+
+    QDirIterator it(QCoreApplication::applicationDirPath()+"/foxsdk/plugins",QDir::NoDotAndDotDot|QDir::AllEntries);
+    while (it.hasNext()) {
+        it.next();
+
+#if defined (LINUX)
+        compare(str1, str2, Qt::CaseInsensitive);
+        if(it.fileInfo().completeSuffix().compare("so",Qt::CaseInsensitive)==0){
+            pluginsSub(it.fileName(), it.filePath(), excludeList);
+        }
+#endif
+#if defined (MAC)
+            if(it.fileInfo().completeSuffix().compare("dylib",Qt::CaseInsensitive)==0){
+                pluginsSub(it.fileName(), it.filePath(), excludeList);
+            }
+#endif
+#if defined (WIN32)
+            if(it.fileInfo().completeSuffix().compare("dll",Qt::CaseInsensitive)==0){
+                pluginsSub(it.fileName(), it.filePath(), excludeList);
+            }
+#endif
+
+    }
+
+    return false;
+}
+
+void PluginPage::saveSettings()
+{
+    QStringList excludeList;
+    for(int i = 0; i < mListWidget->count(); ++i)
+    {
+        QListWidgetItem* item = mListWidget->item(i);
+        if(item->checkState()==Qt::Unchecked){
+            QString listItem = QCoreApplication::applicationDirPath()+"/foxsdk/plugins/" + item->text();
+            excludeList.append(listItem);
+        }
+    }
+
+    ConfigurationPage::mSettings.setValue("excludeplugins", QVariant::fromValue(excludeList));
+
+}
+
 /*
   Combobox wechsel
 

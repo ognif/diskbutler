@@ -28,8 +28,6 @@
 #include "QDir"
 #include "vrulemanager.h"
 #include "zimport_strategy.h"
-#include "bass.h"
-#include "tags.h"
 #include "qtwaitingspinner.h"
 
 class QtWaitingSpinner;
@@ -71,7 +69,6 @@ public:
   int getTotalTime();
   void setRootItem();
   void calculateRealSizes();
-  DWORD	g_BassHandle;
 
 Q_SIGNALS:
   void contentsChanged( bool changed );
@@ -80,6 +77,7 @@ Q_SIGNALS:
   void extractItem();
   void grabItem();
   void testMessage( const QString, bool* );
+  void statusMessage(QString msg, bool isRight);
 
 public Q_SLOTS:
   QDataItem* AddNewFolder();
@@ -91,7 +89,7 @@ public Q_SLOTS:
   void ReverseSelection();
   void UpdateProject();
   void MoveAudioTrack( int index_change );
-  void doFSSync( const QString &remove, const QString &keep );
+  void doFSSync(const QString &remove, const QString &keep);
   void FSSync();
   void FSUnsync();
   void ResetFiles();
@@ -100,7 +98,7 @@ public Q_SLOTS:
   void createContentList();
   void createIndex();
   void slot_rename_in_place();
-  bool on_add_tree( QString &path, bool* newData );
+  bool on_add_tree(QString &path,bool* newData);
 
 public:
   QDataItem *SetSelectedParent();
@@ -210,10 +208,9 @@ protected Q_SLOTS:
   void showStop();
   void dataTrackMode1();
   void dataTrackMode2();
-  void on_add_tree_completed( QDataItem *parent, QDataItem *item );
+  void on_add_tree_completed(QDataItem *parent, QDataItem *item);
 
 protected:
-  HSTREAM str;
   bool mModified;
   bool mNeedQueryAddAudioTrack;
   bool mDoAddAudioTrack;

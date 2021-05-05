@@ -213,10 +213,18 @@ void ContentThread::run()
                 const TCHAR *pFilePath = convertToFoxValue(QDir::toNativeSeparators(((QDataItem*)(*it))->GetFullPath()));
                 file.lpszSourceFilePath = pFilePath;
 
-                const TCHAR *pDiskPath = convertToFoxValue(QDir::toNativeSeparators(((QDataItem*)(*it))->GetDiskPath()));
-                file.lpszDestinationPath = pDiskPath;
+                QString destFilePath = QDir::toNativeSeparators(((QDataItem*)(*it))->GetDiskPath());
 
-                QString destFilePath = ((QDataItem*)(*it))->GetDiskFilePath();
+                QString  diskRoot = PATHSEPSTRING;
+                if( myTree->GetProjectType()==RuleManager::TYPE_PROJECT_MIXEDMODE ){
+                    diskRoot += "data";
+                    diskRoot += destFilePath;
+                }else{
+                    diskRoot = QDir::toNativeSeparators(((QDataItem*)(*it))->GetDiskPath());
+                }
+
+                const TCHAR *pDiskPath = convertToFoxValue(diskRoot);
+                file.lpszDestinationPath = pDiskPath;
 
                 //If source and target do not have the same name we give the different filename to the AddFile. No Rename needed.
                 const TCHAR *pFileName = nullptr;

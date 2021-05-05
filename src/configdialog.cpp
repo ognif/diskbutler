@@ -126,6 +126,12 @@ ConfigDialog::ConfigDialog()
     connect(activeFilter->mDateFrom, SIGNAL(dateTimeChanged(QDateTime)),
             this , SLOT(enableApply()));
 
+    PluginPage *activePlugins = new PluginPage;
+    pagesWidget->addWidget(activePlugins);
+
+    connect(activePlugins->mListWidget, SIGNAL(itemChanged(QListWidgetItem *)),
+            this, SLOT(enableApply()));
+
 
     applyButton = new QPushButton(tr("Apply"));
     okButton = new QPushButton(tr("OK"));
@@ -138,9 +144,43 @@ ConfigDialog::ConfigDialog()
     connect(okButton, SIGNAL(clicked()), this, SLOT(saveAll()));
     connect(applyButton, SIGNAL(clicked()), this, SLOT(saveApply()));
 
+    //HBox
+    //  Icons
+    //VBox
+    //  Content
+    //  Buttons
+
+    QHBoxLayout *allLayout = new QHBoxLayout;
+    allLayout->addWidget(contentsWidget);
+
+    QVBoxLayout *rightLayout = new QVBoxLayout;
+    rightLayout->addWidget(pagesWidget, 1);
+
+    QHBoxLayout *buttonsLayout = new QHBoxLayout;
+    buttonsLayout->addStretch(1);
+    buttonsLayout->addWidget(okButton);
+    buttonsLayout->addWidget(closeButton);
+    buttonsLayout->addWidget(applyButton);
+    rightLayout->addStretch(1);
+    rightLayout->addSpacing(12);
+    rightLayout->addLayout(buttonsLayout);
+
+    allLayout->addLayout(rightLayout);
+    setLayout(allLayout);
+
+
+    /*
+
     QHBoxLayout *horizontalLayout = new QHBoxLayout;
-    horizontalLayout->addWidget(contentsWidget);
-    horizontalLayout->addWidget(pagesWidget, 1);
+
+
+
+
+
+
+
+
+
 
     QHBoxLayout *buttonsLayout = new QHBoxLayout;
     buttonsLayout->addStretch(1);
@@ -154,8 +194,11 @@ ConfigDialog::ConfigDialog()
     mainLayout->addSpacing(12);
     mainLayout->addLayout(buttonsLayout);
     setLayout(mainLayout);
+    */
 
     applyButton->setEnabled(false);
+
+
 
 
 }
@@ -196,6 +239,13 @@ void ConfigDialog::createIcons()
     filterBtn->setTextAlignment(Qt::AlignHCenter);
     filterBtn->setSizeHint(QSize(110,60));
     filterBtn->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
+
+    QListWidgetItem *pluginBtn = new QListWidgetItem(contentsWidget);
+    pluginBtn->setIcon(QIcon(":/icons/plugin32.png"));
+    pluginBtn->setText(tr("Audio Plugins"));
+    pluginBtn->setTextAlignment(Qt::AlignHCenter);
+    pluginBtn->setSizeHint(QSize(110,60));
+    pluginBtn->setFlags(Qt::ItemIsSelectable | Qt::ItemIsEnabled);
 
     connect(contentsWidget,
             SIGNAL(currentItemChanged(QListWidgetItem*,QListWidgetItem*)),
@@ -241,6 +291,9 @@ void ConfigDialog::sendSaveCommand()
 
     FilterPage *activeFilterPage =  dynamic_cast<FilterPage*>(pagesWidget->widget(4));
     activeFilterPage->saveSettings();
+
+    PluginPage *activePluginPage =  dynamic_cast<PluginPage*>(pagesWidget->widget(5));
+    activePluginPage->saveSettings();
 }
 
 

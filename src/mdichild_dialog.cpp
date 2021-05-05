@@ -170,6 +170,9 @@ void MdiChildDialog::createTreeWidget(RuleManager::ProjectType projectType, bool
             this, SLOT(on_extract_item()));
     connect(treeWidget, SIGNAL(grabItem()),
             this, SLOT(on_grab_item()));
+    connect(treeWidget, SIGNAL(statusMessage(QString,bool)),
+            this, SLOT(on_status_message(QString,bool)));
+
 
 }
 
@@ -599,7 +602,7 @@ void MdiChildDialog::toggleFileExplorer()
 void MdiChildDialog::documentWasModified(bool modified)
 {
     setWindowModified(modified);
-    emit status_changed("");
+    emit status_changed("",true);
     emit datatrack_changed();
 }
 
@@ -631,6 +634,11 @@ void MdiChildDialog::on_extract_item()
     emit extract_item();
 }
 
+void MdiChildDialog::on_status_message(QString msg, bool isRight)
+{
+    emit status_changed(msg, isRight);
+}
+
 void MdiChildDialog::on_grab_item()
 {
     emit grab_item();
@@ -639,7 +647,7 @@ void MdiChildDialog::on_grab_item()
 void MdiChildDialog::on_datatrack_changed()
 {
 
-    emit status_changed("");
+    emit status_changed("",true);
     emit datatrack_changed();
 
 }
@@ -652,7 +660,7 @@ void MdiChildDialog::on_audiotrack_changed(bool bEnable)
 void MdiChildDialog::on_project_selection_changed()
 {
     QString status = updateStatus();
-    emit status_changed(status);
+    emit status_changed(status,true);
 }
 
 QString MdiChildDialog::updateStatus() {
@@ -1211,7 +1219,37 @@ void MdiChildDialog::setRibbonTabs(Ribbon *baseRibbon, QWidget* parent)
             baseRibbon->currentTab("General");
         }
         break;
+    case RuleManager::TYPE_PROJECT_MIXEDMODE:
+        baseRibbon->hideAll();
+        baseRibbon->showTab(":/icons/filesystem32.png", tr("File System"));
+        baseRibbon->showTab(":/icons/extiso32.png", tr("ISO Extended"));
+        if(baseRibbon->isTabVisible(lastTab)){
+            baseRibbon->currentTab(lastTab);
+        }else{
+            baseRibbon->currentTab("General");
+        }
+        break;
+    case RuleManager::TYPE_PROJECT_VIDEODVD:
+        baseRibbon->hideAll();
+        baseRibbon->showTab(":/icons/filesystem32.png", tr("File System"));
+        baseRibbon->showTab(":/icons/extiso32.png", tr("ISO Extended"));
+        if(baseRibbon->isTabVisible(lastTab)){
+            baseRibbon->currentTab(lastTab);
+        }else{
+            baseRibbon->currentTab("General");
+        }
+        break;
+    case RuleManager::TYPE_PROJECT_BLURAYVIDEO:
+        baseRibbon->hideAll();
+        baseRibbon->showTab(":/icons/filesystem32.png", tr("File System"));
+        if(baseRibbon->isTabVisible(lastTab)){
+            baseRibbon->currentTab(lastTab);
+        }else{
+            baseRibbon->currentTab("General");
+        }
+        break;
     }
+
 
     if(parent!=nullptr){
         setUIControls(baseRibbon, parent);

@@ -78,11 +78,13 @@ SOURCES_NODES = \
 HEADERS_UTILS = \
     utils/utils_common.h \
     utils/messanger.h \
-    utils/vrulemanager.h
+    utils/vrulemanager.h \
+    utils/dynbasslib.h
 SOURCES_UTIS = \
     utils/utils_common.cpp \
     utils/messanger.cpp \
-    utils/vrulemanager.cpp
+    utils/vrulemanager.cpp \
+    utils/dynbasslib.cpp
 HEADERS_RIBBON = \
     ribbon/ribbon.h \
     ribbon/ribbonbuttongroup.h \
@@ -158,7 +160,7 @@ SOURCES += $${SOURCES_CONTROLS} \
         $${SOURCES_HEX} \
         commontreewidget.cpp \
         audiotaginfo.cpp \
-        configdialog.cpp \        
+        configdialog.cpp \
         main.cpp \
         mainwindow.cpp \
         mdichild_base.cpp \
@@ -167,7 +169,7 @@ SOURCES += $${SOURCES_CONTROLS} \
         mdichild_diskinfo.cpp \
         mdichild_hex.cpp \
         mdichild_scan.cpp \
-        settingspages.cpp \
+        settingspages.cpp \        
         xbelgenerator.cpp \
         xbelhandler.cpp
 
@@ -186,6 +188,8 @@ HEADERS += $${HEADERS_CONTROLS} \
         commontreewidget.h \
         audiotaginfo.h \
         configdialog.h \
+        foxsdk/bassmix.h \
+        foxsdk/tags.h \
         mainwindow.h \
         mdichild_base.h \
         mdichild_deviceinfo.h \
@@ -227,11 +231,7 @@ INCLUDEPATH += $$PWD $$PWD/zmodules $$PWD/ribbon $$PWD/controls $$PWD/hex
 DEPENDPATH += $$PWD/foxsdk
 
 win32: LIBS += -L$$PWD/foxsdk/ -lFoxSDKCore
-win32: LIBS += -L$$PWD/foxsdk/ -lbass
-win32: LIBS += -L$$PWD/foxsdk/ -ltags
 win32: PRE_TARGETDEPS += $$PWD/foxsdk/FoxSDKCore.lib
-win32: PRE_TARGETDEPS += $$PWD/foxsdk/bass.lib
-win32: PRE_TARGETDEPS += $$PWD/foxsdk/tags.lib
 
 unix:!macx {
 LIBS += -L$$PWD/foxsdk/ -lFoxSDKCore
