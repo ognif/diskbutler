@@ -22,9 +22,9 @@
 #include <qstack.h>
 
 #include "qdataitem.h"
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 #include "utils_common.h"
-
+#include "settingspages.h"
 
 QIcon QDataItem::mFolderIcon;
 QIcon QDataItem::mFixedFolderIcon;
@@ -34,25 +34,25 @@ QDataItem::QDataItem(CommonTreeWidget *view)
     : QTreeWidgetItem(view, UserType)
     , mType(File)
     , mSize(0)
-    , mPlayTime(0)
     , mItemCount(0)
     , mNodeCount(0)
     , mIsError(0)
     , mErrorDescription("")
     , mDataTrackMode(1)
+    , mPlayTime(0)
 {
 }
 
 QDataItem::QDataItem(QDataItem *parent)
     : QTreeWidgetItem(parent)
     , mType(File)
-    , mSize(0)
-    , mPlayTime(0)
+    , mSize(0)    
     , mItemCount(0)
     , mNodeCount(0)
     , mIsError(0)
     , mErrorDescription("")
     , mDataTrackMode(1)
+    , mPlayTime(0)
 {
 }
 
@@ -128,6 +128,8 @@ void QDataItem::SetDataWithName(const QString &name)
     mName = name;
     mIsHidden = false;
     mIsHiddenExt = false;
+    mIsArchive = false;
+    mIsDirectory = false;
     mPriority = 0;
     mDateAdded = QDateTime::currentDateTime();
     mDateCreated = mDateAdded;
@@ -135,7 +137,7 @@ void QDataItem::SetDataWithName(const QString &name)
     SetDefaultIcon();
     setText(0, mName);
     setText(1, humanReadableSize(mSize,nullptr));
-    setText(2, mComment);
+    setText(RuleManager::TYPE_PROJECT_MIXEDMODE == project_type?3:2, mComment);
 }
 
 void QDataItem::checkPathAndNaming()
@@ -171,17 +173,20 @@ void QDataItem::SetData(const QString &path)
     mSize = fileinfo.size();
     mIsHidden = false;
     mIsHiddenExt = false;
+    mIsArchive = false;
+    mIsDirectory = false;
     mPriority = 0;
-    /*
-  int size = ConfigurationPage::mSettings.value("NoChecksumFileSize", "32").toInt();
-  if (ConfigurationPage::mSettings.value("CreateAndShowChecksum", true).toBool()
-      && mSize <= size) {
-    mChecksum = CalcChecksum(mFullPath);
-  } else {
-    mChecksum = "";
-  }
-  */
-    mChecksum = "";
+
+    //Der BEreich muss noch gethreaded werden
+    int64 size = ConfigurationPage::mSettings.value("NoChecksumFileSize", "32").toInt();
+    if (ConfigurationPage::mSettings.value("CreateAndShowChecksum", true).toBool()
+            && mSize <= size*1024*1024) {
+        mChecksum = CalcChecksum(mFullPath);
+    } else {
+        mChecksum = "";
+    }
+
+
     mComment = "";
     //Check Icon, if Warning, we use the warn provider
     //Then we need to save the provider Icon in list.
@@ -191,7 +196,7 @@ void QDataItem::SetData(const QString &path)
     setIcon(0, mOrgIcon);
     setText(0, mName);
     setText(1, humanReadableSize(mSize,nullptr));
-    setText(2, mComment);
+    setText(RuleManager::TYPE_PROJECT_MIXEDMODE == project_type?3:2, mComment);
 }
 
 void QDataItem::setIconWarning(bool isWarning, const QString &strWarning)
@@ -199,7 +204,7 @@ void QDataItem::setIconWarning(bool isWarning, const QString &strWarning)
     if(isWarning == true){
         setIcon(0, QIcon(":/icons/warning16.png"));
         mWarning = strWarning;
-        setText(2, mWarning);
+        setText(RuleManager::TYPE_PROJECT_MIXEDMODE == project_type?3:2, mWarning);
     }else{
         mWarning = "";
         if (QDataItem::Folder == mType) {
@@ -209,11 +214,11 @@ void QDataItem::setIconWarning(bool isWarning, const QString &strWarning)
         } else if (QDataItem::File == mType) {
             setIcon(0, mOrgIcon);
         }
-        setText(2, mComment);
+        setText(RuleManager::TYPE_PROJECT_MIXEDMODE == project_type?3:2, mComment);
     }
 }
 
-void QDataItem::SetDataAudio(const QString &path, qint64 data_time, const QString &comment)
+void QDataItem::SetDataAudio(const QString &path, double data_time, const QString &comment)
 {
     QFileInfo fileinfo(path);
     fileinfo.setFile(fileinfo.absoluteFilePath());
@@ -228,6 +233,8 @@ void QDataItem::SetDataAudio(const QString &path, qint64 data_time, const QStrin
     mSize = fileinfo.size();
     mIsHidden = false;
     mIsHiddenExt = false;
+    mIsArchive = false;
+    mIsDirectory = false;
     mPriority = 0;
     mDateAdded = QDateTime::currentDateTime();
     mDateCreated = fileinfo.birthTime();
@@ -244,7 +251,7 @@ void QDataItem::SetDataAudio(const QString &path, qint64 data_time, const QStrin
 }
 
 void QDataItem::SetDataAudioTrack(ValueType type, const QString &, const QString &name,
-                                  qint64 size, int item_count, qint64 length)
+                                  qint64 size, int item_count, double length)
 {
     mType = type;
     mName = name;
@@ -278,17 +285,19 @@ void QDataItem::SetData(ValueType type, const QString &path, const QString &name
     mNodeCount = node_count;
     setText(0, mName);
     setText(1, humanReadableSize(mSize,nullptr));
-    setText(2, mComment);
+    setText(RuleManager::TYPE_PROJECT_MIXEDMODE == project_type?3:2, mComment);
 }
 
 void QDataItem::SetData(ValueType type, const QString &path, const QString &name,
                         qint64 size, int item_count, int node_count,
-                        bool bHidden, bool bHiddenExt, int priority,
+                        bool bHidden, bool bHiddenExt, bool bArchive, bool bDirectory, int priority,
                         QDateTime date_added, QDateTime date_created, QDateTime date_modified,
                         const QString &checksum, const QString &comment)
 {
     mIsHidden = bHidden;
     mIsHiddenExt = bHiddenExt;
+    mIsArchive = bArchive;
+    mIsDirectory = bDirectory;
     mPriority = priority;
     mDateAdded = date_added;
     mDateCreated = date_created;
@@ -300,12 +309,14 @@ void QDataItem::SetData(ValueType type, const QString &path, const QString &name
 
 void QDataItem::SetData(ValueType, const QString &path, const QString &name,
                         qint64 size, qint64 length, int, int,
-                        bool bHidden, bool bHiddenExt, int priority,
+                        bool bHidden, bool bHiddenExt, bool bArchive, bool bDirectory, int priority,
                         QDateTime date_added, QDateTime date_created, QDateTime date_modified,
                         const QString &checksum, const QString &comment) //AudioFile
 {
     mIsHidden = bHidden;
     mIsHiddenExt = bHiddenExt;
+    mIsArchive = bArchive;
+    mIsDirectory = bDirectory;
     mPriority = priority;
     mDateAdded = date_added;
     mDateCreated = date_created;
@@ -323,18 +334,31 @@ void QDataItem::SetDataLBA(const qint64 data_size)
     setText(1, QString::number(data_size));
 }
 
-void QDataItem::SetDataSize(const qint64 data_size,bool isExplorer)
+void QDataItem::SetDataSize(const qint64 data_size, const qint64 audio_size ,bool isExplorer)
 {
     mSize = data_size;
+
     if(isExplorer==false){
-        setText(1, humanReadableSize(mSize,nullptr));
+        setText(1, humanReadableSize(data_size+audio_size,nullptr));
     }else{
-        setText(2, humanReadableSize(mSize,nullptr));
+        setText(2, humanReadableSize(data_size+audio_size,nullptr));
+    }
+}
+
+void QDataItem::SetDataSize(const qint64 data_size,bool isExplorer)
+{
+
+    mSize = data_size;
+
+    if(isExplorer==false){
+        setText(1, humanReadableSize(data_size,nullptr));
+    }else{
+        setText(2, humanReadableSize(data_size,nullptr));
     }
 
 }
 
-void QDataItem::SetDataTime(const qint64 data_time)
+void QDataItem::SetDataTime(const double data_time)
 {
     mPlayTime = data_time;
     setText(2, QDateTime::fromSecsSinceEpoch(data_time).toUTC().toString("hh:mm:ss"));
@@ -387,7 +411,7 @@ bool QDataItem::DoValidate()
         } else {
             mIsError = true;
             mErrorDescription = "File not found";
-            setText(2, mErrorDescription);
+            setText(RuleManager::TYPE_PROJECT_MIXEDMODE == project_type?3:2, mErrorDescription);
             return false;
         }
     } else {
@@ -411,6 +435,7 @@ QString QDataItem::ToXMLElementIndexFile(int depth)
                 + " datecreated=" + escapedAttribute(GetDateCreated().toString())
                 + " datemodified=" + escapedAttribute(GetDateModified().toString())
                 + " comment=" + escapedAttribute(GetComment())
+                + " projecttype=" + escapedAttribute(QString::number(project_type))
                 + ">\n";
 
         for (int i = 0; i < childCount(); ++i)
@@ -431,13 +456,15 @@ QString QDataItem::ToXMLElementIndexFile(int depth)
                 + " datecreated=" + escapedAttribute(GetDateCreated().toString())
                 + " datemodified=" + escapedAttribute(GetDateModified().toString())
                 + " checksum=" + escapedAttribute(GetChecksum())
-                + " comment=" + escapedAttribute(GetComment());
+                + " comment=" + escapedAttribute(GetComment())
+                + " projecttype=" + escapedAttribute(QString::number(project_type));
         out += "/>\n";
     } else if (QDataItem::DataTrack == mType) {
         //bool folded = !isExpanded();
         out += indent(depth)
                 + "<datatrack name=" + escapedAttribute(text(0))
                 + " size=" + escapedAttribute(QString::number(GetDataSize()))
+                + " projecttype=" + escapedAttribute(QString::number(project_type))
                 + ">\n";
 
         for (int i = 0; i < childCount(); ++i)
@@ -469,6 +496,7 @@ QString QDataItem::ToXMLElement(int depth)
                 + " datecreated=" + escapedAttribute(GetDateCreated().toString())
                 + " datemodified=" + escapedAttribute(GetDateModified().toString())
                 + " comment=" + escapedAttribute(GetComment())
+                + " projecttype=" + escapedAttribute(QString::number(project_type))
                 + ">\n";
 
         for (int i = 0; i < childCount(); ++i)
@@ -483,10 +511,10 @@ QString QDataItem::ToXMLElement(int depth)
 
         out += " name=" + escapedAttribute(text(0))
                 + " size=" + escapedAttribute(QString::number(GetDataSize()));
-                if(static_cast<QDataItem*>(this->parent())->GetType() == QDataItem::AudioTrack){
-                    out += " length=" + escapedAttribute(QString::number(GetDataTime()));
-                }
-                out += " path=" + escapedAttribute(GetFullPath())
+        if(static_cast<QDataItem*>(this->parent())->GetType() == QDataItem::AudioTrack){
+            out += " length=" + escapedAttribute(QString::number(GetDataTime()));
+        }
+        out += " path=" + escapedAttribute(GetFullPath())
                 + " hidden=" + escapedAttribute(QString::number(GetHidden()))
                 + " hiddenext=" + escapedAttribute(QString::number(GetHiddenExt()))
                 + " priority=" + escapedAttribute(QString::number(GetPriority()))
@@ -494,7 +522,8 @@ QString QDataItem::ToXMLElement(int depth)
                 + " datecreated=" + escapedAttribute(GetDateCreated().toString())
                 + " datemodified=" + escapedAttribute(GetDateModified().toString())
                 + " checksum=" + escapedAttribute(GetChecksum())
-                + " comment=" + escapedAttribute(GetComment());
+                + " comment=" + escapedAttribute(GetComment())
+                + " projecttype=" + escapedAttribute(QString::number(project_type));
         out += "/>\n";
     } else if (QDataItem::DataTrack == mType) {
         bool folded = !isExpanded();
@@ -503,6 +532,7 @@ QString QDataItem::ToXMLElement(int depth)
                 + " size=" + escapedAttribute(QString::number(GetDataSize()))
                 + " item_count=" + escapedAttribute(QString::number(GetDataItemCount()))
                 + " node_count=" + escapedAttribute(QString::number(GetDataNodeCount()))
+                + " projecttype=" + escapedAttribute(QString::number(project_type))
                 + " folded=\"" + (folded ? "yes" : "no")
                 + "\">\n";
 
@@ -516,6 +546,7 @@ QString QDataItem::ToXMLElement(int depth)
                 + "<audiotrack name=" + escapedAttribute(text(0))
                 + " size=" + escapedAttribute(QString::number(GetDataSize()))
                 + " item_count=" + escapedAttribute(QString::number(GetDataItemCount()))
+                + " projecttype=" + escapedAttribute(QString::number(project_type))
                 + " folded=\"" + (folded ? "yes" : "no")
                 + "\">\n";
 
@@ -529,6 +560,7 @@ QString QDataItem::ToXMLElement(int depth)
 
 void QDataItem::FromXMLElement(const QString &qName, const QXmlAttributes &attributes)
 {
+
     if (qName == "folder") {
         setFlags(flags() | Qt::ItemIsEditable);
         QString size = attributes.value("size");
@@ -536,13 +568,20 @@ void QDataItem::FromXMLElement(const QString &qName, const QXmlAttributes &attri
         QString node_count = attributes.value("node_count");
         QString hidden = attributes.value("hidden");
         QString hiddenExt = attributes.value("hiddenext");
+        QString archive = attributes.value("archive");
+        QString directory = attributes.value("directory");
         QString priority = attributes.value("priority");
         QString dateadded = attributes.value("dateadded");
         QString datecreated = attributes.value("datecreated");
         QString datemodified = attributes.value("datemodified");
+
+        int nDiskType = -1;
+        nDiskType = attributes.value("projecttype").toInt();
+        SetProjectTypeFromXML(nDiskType);
+
         SetData(QDataItem::Folder, attributes.value("path"), attributes.value("name"),
                 size.toInt(), item_count.toInt(), node_count.toInt(),
-                hidden.toInt(), hiddenExt.toInt(), priority.toInt(),
+                hidden.toInt(), hiddenExt.toInt(), archive.toInt(), directory.toInt(), priority.toInt(),
                 QDateTime::fromString(dateadded), QDateTime::fromString(datecreated),
                 QDateTime::fromString(datemodified), "", attributes.value("comment"));
         //setIcon(0, mFolderIcon);
@@ -554,15 +593,22 @@ void QDataItem::FromXMLElement(const QString &qName, const QXmlAttributes &attri
 
         QString hidden = attributes.value("hidden");
         QString hiddenExt = attributes.value("hiddenext");
+        QString archive = attributes.value("archive");
+        QString directory = attributes.value("directory");
         QString priority = attributes.value("priority");
         QString dateadded = attributes.value("dateadded");
         QString datecreated = attributes.value("datecreated");
         QString datemodified = attributes.value("datemodified");
+
+        int nDiskType = -1;
+        nDiskType = attributes.value("projecttype").toInt();
+        SetProjectTypeFromXML(nDiskType);
+
         if(attributes.value("length").count()==0){
 
             SetData(QDataItem::File, attributes.value("path"),
                     attributes.value("name"), size.toInt(), 1, 0,
-                    hidden.toInt(), hiddenExt.toInt(), priority.toInt(),
+                    hidden.toInt(), hiddenExt.toInt(), archive.toInt(), directory.toInt(), priority.toInt(),
                     QDateTime::fromString(dateadded), QDateTime::fromString(datecreated),
                     QDateTime::fromString(datemodified), attributes.value("checksum"),
                     attributes.value("comment"));
@@ -570,9 +616,13 @@ void QDataItem::FromXMLElement(const QString &qName, const QXmlAttributes &attri
         }else{
             QString length = attributes.value("length");
 
+            int nDiskType = -1;
+            nDiskType = attributes.value("projecttype").toInt();
+            SetProjectTypeFromXML(nDiskType);
+
             SetData(QDataItem::File, attributes.value("path"),
                     attributes.value("name"), size.toInt(), length.toInt(), 1, 0,
-                    hidden.toInt(), hiddenExt.toInt(), priority.toInt(),
+                    hidden.toInt(), hiddenExt.toInt(), archive.toInt(), directory.toInt(), priority.toInt(),
                     QDateTime::fromString(dateadded), QDateTime::fromString(datecreated),
                     QDateTime::fromString(datemodified), attributes.value("checksum"),
                     attributes.value("comment"));
@@ -583,10 +633,58 @@ void QDataItem::FromXMLElement(const QString &qName, const QXmlAttributes &attri
         QString size = attributes.value("size");
         QString item_count = attributes.value("item_count");
         QString node_count = attributes.value("node_count");
+
+        int nDiskType = -1;
+        nDiskType = attributes.value("projecttype").toInt();
+        SetProjectTypeFromXML(nDiskType);
+
         SetData(QDataItem::DataTrack, QString(""), attributes.value("name"),
                 size.toInt(), item_count.toInt(), node_count.toInt());
         bool folded = (attributes.value("folded") != "no");
         setExpanded(!folded);
+    }
+}
+
+void QDataItem::SetProjectTypeFromXML(int projectTypeXML)
+{
+    if(projectTypeXML==-1)return;
+    switch(projectTypeXML){
+    case 0:
+        project_type = RuleManager::TYPE_PROJECT_EXPLORE;
+        break;
+    case 1:
+        project_type = RuleManager::TYPE_PROJECT_OPEN;
+        break;
+    case 2:
+        project_type = RuleManager::TYPE_PROJECT_AUDIOCD;
+        break;
+    case 3:
+        project_type = RuleManager::TYPE_PROJECT_MIXEDMODE;
+        break;
+    case 4:
+        project_type = RuleManager::TYPE_PROJECT_VIDEODVD;
+        break;
+    case 5:
+        project_type = RuleManager::TYPE_PROJECT_BLURAYVIDEO;
+        break;
+    case 6:
+        project_type = RuleManager::TYPE_PROJECT_UDF;
+        break;
+    case 7:
+        project_type = RuleManager::TYPE_PROJECT_ISO;
+        break;
+    case 8:
+        project_type = RuleManager::TYPE_PROJECT_ISOUDF;
+        break;
+    case 9:
+        project_type = RuleManager::TYPE_PROJECT_VIDEOCD;
+        break;
+    case 10:
+        project_type = RuleManager::TYPE_PROJECT_SUPERVIDEO;
+        break;
+    case 11:
+        project_type = RuleManager::TYPE_PROJECT_MAX;
+        break;
     }
 }
 

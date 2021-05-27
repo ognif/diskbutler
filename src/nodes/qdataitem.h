@@ -25,6 +25,7 @@
 #include <QDateTime>
 #include <QDebug>
 #include "FoxSDKExport.h"
+#include "vrulemanager.h"
 
 //We have changed it from slash to backslash. We keep everything backslash here.
 
@@ -59,6 +60,7 @@ public:
 
     void SetType(ValueType type);
     ValueType GetType() {return mType;}
+    void SetProjectType(RuleManager::ProjectType newValue){project_type=newValue;};
     QString GetName() {return mName;}
     void SetName(const QString &name) {mName = name;}
     void checkPathAndNaming();
@@ -115,26 +117,27 @@ public:
     void SetDefaultIcon();
     void SetDataWithName(const QString &name);
     void SetData(const QString &path);
-    void SetDataAudio(const QString &path, qint64 data_time, const QString &comment);
+    void SetDataAudio(const QString &path, double data_time, const QString &comment);
     void SetDataAudioTrack(ValueType type, const QString &path, const QString &name,
-                                      qint64 size, int item_count, qint64 length);
+                                      qint64 size, int item_count, double length);
     void SetData(ValueType type, const QString &path, const QString &name,
                  qint64 size, int item_count, int node_count);
     void SetData(ValueType type, const QString &path, const QString &name,
                  qint64 size, int item_count, int node_count,
-                 bool bHidden, bool bHiddenExt, int priority,
+                 bool bHidden, bool bHiddenExt, bool bArchive, bool bDirectory, int priority,
                  QDateTime date_added, QDateTime date_created, QDateTime date_modified,
                  const QString &checksum, const QString &comment);
     void SetData(ValueType type, const QString &path, const QString &name,
                  qint64 size, qint64 length, int item_count, int node_count,
-                 bool bHidden, bool bHiddenExt, int priority,
+                 bool bHidden, bool bHiddenExt, bool bArchive, bool bDirectory, int priority,
                  QDateTime date_added, QDateTime date_created, QDateTime date_modified,
                  const QString &checksum, const QString &comment);
+    void SetDataSize(const qint64 data_size, const qint64 audio_size ,bool isExplorer=false);
     void SetDataSize(const qint64 data_size,bool isExplorer=false);
     void SetDataLBA(const qint64 data_size);
-    void SetDataTime(const qint64 data_time);
+    void SetDataTime(const double data_time);
 
-    qint64 GetDataTime() {return mPlayTime;}
+    double GetDataTime() {return mPlayTime;}
     qint64 GetDataSize() {return mSize;}
 
     void SetFullPath(const QString &path) {mFullPath = path;}
@@ -165,6 +168,11 @@ public:
     void SetHidden(bool isChecked) {mIsHidden = isChecked;}
     bool GetHiddenExt() {return mIsHiddenExt;}
     void SetHiddenExt(bool isChecked) {mIsHiddenExt = isChecked;}
+    bool GetArchive() {return mIsArchive;}
+    void SetArchive(bool isChecked) {mIsArchive = isChecked;}
+    bool GetDirectory() {return mIsDirectory;}
+    void SetDirectory(bool isChecked) {mIsDirectory = isChecked;}
+
     int GetPriority() {return mPriority;}
     void SetPriority(int priority) {mPriority = priority;}
     QDateTime GetDateAdded() {return mDateAdded;}
@@ -177,15 +185,20 @@ public:
     QByteArray GetChecksum() {return mChecksum;}
     void SetChecksum(QByteArray checksum) {mChecksum = checksum;}
     QString GetComment() {return mComment;}
-    void SetComment(QString comment) {mComment = comment;}
-    int getItemPlayTime() {return mPlayTime;}
+    void SetComment(QString comment) {
+        mComment = comment;
+        setText(RuleManager::TYPE_PROJECT_MIXEDMODE == project_type?3:2, mComment);
+    }
+    double getItemPlayTime() {return mPlayTime;}
 
 protected:
     QString indent(int depth);
     QString escapedText(const QString &str);
     QString escapedAttribute(const QString &str);
+    void SetProjectTypeFromXML(int projectTypeXML);
 
 private:
+    RuleManager::ProjectType project_type;
     ValueType mType;
     // if no need to set item as different folder or file icon, that's better
     // to set following member as static
@@ -211,10 +224,13 @@ private:
     QDateTime mDateModified;
     bool mIsHidden;
     bool mIsHiddenExt;
+    bool mIsArchive;
+    bool mIsDirectory;
     int  mPriority;
     QByteArray mChecksum;
     QString mComment;
-    qint64 mPlayTime;
+    double mPlayTime;
+
 };
 
 #endif

@@ -31,6 +31,10 @@
 #include "qdiskitem.h"
 #include "vrulemanager.h"
 #include "mainwindow.h"
+#include "qttreepropertybrowser.h"
+#include "qtpropertymanager.h"
+#include "qtvariantproperty.h"
+#include "qteditorfactory.h"
 
 //QT_BEGIN_NAMESPACE
 //class QTreeWidget;
@@ -75,6 +79,7 @@ public:
   void toggleFileExplorerTree();
   void toggleFileExplorerList();
   void toggleFileExplorer();
+  void togglePropertyGrid();
   QString updateStatus();
   bool gotoListViewParent();
   QString getListViewRootPath() const;
@@ -117,19 +122,22 @@ private:
   void createTreeWidget(RuleManager::ProjectType projectType, bool isXbel = false);
   QString buildExploreStatusBar(QString inProjectType);
   QString buildCommonCD(QString inProjectType);
-  QString buildAudioCD(QString inProjectType);
+  QString buildAudioCD(QString inProjectType, bool doDetails = true);
+  bool isParentAudioTrack(QDataItem *item);
+  int countTotalTracks();
   bool isAudioTrack();
 
 private slots:
   void documentWasModified(bool modified);
-  void on_treeView_clicked(const QModelIndex &index);
-  void on_listView_doubleClicked(const QModelIndex &index);
-  void on_project_selection_changed();
-  void on_datatrack_changed();
-  void on_audiotrack_changed(bool);
-  void on_extract_item();
-  void on_grab_item();
-  void on_status_message(QString msg, bool isRight);
+  void onTreeViewClicked(const QModelIndex &index);
+  void onListViewDoubleClicked(const QModelIndex &index);
+  void onProjectSelectionChanged();
+  void onDatatrackChanged();
+  void onAudiotrackChanged(bool);
+  void onExtractItem();
+  void onGrabItem();
+  void onStatusMessage(QString msg, bool isRight);
+  void onUpdatePropertyValues();
 
 private:
   RuleManager::ProjectType mProjectType;
@@ -142,11 +150,61 @@ private:
   QFileSystemModel *listModel;
   QFileSystemModel *treeModel;
 
+  void BuildPropertyTree();
+
   QSplitter *fileExplorerSplitter;
+  QSplitter *fileTreeSplitter;
+
+  QtTreePropertyBrowser *propertyTree;
+
 
   QDataItem *item;
   QPixmap folderOnPixmap, folderOffPixmap, filePixmap;
   QString strlastSelectedTab;
+
+
+  //Property
+  QtVariantPropertyManager *sdkItemPropManager;
+  QtVariantProperty *sItemPropName;
+  QtVariantProperty *sItemPropSourcePath;
+  QtVariantProperty *sItemPropChecksum;
+  QtVariantProperty *sItemPropComment;
+  QtVariantProperty *sItemPropDiskPath;
+  QtVariantProperty *nItemPropSize;
+
+  QtVariantProperty *nDiskPropSize;
+  QtVariantProperty *sDiskPropAmount;
+  QtVariantEditorFactory *sdkFilePropFactory;
+  QtEnumPropertyManager *sdkEmuManager;
+  QtProperty *groupFilePropDate;
+  QtProperty *groupFilePropEx;
+  QtProperty *groupFilePropAtrributes;
+  QtProperty *nItemPropPriority;
+  QtEnumEditorFactory *cbPriorityFactory;
+
+  //Property Attributes
+  QtVariantProperty *bItemPropAttributeAHidden;
+  QtVariantProperty *bItemPropAttributeHidden;
+  QtVariantProperty *bItemPropAttributeArchive;
+  QtVariantProperty *bItemPropAttributeDir;
+
+  //Property Dates
+  QtVariantProperty *dItemPropCreatedDateTime;
+  QtVariantProperty *dItemPropModifiedDateTime;
+  QtVariantProperty *dItemPropAccessDateTime;
+
+  QtVariantProperty *bUseDatesProp;
+
+  QtVariantProperty *bUsePropCreatedDate;
+  QtVariantProperty *bUsePropModifiedDate;
+  QtVariantProperty *bUsePropExpirationDate;
+  QtVariantProperty *bUsePropEffectiveDate;
+
+  QtVariantProperty *dDiskPropCreatedDateTime;
+  QtVariantProperty *dDiskPropModifiedDateTime;
+  QtVariantProperty *dDiskPropExpirationDateTime;
+  QtVariantProperty *dDiskPropEffectiveDateTime;
+
 };
 
 #endif

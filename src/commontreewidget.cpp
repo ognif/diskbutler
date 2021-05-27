@@ -79,6 +79,7 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
       mNeedQueryReplaceFile( true ),
       mDoReplaceFile( false ),
       mSelectedItem( nullptr ),
+      mSessionItem(nullptr),
       mDataTrackItem( nullptr ),
       mSize( 0 ),
       mItemCount( 0 ),
@@ -86,6 +87,7 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
       mAudioCount( 0 ),
       mProjectType( projectType ),
       mQueryResetBeforeImport( false )
+
 {
     setAcceptDrops( true );
     setDragEnabled( false );
@@ -109,6 +111,7 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
     diskItem->SetName( diskName );
 
 
+
     //What are the default values we read in?
     //mSystemId = ConfigurationPage::mSettings.value("systemId","").toString();
     //(QDiskItem *)diskItem->setSystemId("ttest");
@@ -119,15 +122,18 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
 
 
     mHeadItem = diskItem;
+    updateDataSize(diskItem, 0, 0, 0);
 
     QDataItem *childItem;
     childItem = new QDataItem( diskItem );
     childItem->SetType( QDataItem::Session );
+    childItem->SetProjectType(mProjectType);
     childItem->setText( 0, tr("Session") );
     childItem->SetName( tr("Session") );
     childItem->setExpanded( true );
     mSessionItem = childItem;
     setSelected(childItem);
+    updateDataSize(childItem, 0, 0, 0);
 
 
     //Problem is, that the datatrackitem is created.
@@ -219,7 +225,7 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
     //connect(this, SIGNAL(currentItemChanged(QTreeWidgetItem*, QTreeWidgetItem*)), this, SLOT(slot_handle_currentItemChanged(QTreeWidgetItem *, QTreeWidgetItem *)));
     connect( this, SIGNAL(itemSelectionChanged()), this, SLOT(slot_handle_itemSelectChanged()));
     connect( this, SIGNAL(itemDoubleClicked(QTreeWidgetItem*,int)), this, SLOT(slot_handle_itemDoubleClicked(QTreeWidgetItem*,int)));
-    connect( this, SIGNAL(testMessage(QString,bool*)), this, SLOT(on_add_tree(QString,bool*)));
+    connect( this, SIGNAL(testMessage(QString,bool*)), this, SLOT(onAddTree(QString,bool*)));
 }
 
 //void CommonTreeWidget::slot_handle_collapse(QTreeWidgetItem *item)
@@ -369,6 +375,18 @@ void CommonTreeWidget::InsertItemFromRibbon()
     }
 }
 
+bool CommonTreeWidget::callerContainDataTrack(QDataItem *item)
+{
+    QDataItem *parent = item;
+
+    while(QDataItem::Disk != parent->GetType()){
+        if(parent->GetType()==QDataItem::DataTrack) return true;
+        parent = (QDataItem *)parent->parent();
+    }
+
+    return false;
+}
+
 QDataItem* CommonTreeWidget::InsertItem(const QString &path)
 {
 
@@ -395,10 +413,31 @@ QDataItem* CommonTreeWidget::InsertItem(const QString &path)
         setSelected(mSessionItem);
     }
 
-    if (isAudioFile(path))
-        return InsertAudioItem(path);
-    else
+    //Ich brauche hier eine WEiche für Mixed Mode.
+    //Also wenn ein PArent in der Reihe ein DataTRack ist, dann InsertData ansonsten insert Audio
+
+    //What happen in Mixed Mdoe?
+    if(RuleManager::TYPE_PROJECT_AUDIOCD == mProjectType || RuleManager::TYPE_PROJECT_MIXEDMODE == mProjectType){
+        if(callerContainDataTrack(mSelectedItem)==true) return InsertDataItem(path);
+        if (isAudioFile(path)) {
+            return InsertAudioItem(path);
+        }else{
+            return nullptr;
+        }
+    }
+    return InsertDataItem(path);
+
+    /*
+    if (RuleManager::TYPE_PROJECT_AUDIOCD != mProjectType
+            && RuleManager::TYPE_PROJECT_OPEN != mProjectType
+            && RuleManager::TYPE_PROJECT_MIXEDMODE != mProjectType) {
         return InsertDataItem(path);
+    } else if (isAudioFile(path)) {
+        return InsertAudioItem(path);
+    }
+    return nullptr;
+    */
+
 }
 
 QDataItem* CommonTreeWidget::InsertPlaylistItem(const QString &path)
@@ -581,6 +620,7 @@ QDataItem* CommonTreeWidget::InsertItem(QDataItem *parent, const QString &path, 
     } else {
         childItem = new QDataItem(mSessionItem);
     }
+    childItem->SetProjectType(mProjectType);
     childItem->setData(0, Qt::UserRole, "");
     childItem->setFlags((childItem->flags() & (~Qt::ItemIsDropEnabled)) | Qt::ItemIsEditable);
     childItem->SetType(QDataItem::File);
@@ -594,7 +634,7 @@ void CommonTreeWidget::InsertNode(const QString &path)
 {
     GetSelectedItem();
     QDataItem *parent;
-    disconnect(this, SIGNAL(testMessage(const QString, bool*)), nullptr, nullptr);
+    disconnect(this, SIGNAL(testMessage(QString,bool*)), nullptr, nullptr);
 
 
     if (mSelectedItem == nullptr || QDataItem::Disk == mSelectedItem->GetType()) {
@@ -635,8 +675,8 @@ void CommonTreeWidget::InsertNode(const QString &path)
     }
 
     mThreadAddTree = new ThreadAddTree(this, parent, path);
-    connect(mThreadAddTree, SIGNAL(completed(QDataItem*, QDataItem*)), this, SLOT(on_add_tree_completed(QDataItem*, QDataItem*)));
-    connect(this, SIGNAL(testMessage(QString, bool*)), this, SLOT(on_add_tree(QString, bool*)), Qt::BlockingQueuedConnection);
+    connect(mThreadAddTree, SIGNAL(completed(QDataItem*,QDataItem*)), this, SLOT(onAddTreeCompleted(QDataItem*,QDataItem*)));
+    connect(this, SIGNAL(testMessage(QString,bool*)), this, SLOT(onAddTree(QString,bool*)), Qt::BlockingQueuedConnection);
 
     mThreadAddTree->start();
     QWidget *w = qobject_cast<QWidget*>(QApplication::activeWindow());
@@ -794,6 +834,8 @@ QDataItem* CommonTreeWidget::AddNewFolder()
 void CommonTreeWidget::DeleteItem()
 {
     GetSelectedItem();
+
+    //Should not happen
     if (mSessionItem == mSelectedItem) {
         QMessageBox::information(this, tr("Information"),
                                  tr("Sorry the session node cannot be deleted!"));
@@ -813,22 +855,30 @@ void CommonTreeWidget::DeleteItem()
                                          tr("Sorry the Datatrack is not empty, cannot be deleted!"));
                 return;
             }
-
-            if(QDataItem::AudioTrack != mSelectedItem->GetType()) {
+            /*
+             * Wenn nicht Audiotrack und auch nicht Parent ein Audiotrack ist dann die allgemein aktualisieren.
+             */
+            if(QDataItem::AudioTrack != mSelectedItem->GetType() && QDataItem::AudioTrack != ((QDataItem*)parentItem)->GetType()) {
                 updateDataSize((QDataItem*)parentItem, -1*mSelectedItem->GetDataSize(),
                                -1*mSelectedItem->GetDataItemCount(), -1*mSelectedItem->GetDataNodeCount());
             }
             //parentItem->removeChild(mSelectedItem);
             QDataItem *selected = mSelectedItem;
 
+            //AudioTrack
             if (QDataItem::AudioTrack == mSelectedItem->GetType()) {
                 parentItem->removeChild(selected);
                 updateAudioTrackName();
             }else if(QDataItem::AudioTrack == ((QDataItem*)parentItem)->GetType()){
-                parentItem->removeChild(selected);
+                //Reset all Data
+                    parentItem->removeChild(selected);
+                    ((QDataItem*)parentItem)->SetDataSize(0);
+                    ((QDataItem*)parentItem)->SetDataTime(0);
                 QAudioTrackItem *audio_track = (QAudioTrackItem*)mSelectedItem;
                 audio_track->resetAll();
+                audio_track->setText(2, tr("00:00:00"));
                 updateAudioTrackName();
+                //Start Datatrack
             } else if (mSelectedItem == mDataTrackItem) {
                 mDataTrackItem = nullptr;
                 parentItem->removeChild(selected);
@@ -837,6 +887,8 @@ void CommonTreeWidget::DeleteItem()
                 parentItem->removeChild(selected);
                 emit datatrackChanged();
             }
+            //Now we have the ugly problem. On AudioCD and MixedModeCD we need to decrease the AudioTrack.
+            updateDataSize((QDataItem*)parentItem, 0, 0, 0);
 
             setSelected((QDataItem *)parentItem);
         }
@@ -1373,7 +1425,8 @@ QDataItem *CommonTreeWidget::addTree(QDataItem *parent, const QString &path,
         //item->setData(0, Qt::UserRole, "");
         //item->setFlags(item->flags() | Qt::ItemIsEditable);
         item->SetType(QDataItem::Folder);
-        item->SetData(path);
+        item->SetProjectType(mProjectType);
+        item->SetData(path);     
         item->SetDataNodeCount(1);
     }
 
@@ -1492,22 +1545,37 @@ void CommonTreeWidget::setSelected(QDataItem *item)
 
 void CommonTreeWidget::updateDataSize(QDataItem *parent, qint64 size, int item_count, int node_count)
 {
-    // update parents
+
+    //First get total Time and Size of Audio Part
     if (nullptr != parent) {
-        if (QDataItem::AudioTrack == parent->GetType()) {
-            parent->SetDataSize(parent->GetDataSize() + size);
-            parent->SetDataItemCount(parent->GetDataItemCount() + item_count);
-        } else {
-            QTreeWidgetItem *parentTmp = parent;
-            while (nullptr != parentTmp) {
+        double nTotalTimeSeconds = 0;
+        qint64 nTotalDataSize = 0;
+        if(mProjectType == RuleManager::TYPE_PROJECT_AUDIOCD || mProjectType == RuleManager::TYPE_PROJECT_MIXEDMODE){
+            nTotalTimeSeconds = getTotalTime();
+            nTotalDataSize = nTotalTimeSeconds*176400;
+        }
+
+        //Now we loop through the nodes
+        QTreeWidgetItem *parentTmp = parent;
+        while (nullptr != parentTmp) {
+            //Session and Disk Items
+            if(((QDataItem *)parentTmp)->GetType()==QDataItem::Disk || ((QDataItem *)parentTmp)->GetType()==QDataItem::Session){
+                if(mProjectType == RuleManager::TYPE_PROJECT_AUDIOCD || mProjectType == RuleManager::TYPE_PROJECT_MIXEDMODE){
+                    ((QDataItem *)parentTmp)->SetDataTime(nTotalTimeSeconds);
+
+                }
+                qDebug() << "audiosize: " + QString::number(nTotalDataSize);
                 ((QDataItem *)parentTmp)->SetDataSize(
-                            ((QDataItem *)parentTmp)->GetDataSize() + size);
-                ((QDataItem *)parentTmp)->SetDataItemCount(
-                            ((QDataItem *)parentTmp)->GetDataItemCount() + item_count);
-                ((QDataItem *)parentTmp)->SetDataNodeCount(
-                            ((QDataItem *)parentTmp)->GetDataNodeCount() + node_count);
-                parentTmp = ((QDataItem *)parentTmp)->parent();
+                                ((QDataItem *)parentTmp)->GetDataSize() + size, nTotalDataSize);
+            }else{
+                ((QDataItem *)parentTmp)->SetDataSize(
+                                ((QDataItem *)parentTmp)->GetDataSize() + size);
             }
+            ((QDataItem *)parentTmp)->SetDataItemCount(
+                        ((QDataItem *)parentTmp)->GetDataItemCount() + item_count);
+            ((QDataItem *)parentTmp)->SetDataNodeCount(
+                        ((QDataItem *)parentTmp)->GetDataNodeCount() + node_count);
+            parentTmp = ((QDataItem *)parentTmp)->parent();
         }
     }
     if (mHeadItem) {
@@ -1515,6 +1583,7 @@ void CommonTreeWidget::updateDataSize(QDataItem *parent, qint64 size, int item_c
         mItemCount = mHeadItem->GetDataItemCount();
         mNodeCount = mHeadItem->GetDataNodeCount();
     }
+
 }
 
 bool CommonTreeWidget::isAudioFile(const QString &path)
@@ -1566,6 +1635,7 @@ QDataItem* CommonTreeWidget::getDataTrackItem() {
         //if (mDataTrackItem->parent() == mSessionItem) {
         //  QMessageBox::QMessageBox::about(this, tr("Information"), tr("Ok"));
         //}
+        mDataTrackItem->SetProjectType(mProjectType);
         mDataTrackItem->setData(0, Qt::UserRole, "");
         mDataTrackItem->SetType(QDataItem::DataTrack);
         mDataTrackItem->SetDataWithName(tr("DataTrack(Mode1)"));
@@ -1605,7 +1675,10 @@ QDataItem* CommonTreeWidget::addAudioTrack()
     audiotrack= new QAudioTrackItem(mSessionItem);
     audiotrack->SetType(QDataItem::AudioTrack);
     audiotrack->setText(0, tr("AudioTrack[%1]").arg(mAudioCount));
+    audiotrack->setText(2, tr("00:00:00"));
     audiotrack->setExpanded(true);
+    updateDataSize(audiotrack, 0, 0, 0);
+
 
     return audiotrack;
 }
@@ -1680,10 +1753,10 @@ QDataItem* CommonTreeWidget::addAudioToEmptyAudioTrack(QDataItem *audio_track, c
         }
 
         audioItem->SetDataAudio(file_info.absoluteFilePath(),realAudioLength,tmpComment);
-
+        qDebug() << "real " + QString::number(realAudioLength);
         audio_track->SetDataSize(realAudioLength*176400);
         audio_track->SetDataTime(realAudioLength);
-
+        updateDataSize(audio_track, 0, 0, 0);
         return audio_track;
     }
 
@@ -1895,7 +1968,7 @@ void CommonTreeWidget::dataTrackMode2() {
     }
 }
 
-void CommonTreeWidget::on_add_tree_completed(QDataItem *parent, QDataItem *item) {
+void CommonTreeWidget::onAddTreeCompleted(QDataItem *parent,QDataItem *item) {
     if (item != nullptr) {
         // update parents and whole tree
         updateDataSize(parent, item->GetDataSize(), item->GetDataItemCount(), item->GetDataNodeCount());
@@ -1904,7 +1977,7 @@ void CommonTreeWidget::on_add_tree_completed(QDataItem *parent, QDataItem *item)
     }
 
     disconnect(this, SIGNAL(testMessage(QString,bool*)), nullptr, nullptr);
-    connect(this, SIGNAL(testMessage(QString,bool*)), this, SLOT(on_add_tree(QString,bool*)));
+    connect(this, SIGNAL(testMessage(QString,bool*)), this, SLOT(onAddTree(QString,bool*)));
 
     resetQueryAddAudioTrack();
     resetQueryReplaceFile();
@@ -1959,7 +2032,7 @@ int CommonTreeWidget::findSameNameInLevel(QDataItem *parent, const QString &path
     return -1;
 }
 
-bool CommonTreeWidget::on_add_tree(QString &path, bool* newData)
+bool CommonTreeWidget::onAddTree(QString path, bool* newData)
 {
     //QMessageBox::information(this, tr("Information"), tr("Button click!"));
 
@@ -2136,6 +2209,7 @@ QDataItem *CommonTreeWidget::importTree(QDataItem *parent, const QString &path,
         //item->setData(0, Qt::UserRole, "");
         //item->setFlags(item->flags() | Qt::ItemIsEditable);
         item->SetType(QDataItem::Folder);
+        item->SetProjectType(mProjectType);
         item->SetData(path);
         item->SetDataNodeCount(1);
     }
@@ -2242,6 +2316,7 @@ void CommonTreeWidget::createFixedFolder()
             for (int j = 0; j < mFixedFolderMap.value(parent_name).size(); j++) {
                 QDataItem *folder = new QDataItem(parent);
                 folder->SetType(QDataItem::FixedFolder);
+                folder->SetProjectType(mProjectType);
                 folder->SetDataWithName(mFixedFolderMap.value(parent_name)[j]);
                 folder->setFlags(folder->flags() & (~Qt::ItemIsEditable));
             }
@@ -2344,6 +2419,7 @@ QDataItem* CommonTreeWidget::addFSVirtualFolder(const QString &name)
 {
     QDataItem *item = new QDataItem();
     item->SetType(QDataItem::VirtualFolder);
+    item->SetProjectType(mProjectType);
     item->SetDataWithName(name);
     item->SetDataNodeCount(1);
 
@@ -2351,12 +2427,16 @@ QDataItem* CommonTreeWidget::addFSVirtualFolder(const QString &name)
     return item;
 }
 
-QList<QTreeWidgetItem*> CommonTreeWidget::takeChildrenWithUpdatedInfo(QDataItem *parent)
+QList<QTreeWidgetItem*> CommonTreeWidget::takeChildrenWithUpdatedInfo(QDataItem *parent, bool doInfos)
 {
     QList<QTreeWidgetItem*> children;
+    //takeChildren will remove all children and returns them into a list.
     children = parent->takeChildren();
-    updateDataSize(parent, -parent->GetDataSize(), -parent->GetDataItemCount(),
-                   -parent->GetDataNodeCount());
+    if(doInfos==true){
+        updateDataSize(parent, -parent->GetDataSize(), -parent->GetDataItemCount(),
+                       -parent->GetDataNodeCount());
+    }
+
 
     return children;
 }
@@ -2385,6 +2465,25 @@ void CommonTreeWidget::addChildWithUpdatedInfo(QDataItem *parent, QDataItem *chi
 
 void CommonTreeWidget::ResetFiles()
 {
+
+    if(RuleManager::TYPE_PROJECT_AUDIOCD == mProjectType || RuleManager::TYPE_PROJECT_MIXEDMODE == mProjectType){
+        takeChildrenWithUpdatedInfo(mSessionItem,true);
+
+        if(RuleManager::TYPE_PROJECT_MIXEDMODE == mProjectType){
+            mDataTrackItem=nullptr;
+        }
+
+        mModified = true;
+        resetQueryAddAudioTrack();
+        resetQueryReplaceFile();
+        emit contentsChanged(true);
+    }
+
+    if(mDataTrackItem==nullptr) return;
+
+    //Es ist ja kein DataTRack vorhanden, der ist ja nullptr.
+    //NAchfolgend für andere Projekte. Dennn hier gibt es einen Datatrack
+
     GetSelectedItem();
 
     if (RuleManager::TYPE_PROJECT_OPEN == mProjectType) {
@@ -2400,6 +2499,7 @@ void CommonTreeWidget::ResetFiles()
 
     //if(mSelectedItem->GetType() == QDataItem::AudioTrack) mAudioCount = 0;
 
+
     if (getIsFSSyncAvailable() && mSelectedItem == mDataTrackItem) {
         for (int i=0; i<mSelectedItem->childCount(); i++) {
             QDataItem *virtualItem = (QDataItem *)mSelectedItem->child(i);
@@ -2407,7 +2507,7 @@ void CommonTreeWidget::ResetFiles()
         }
     } else {
         if (RuleManager::TYPE_PROJECT_OPEN != mProjectType) {
-            takeChildrenWithUpdatedInfo(mDataTrackItem);
+            takeChildrenWithUpdatedInfo(mDataTrackItem); // Hier geht er rein wenn Datatrack vorhanden ist.
             createFixedFolder();
             mQueryResetBeforeImport = false;
         } else {
@@ -2448,9 +2548,11 @@ int CommonTreeWidget::getTotalTimeExplorer()
     return totalTime;
 }
 
-int CommonTreeWidget::getTotalTime()
+double CommonTreeWidget::getTotalTime()
 {
-    int totalTime = 0;
+    if(!mSessionItem) return 0;
+
+    double totalTime = 0;
     int start = IsDataTrackExist() ? 1 : 0;
 
     //qDebug() << QString::number(mSessionItem->childCount());

@@ -80,5 +80,9 @@
         <file>icons/warning16.png</file>
         <file>icons/plugin32.png</file>
         <file>icons/unlock32.png</file>
+        <file>icons/cdtext32.png</file>
+        <file>icons/propertygrid32.png</file>
+        <file>icons/cdtext_reset32.png</file>
+        <file>icons/filter_reset32.png</file>
     </qresource>
 </RCC>

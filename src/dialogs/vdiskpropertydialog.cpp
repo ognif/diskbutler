@@ -152,3 +152,8 @@ void VDiskPropertyDialog::on_dateUsage_stateChanged(int arg1)
     ui->dateTimeExpiration->setEnabled(arg1==2?true:false);
     ui->dateTimeEffective->setEnabled(arg1==2?true:false);
 }
+
+void VDiskPropertyDialog::on_checkByDate_stateChanged(int arg1)
+{
+
+}

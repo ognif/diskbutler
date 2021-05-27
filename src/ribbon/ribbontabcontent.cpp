@@ -97,6 +97,37 @@ void RibbonTabContent::addVLayout(const QString &groupName, QVBoxLayout *vLayout
 
 }
 
+void RibbonTabContent::addGLayout(const QString &groupName, QGridLayout *gLayout){
+
+    RibbonButtonGroup *ribbonButtonGroup = nullptr;
+    for (int i = 0; i < ui->ribbonHorizontalLayout->count(); i++)
+    {
+      RibbonButtonGroup *group = static_cast<RibbonButtonGroup*>(ui->ribbonHorizontalLayout->itemAt(i)->widget());
+      if (group->title().toLower() == groupName.toLower())
+      {
+        ribbonButtonGroup = group;
+        break;
+      }
+    }
+
+    if (ribbonButtonGroup != nullptr)
+    {
+
+        ribbonButtonGroup->addGrid(gLayout);
+
+    }
+    else
+    {
+      // Group not found
+      // Add ribbon group
+      addGroup(groupName);
+
+      // Add ribbon button
+      addGLayout(groupName, gLayout);
+    }
+
+}
+
 void RibbonTabContent::addWidget(const QString &groupName, QWidget *newItem)
 {
     // Find ribbon group
@@ -156,6 +187,41 @@ void RibbonTabContent::addCombobox(const QString &groupName, QComboBox *combobbo
 
     // Add ribbon button
     addCombobox(groupName, combobbox, vLayout);
+  }
+}
+
+void RibbonTabContent::addButton(const QString &groupName, QToolButton *button, QGridLayout *gLayout)
+{
+  // Find ribbon group
+  RibbonButtonGroup *ribbonButtonGroup = nullptr;
+  for (int i = 0; i < ui->ribbonHorizontalLayout->count(); i++)
+  {
+    RibbonButtonGroup *group = static_cast<RibbonButtonGroup*>(ui->ribbonHorizontalLayout->itemAt(i)->widget());
+    if (group->title().toLower() == groupName.toLower())
+    {
+      ribbonButtonGroup = group;
+      break;
+    }
+  }
+
+  if (ribbonButtonGroup != nullptr)
+  {
+    // Group found
+    // Add ribbon button
+      if(gLayout!=nullptr){
+          ribbonButtonGroup->addGButton(button,gLayout);
+      }else{
+          ribbonButtonGroup->addButton(button);
+      }
+  }
+  else
+  {
+    // Group not found
+    // Add ribbon group
+    addGroup(groupName);
+
+    // Add ribbon button
+    addButton(groupName, button, gLayout);
   }
 }
 

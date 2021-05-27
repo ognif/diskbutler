@@ -14,6 +14,7 @@
 #include <QTabWidget>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QGridLayout>
 #include <QtWidgets>
 
 class Ribbon : public QTabWidget
@@ -59,8 +60,10 @@ public:
   /// \param[in] groupName Name of the group
   /// \param[in] button The button
   void addWidgetGroup(const QString &tabName, const QString &groupName, QWidget *newItem);
-  void addButton(const QString &tabName, const QString &groupName, QToolButton *button, QVBoxLayout *vLayout);
+  void addVButton(const QString &tabName, const QString &groupName, QToolButton *button, QVBoxLayout *vLayout);
+  void addGButton(const QString &tabName, const QString &groupName, QToolButton *button, QGridLayout *gLayout);
   void addVerticalLayout(const QString &tabName, const QString &groupName, QVBoxLayout *vLayout);
+  void addGridLayout(const QString &tabName, const QString &groupName, QGridLayout *gLayout);
   void addComboBox(const QString &tabName, const QString &groupName, QComboBox *combobox, QVBoxLayout *vLayout);
 
   void setTabIndex(int index);

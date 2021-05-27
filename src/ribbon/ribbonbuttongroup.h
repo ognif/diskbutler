@@ -55,7 +55,9 @@ public:
   void removeButton(QToolButton *button);
 
   void addVertical(QVBoxLayout *vLayout);
+  void addGrid(QGridLayout *gLayout);
   void addVButton(QToolButton *button,QVBoxLayout *vLayout);
+  void addGButton(QToolButton *button,QGridLayout *gLayout);
   void addVComboBox(QComboBox *comboBox, QVBoxLayout *vLayout);
   void addNewWidget(QWidget *newItem);
 

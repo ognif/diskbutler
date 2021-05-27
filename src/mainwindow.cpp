@@ -29,6 +29,7 @@
 #include "burndialog.h"
 #include "ribbonbuilder.h"
 
+
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -154,6 +155,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( audioTrackEditButton, SIGNAL( clicked() ), this, SLOT( addAudioTrack() ) );
     connect( allSelectEditButton, SIGNAL( clicked() ), this, SLOT( selectAll() ));
     connect( inverseSelectEditButton, SIGNAL( clicked() ), this, SLOT( reverseSelection() ) );
+    //Filter stuff
+    connect( addFilterToList, SIGNAL( clicked() ), this, SLOT( filterAddToList() ) );
+    connect( delFilterFromList, SIGNAL( clicked() ), this, SLOT( filterDelFromList() ) );
+    connect( importFilterList, SIGNAL( clicked() ), this, SLOT( filterImport() ) );
+    connect( resetFilterList, SIGNAL( clicked() ), this, SLOT( filterReset() ) );
+    connect( filterByDate , SIGNAL(stateChanged(int)), this, SLOT(filterByDateTrigger(int)));
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //Start General Tab
@@ -211,6 +218,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ribbonBuilderView( ui->ribbonTabWidget, this );
 
     connect(viewBrowserButton, &QToolButton::clicked,  [=] { toggleFileExplorer(); });
+    connect(viewPropertyGridButton, &QToolButton::clicked,  [=] { togglePropertyGrid(); });
     connect(viewTileButton, SIGNAL(clicked()), this, SLOT(viewTileMdi()));
     connect(viewCascadeButton, SIGNAL(clicked()), this, SLOT(viewCascadeView()));
     connect(m_windowMenu, SIGNAL(aboutToShow()), this, SLOT(updateWindowSwitchMenu()));
@@ -314,6 +322,43 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(emulationTypeBootCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(bootEmulationTypeChanged(int)));
     connect(platformBootCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(bootPlatformChanged(int)));
     connect(bootISOLevelCombo, SIGNAL(activated(int)), this, SLOT(fsIsoTypeChanged(int)));
+
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    //Start CDText
+    //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+    ribbonBuilderCDText( ui->ribbonTabWidget, this );
+
+    connect(cdTextArrangerEdit  , &QLineEdit::textChanged, [=]() { this->onEnterCDTextText(cdTextArrangerEdit); });
+    connect(cdTextComposerEdit  , &QLineEdit::textChanged, [=]() { this->onEnterCDTextText(cdTextComposerEdit); });
+    connect(cdTextSongWriterEdit, &QLineEdit::textChanged, [=]() { this->onEnterCDTextText(cdTextSongWriterEdit); });
+    connect(cdTextPerformerEdit , &QLineEdit::textChanged, [=]() { this->onEnterCDTextText(cdTextPerformerEdit); });
+    connect(cdTextMessageEdit   , &QLineEdit::textChanged, [=]() { this->onEnterCDTextText(cdTextMessageEdit); });
+    connect(cdTextTitleEdit     , &QLineEdit::textChanged, [=]() { this->onEnterCDTextText(cdTextTitleEdit); });
+    connect(cdTextEANEdit       , &QLineEdit::textChanged, [=]() { this->onEnterCDTextText(cdTextEANEdit); });
+
+    connect(audioAddPause , SIGNAL(stateChanged(int)), this, SLOT(onAudioAddPause(int)));
+    connect(audioPauseLength, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+            [=](double d){ onAudioPauseLength(d);});
+    connect(addIndexToList, &QToolButton::clicked,  [=] { onActionIndexes(true); });
+    connect(delIndexFromList, &QToolButton::clicked,  [=] { onActionIndexes(false); });
+    connect(resetAudioData, &QToolButton::clicked,  [=] { onActionAudioReset(); });
+
+
+
+    /*
+
+
+    QDoubleSpinBox *indexesMinSelector;
+    QDoubleSpinBox *indexesSecSelector;
+    QDoubleSpinBox *indexesFrameSelector;
+    QListWidget * indexesCollectionList;
+    QDoubleSpinBox *audioPauseLength;
+    QCheckBox *audioAddPause;
+
+    QToolButton *addIndexToList;
+    QToolButton *delIndexFromList;
+     */
 
 
     //Finish Build Ribbon
@@ -540,6 +585,13 @@ void MainWindow::updateStatusBarText(const QString &text, bool isInfo)
 //##############################################################################################################
 //Window Display Functions
 //##############################################################################################################
+
+void MainWindow::togglePropertyGrid()
+{
+    if (activeMdiChild() == nullptr)
+        return;
+    activeMdiChild()->togglePropertyGrid();
+}
 
 void MainWindow::toggleFileExplorer()
 {
@@ -823,12 +875,19 @@ void MainWindow::checkFileSystemNaming()
 
             }
 
-            if(strWarning.length()>0){
-                ((QDataItem*)(*it))->setIconWarning( true, strWarning );
-            }else{
-                ((QDataItem*)(*it))->setIconWarning( false, strWarning );
-            }
+            if ( ((QDataItem*)(*it))->GetType()==QDataItem::Folder ||  ((QDataItem*)(*it))->GetType()==QDataItem::File ){
 
+                if(((QDataItem*)(*it)->parent())->GetType()==QDataItem::AudioTrack){
+                    return;
+                }
+
+                if(strWarning.length()>0){
+                    ((QDataItem*)(*it))->setIconWarning( true, strWarning);
+                }else{
+                    ((QDataItem*)(*it))->setIconWarning( false, strWarning);
+                }
+
+            }
 
             ++it;
         }
@@ -886,6 +945,100 @@ void MainWindow::reverseSelection()
 
 //##############################################################################################################
 //End Disk Content Functions
+//##############################################################################################################
+
+//##############################################################################################################
+//Filter
+//##############################################################################################################
+
+void MainWindow::setNewFilterValues()
+{
+    if(activeMdiChild() != nullptr){
+        QDiskItem *diskItem = (QDiskItem *)activeMdiChild()->getTreeWidget()->topLevelItem(0);
+        if(diskItem){
+            diskItem->setFilterList(getFilterList());
+            diskItem->setDateFrom(filterFromDate->date().toString());
+            diskItem->setDateTo(filterToDate->date().toString());
+            diskItem->setByDate(filterByDate->checkState());
+        }
+    }
+
+    // WE need to add the query about the checkdate
+    if(fileFilterList->count()>0){
+        delFilterFromList->setEnabled(true);
+    }else{
+        delFilterFromList->setEnabled(false);
+    }
+}
+
+QStringList *MainWindow::getFilterList()
+{
+    QStringList *list = new QStringList();
+    for (int i=0; i<fileFilterList->count(); i++) {
+        list->insert(i, fileFilterList->item(i)->text());
+    }
+    return list;
+}
+
+void MainWindow::filterAddToList()
+{
+    QListWidgetItem *item = new QListWidgetItem("");
+    fileFilterList->insertItem(0,item);
+    item->setFlags(item->flags() | Qt::ItemIsEditable);
+    fileFilterList->setCurrentItem(item);
+    fileFilterList->editItem(item);
+    setNewFilterValues();
+}
+
+void MainWindow::filterDelFromList()
+{
+    fileFilterList->takeItem(fileFilterList->currentRow());
+    setNewFilterValues();
+}
+
+void MainWindow::filterImport()
+{
+    filterByDate->setChecked(ConfigurationPage::mSettings.value("bydate", false).toBool());
+    filterFromDate->setDate(ConfigurationPage::mSettings.value("datefrom").toDate());
+    filterToDate->setDate(ConfigurationPage::mSettings.value("dateto").toDate());
+
+    int filterCount = ConfigurationPage::mSettings.value("filtercount", 0).toInt();
+    fileFilterList->clear();
+    for (int i=0; i<filterCount; i++) {
+        QListWidgetItem *item = new QListWidgetItem(ConfigurationPage::mSettings.value("filteritem" + QString::number(i), "").toString());
+        fileFilterList->addItem(item);
+        item->setFlags(item->flags() | Qt::ItemIsEditable);
+    }
+    setNewFilterValues();
+}
+
+void MainWindow::filterReset()
+{
+    filterByDate->setChecked(false);
+    filterFromDate->setDate(QDate::currentDate());
+    filterToDate->setDate(QDate::currentDate());
+
+    fileFilterList->clear();
+
+
+    filterByDateTrigger(0);
+    setNewFilterValues();
+}
+
+void MainWindow::filterByDateTrigger(int state)
+{
+    filterFromDate->setEnabled(state);
+    filterToDate->setEnabled(state);
+
+    fileFilterList->setEnabled(!state);
+    addFilterToList->setEnabled(!state);
+    delFilterFromList->setEnabled(!state);
+
+    setNewFilterValues();
+}
+
+//##############################################################################################################
+//End Filter Functions
 //##############################################################################################################
 
 void MainWindow::fillSourceDriveList()
@@ -1263,11 +1416,12 @@ void MainWindow::onActiveChildChanged(QMdiSubWindow *activeSubWindow)
     if(mdiArea->subWindowList().count()<=1){
         viewTileButton->setEnabled(false);
         viewCascadeButton->setEnabled(false);
-        viewSwitchButton->setEnabled(false);
+        viewSwitchButton->setEnabled(false);        
     }else{
         viewTileButton->setEnabled(true);
         viewCascadeButton->setEnabled(true);
         viewSwitchButton->setEnabled(true);
+        viewPropertyGridButton->setEnabled(false);
     }
 
     if(mdiArea->subWindowList().count()==0){
@@ -1284,6 +1438,8 @@ void MainWindow::onActiveChildChanged(QMdiSubWindow *activeSubWindow)
         delEditButton->setEnabled(false);
         renameEditButton->setEnabled(false);
         viewBrowserButton->setEnabled(false);
+        viewPropertyGridButton->setEnabled(false);
+
 
         delAllEditButton->setEnabled(false);
         updtEditButton->setEnabled(false);
@@ -1299,6 +1455,15 @@ void MainWindow::onActiveChildChanged(QMdiSubWindow *activeSubWindow)
         imageMediaButton->setEnabled(false);
         grabAudioMediaButton->setEnabled(false);
         burnGeneralButton->setEnabled(false);
+
+        filterByDate->setEnabled(false);
+        filterFromDate->setEnabled(false);
+        filterToDate->setEnabled(false);
+        fileFilterList->setEnabled(false);
+        addFilterToList->setEnabled(false);
+        delFilterFromList->setEnabled(false);
+        importFilterList->setEnabled(false);
+        resetFilterList->setEnabled(false);
 
         return;
     }
@@ -2035,6 +2200,118 @@ void MainWindow::isoExBibliographicFilechanged( QString strText )
 //##############################################################################################################
 
 //##############################################################################################################
+//CDTEXT Settings
+//##############################################################################################################
+void MainWindow::onActionAudioReset()
+{
+    QDataItem *selectedItem = (QDataItem *)activeMdiChild()->getTreeWidget()->GetSelectedItem();
+    QAudioTrackItem *audio_track = getAudioTrack(selectedItem);
+    QDiskItem *diskItem = nullptr;
+
+    if(audio_track){
+        audio_track->resetAll();
+    }else{
+        diskItem = dynamic_cast<QDiskItem *>( selectedItem );
+        if(diskItem)
+            diskItem->resetCDText();
+    }
+}
+
+void MainWindow::onActionIndexes(bool isAdd)
+{
+    QDataItem *selectedItem = (QDataItem *)activeMdiChild()->getTreeWidget()->GetSelectedItem();
+    QAudioTrackItem *audio_track = getAudioTrack(selectedItem);
+
+    if(isAdd == true){
+        int minutes = indexesMinSelector->value();
+        int seconds = indexesSecSelector->value();
+        int frames = indexesFrameSelector->value();
+        audio_track->addIndex(minutes, seconds, frames);
+        indexesCollectionList->addItem(MSFToStr(minutes, seconds, frames));
+    }else{
+        if(indexesCollectionList->selectedItems().size() > 0) {
+          QModelIndexList indexes = indexesCollectionList->selectionModel()->selectedIndexes();
+          foreach (QModelIndex index, indexes) {
+            audio_track->removeIndex(index.row());
+          }
+          qDeleteAll(indexesCollectionList->selectedItems());
+        }
+    }
+}
+
+void MainWindow::onAudioPauseLength(double nValue)
+{
+    QDataItem *selectedItem = (QDataItem *)activeMdiChild()->getTreeWidget()->GetSelectedItem();
+    QAudioTrackItem *audio_track = getAudioTrack(selectedItem);
+    if(audio_track)
+        audio_track->setPause(nValue);
+
+}
+
+void MainWindow::onAudioAddPause(int nState)
+{
+    QDataItem *selectedItem = (QDataItem *)activeMdiChild()->getTreeWidget()->GetSelectedItem();
+    QAudioTrackItem *audio_track = getAudioTrack(selectedItem);
+    if(audio_track)
+        audio_track->setPauseInFrames(nState?true:false);
+
+}
+
+void MainWindow::onEnterCDTextText(QLineEdit* edit)
+{
+    QStringList myMapper;
+    myMapper << "wdgArranger" << "wdgComposer" << "wdgSongwriter" << "wdgPerformer" << "wdgMessage" << "wdgTitle" << "wdgUpcEan";
+
+    QDataItem *selectedItem = (QDataItem *)activeMdiChild()->getTreeWidget()->GetSelectedItem();
+    QAudioTrackItem *audio_track = getAudioTrack(selectedItem);
+    QDiskItem *diskItem = nullptr;
+
+    if(selectedItem){
+        if(selectedItem->GetType()==QDataItem::Disk){
+            diskItem = dynamic_cast<QDiskItem *>( selectedItem );
+
+        }
+    }
+
+    switch(myMapper.indexOf(edit->objectName())){
+        case 0: //Arranger
+            if(audio_track){audio_track->setArranger(edit->text());}
+            if(diskItem){diskItem->setArranger(edit->text());}
+            break;
+        case 1: //Composer
+            if(audio_track){audio_track->setComposer(edit->text());}
+            if(diskItem){diskItem->setComposer(edit->text());}
+            break;
+        case 2: //Songwriter
+            if(audio_track){audio_track->setSongWriter(edit->text());}
+            if(diskItem){diskItem->setSongWriter(edit->text());}
+            break;
+        case 3: //Performer
+            if(audio_track){audio_track->setPerformer(edit->text());}
+            if(diskItem){diskItem->setPerformer(edit->text());}
+            break;
+        case 4: //Message
+            if(audio_track){audio_track->setMessage(edit->text());}
+            if(diskItem){diskItem->setMessage(edit->text());}
+            break;
+        case 5: //Title
+            if(audio_track){audio_track->setTitle(edit->text());}
+            if(diskItem){diskItem->setTitle(edit->text());}
+            break;
+        case 6: //UpcEan
+            if(audio_track){audio_track->setUPCEAN(edit->text());}
+            if(diskItem){diskItem->setUPCEAN(edit->text());}
+            break;
+    }
+
+
+}
+
+//##############################################################################################################
+//End CDTEXT Settings
+//##############################################################################################################
+
+//##############################################################################################################
 //Check actual version o Network
 //##############################################################################################################
 
@@ -2707,6 +2984,7 @@ void MainWindow::mdiAreaActivationTemplate()
  *Bisher sieht es so aus als wenn der IMGBurn 4 Sektoren lädt und dass er auch bei Boot Level3 nimmt.
  *
  *
- *
+ * size() size_t zu int: static_cast<int>(mIndexes.size())
+ * Cast QDataItem to other: audio_track = dynamic_cast<QAudioTrackItem *>(parentItem);
  *
  */

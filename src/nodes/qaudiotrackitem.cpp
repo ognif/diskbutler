@@ -77,7 +77,7 @@ void QAudioTrackItem::FromXMLElement(const QString &qName, const QXmlAttributes 
         QString count = attributes.value("item_count");
         QString length = attributes.value("length");
         SetDataAudioTrack(QDataItem::AudioTrack, QString(""), attributes.value("name"),
-                          size.toInt(), count.toInt(), length.toInt() );
+                          size.toInt(), count.toInt(), length.toDouble() );
         setArranger(attributes.value("arranger"));
         setComposer(attributes.value("composer"));
         setSongWriter(attributes.value("songwriter"));

@@ -19,7 +19,7 @@
 
 #include "qdiskitem.h"
 #include <QtWidgets>
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 
 
 QDiskItem::QDiskItem(CommonTreeWidget *view)
@@ -116,7 +116,12 @@ QDiskItem::QDiskItem(CommonTreeWidget *view)
   mDateExpiration = QDateTime::currentDateTime();
   mDateEffective = QDateTime::currentDateTime();
   mDateCreation = QDateTime::currentDateTime();
-  mDateMdification = QDateTime::currentDateTime();
+  mDateModification = QDateTime::currentDateTime();
+
+  mUseDateModification = true;
+  mUseDateCreation = true;
+  mUseDateEffective = false;
+  mUseDateExpiration = false;
 
 }
 
@@ -134,11 +139,15 @@ QString QDiskItem::ToXMLElement(int depth)
       + " filter=" + escapedAttribute(encodeFilterList(mFilterList))
       + " bydate=" + escapedAttribute(mByDate?"true":"false")
       + " datefrom=" + escapedAttribute(mDateFrom)
-      + " dateto=" + escapedAttribute(mDateTo)
+      + " dateto=" + escapedAttribute(mDateTo)            
+      + " useDateModification=" + escapedAttribute(mUseDateModification?"true":"false")
+      + " useDateCreation=" + escapedAttribute(mUseDateCreation?"true":"false")
+      + " useDateEffective=" + escapedAttribute(mUseDateEffective?"true":"false")
+      + " useDateExpiration=" + escapedAttribute(mUseDateExpiration?"true":"false")
       + " dateExpiration=" + escapedAttribute(mDateExpiration.toString("yyyy-MM-dd hh:mm:ss"))
       + " dateEffective=" + escapedAttribute(mDateEffective.toString("yyyy-MM-dd hh:mm:ss"))
       + " dateCreation=" + escapedAttribute(mDateCreation.toString("yyyy-MM-dd hh:mm:ss"))
-      + " dateMdification=" + escapedAttribute(mDateMdification.toString("yyyy-MM-dd hh:mm:ss"))
+      + " dateMdification=" + escapedAttribute(mDateModification.toString("yyyy-MM-dd hh:mm:ss"))
       + ">\n";
 
   QString options = "";
@@ -228,6 +237,11 @@ void QDiskItem::FromXMLElement(const QString &qName, const QXmlAttributes &attri
     setByDate((attributes.value("bydate")=="true")?true:false);
     setDateFrom(attributes.value("datefrom"));
     setDateTo(attributes.value("dateto"));
+
+    setUseDateModification((attributes.value("useDateModification")=="true")?true:false);
+    setUseDateCreation((attributes.value("useDateCreation")=="true")?true:false);
+    setUseDateEffective((attributes.value("useDateEffective")=="true")?true:false);
+    setUseDateExpiration((attributes.value("useDateExpiration")=="true")?true:false);
 
     setDiskDateExpiration(QDateTime::fromString(attributes.value("dateExpiration"),"yyyy-MM-dd hh:mm:ss"));
     setDiskDateEffective(QDateTime::fromString(attributes.value("dateEffective"),"yyyy-MM-dd hh:mm:ss"));
@@ -326,4 +340,15 @@ bool QDiskItem::isFilterSuffix(QString suffix)
       return true;
   }
   return false;
+}
+
+void QDiskItem::resetCDText()
+{
+    mArranger = "";
+    mComposer = "";
+    mSongWriter = "";
+    mPerformer = "";
+    mAudioMessage = "";
+    mAudioTitle = "";
+    mUPCEAN = "";
 }

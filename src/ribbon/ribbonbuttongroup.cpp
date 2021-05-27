@@ -67,6 +67,11 @@ void RibbonButtonGroup::addVertical(QVBoxLayout *vLayout){
     ui->horizontalLayout->addLayout(vLayout);
 }
 
+void RibbonButtonGroup::addGrid(QGridLayout *gLayout){
+
+    ui->horizontalLayout->addLayout(gLayout);
+}
+
 void RibbonButtonGroup::addVButton(QToolButton *button, QVBoxLayout *vLayout)
 {
 
@@ -76,6 +81,18 @@ void RibbonButtonGroup::addVButton(QToolButton *button, QVBoxLayout *vLayout)
   button->setIconSize(QSize(16,16));
   button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
   vLayout->addWidget(button);
+}
+
+void RibbonButtonGroup::addGButton(QToolButton *button, QGridLayout *gLayout)
+{
+
+  button->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
+  button->setMinimumSize(16, 16);
+  button->setAutoRaise(true); //Should decide between flat and 3D?
+  button->setIconSize(QSize(16,16));
+  button->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+  qDebug() << gLayout->rowCount();
+  gLayout->addWidget(button,gLayout->rowCount(),0);
 }
 
 void RibbonButtonGroup::addVComboBox(QComboBox *comboBox, QVBoxLayout *vLayout)

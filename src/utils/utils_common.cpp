@@ -165,5 +165,24 @@ QMainWindow* getMainWindow()
 }
 */
 
-
-
+QAudioTrackItem *getAudioTrack(QDataItem *item)
+{
+    QAudioTrackItem *audio_track = nullptr;
+    if(item){
+        if(item->GetType()==QDataItem::AudioTrack || item->GetType()==QDataItem::File){
+            if(item->GetType()==QDataItem::File){
+                QTreeWidgetItem* parentItem = item->parent();
+                if(parentItem){
+                    if(((QDataItem*)parentItem)->GetType()==QDataItem::AudioTrack){
+                        audio_track = dynamic_cast<QAudioTrackItem *>(parentItem);
+                    }
+                }
+            }
+            if(audio_track == nullptr){
+                audio_track = dynamic_cast<QAudioTrackItem *>(item);
+            }
+            return audio_track;
+        }
+    }
+    return nullptr;
+}

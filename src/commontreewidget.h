@@ -66,7 +66,7 @@ public:
   void setOverwriteFlag( bool setState ) { addTRackCDTextToDisc=setState; }
 
   void SetDataTrackItem( QDataItem *datatrack );
-  int getTotalTime();
+  double getTotalTime();
   void setRootItem();
   void calculateRealSizes();
 
@@ -98,7 +98,7 @@ public Q_SLOTS:
   void createContentList();
   void createIndex();
   void slot_rename_in_place();
-  bool on_add_tree(QString &path,bool* newData);
+  bool onAddTree(QString path,bool* newData);
 
 public:
   QDataItem *SetSelectedParent();
@@ -151,7 +151,7 @@ protected:
   QDataItem* replaceAudioInAudioTrack( QDataItem *audio_track, const QString &path );
   QDataItem* addAudioToEmptyAudioTrack( QDataItem *audio_track, const QString &path );
   QDataItem* addFSVirtualFolder( const QString &name );
-  inline QList<QTreeWidgetItem*> takeChildrenWithUpdatedInfo( QDataItem *parent );
+  inline QList<QTreeWidgetItem*> takeChildrenWithUpdatedInfo(QDataItem *parent, bool doInfos = true);
   void removeChildWithUpdatedInfo( QDataItem *parent, QDataItem *child );
   void addChildrenWithUpdatedInfo( QDataItem *parent, const QList<QTreeWidgetItem*> &children, qint64 data_size, int item_count, int node_count );
   void addChildWithUpdatedInfo( QDataItem *parent, QDataItem *child );
@@ -168,6 +168,7 @@ protected:
   QString buildDiskName();
 
   int audioTrackCount();
+  bool callerContainDataTrack(QDataItem *item);
 
   void setSizes();
 
@@ -208,7 +209,7 @@ protected Q_SLOTS:
   void showStop();
   void dataTrackMode1();
   void dataTrackMode2();
-  void on_add_tree_completed(QDataItem *parent, QDataItem *item);
+  void onAddTreeCompleted(QDataItem *parent,QDataItem *item);
 
 protected:
   bool mModified;

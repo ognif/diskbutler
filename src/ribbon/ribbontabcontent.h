@@ -52,7 +52,9 @@ public:
   void addCombobox(const QString &groupName, QComboBox *combobbox, QVBoxLayout *vLayout);
   void addWidget(const QString &groupName, QWidget *newItem);
   void addButton(const QString &groupName, QToolButton *button, QVBoxLayout *vLayout);
+  void addButton(const QString &groupName, QToolButton *button, QGridLayout *gLayout);
   void addVLayout(const QString &groupName, QVBoxLayout *vLayout);
+  void addGLayout(const QString &groupName, QGridLayout *gLayout);
 
   /// Remove a button from the specified group.
   /// The group is also removed if it's empty.

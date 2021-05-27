@@ -186,7 +186,38 @@ void Ribbon::addGroup(const QString &tabName, const QString &groupName)
     }
 }
 
-void Ribbon::addButton(const QString &tabName, const QString &groupName, QToolButton *button, QVBoxLayout *vLayout)
+void Ribbon::addGButton(const QString &tabName, const QString &groupName, QToolButton *button, QGridLayout *gLayout)
+{
+    // Find ribbon tab
+    QWidget *tab = nullptr;
+    for (int i = 0; i < count(); i++)
+    {
+        if (tabText(i).toLower() == tabName.toLower())
+        {
+            tab = QTabWidget::widget(i);
+            break;
+        }
+    }
+
+    if (tab != nullptr)
+    {
+        // Tab found
+        // Add ribbon button
+        RibbonTabContent *ribbonTabContent = static_cast<RibbonTabContent*>(tab);
+        ribbonTabContent->addButton(groupName, button, gLayout);
+    }
+    else
+    {
+        // Tab not found.
+        // Create tab
+        addTab(tabName);
+
+        // Add ribbon button
+        addGButton(tabName, groupName, button, gLayout);
+    }
+}
+
+void Ribbon::addVButton(const QString &tabName, const QString &groupName, QToolButton *button, QVBoxLayout *vLayout)
 {
     // Find ribbon tab
     QWidget *tab = nullptr;
@@ -213,7 +244,7 @@ void Ribbon::addButton(const QString &tabName, const QString &groupName, QToolBu
         addTab(tabName);
 
         // Add ribbon button
-        addButton(tabName, groupName, button, vLayout);
+        addVButton(tabName, groupName, button, vLayout);
     }
 }
 void Ribbon::addWidgetGroup(const QString &tabName, const QString &groupName, QWidget *newItem)
@@ -280,6 +311,27 @@ void Ribbon::addComboBox(const QString &tabName, const QString &groupName, QComb
 
         // Add ribbon button
         addComboBox(tabName, groupName, combobox, vLayout);
+    }
+}
+
+void Ribbon::addGridLayout(const QString &tabName, const QString &groupName, QGridLayout *gLayout){
+
+    QWidget *tab = nullptr;
+    for (int i = 0; i < count(); i++)
+    {
+        if (tabText(i).toLower() == tabName.toLower())
+        {
+            tab = QTabWidget::widget(i);
+            break;
+        }
+    }
+
+    if (tab != nullptr)
+    {
+        // Tab found
+        // Add ribbon button
+        RibbonTabContent *ribbonTabContent = static_cast<RibbonTabContent*>(tab);
+        ribbonTabContent->addGLayout(groupName, gLayout);
     }
 }
 
@@ -372,6 +424,7 @@ void Ribbon::hideAll()
     hideTab(tr("File System"));
     hideTab(tr("ISO Extended"));
     hideTab(tr("Boot Disc"));
+    hideTab(tr("Audio"));
     hideTab(tr("Scan Editor"));
     hideTab(tr("Hex Editor"));
     hideTab(tr("Create image"));

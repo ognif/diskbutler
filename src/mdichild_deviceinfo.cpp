@@ -277,6 +277,7 @@ void MdiChildDeviceInfo::setUIControls(Ribbon *, QWidget* parent)
     ribbonOwner->delEditButton->setEnabled(false);
     ribbonOwner->renameEditButton->setEnabled(false);
     ribbonOwner->viewBrowserButton->setEnabled(false);
+    ribbonOwner->viewPropertyGridButton->setEnabled(false);
     ribbonOwner->delAllEditButton->setEnabled(false);
     ribbonOwner->updtEditButton->setEnabled(false);
     ribbonOwner->inverseSelectEditButton->setEnabled(false);

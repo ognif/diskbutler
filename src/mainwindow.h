@@ -34,7 +34,7 @@
 #include "qtwaitingspinner.h"
 #include "devicecomboex.h"
 #include "dynbasslib.h"
-
+#include "qaudiotrackitem.h"
 
 class QtWaitingSpinner;
 
@@ -156,6 +156,8 @@ public:
     QToolButton *burnDeviceUpdateButton;
     QToolButton *readDeviceUpdateButton;
     QToolButton *updateScanEditor;
+    QToolButton *resetAudioData;
+    QToolButton *viewPropertyGridButton;
 
     QComboBox *udfVersionFSCombo;
     QComboBox *udfPartitionFSCombo;
@@ -199,8 +201,6 @@ public:
     QCheckBox *burnISOEjectAfterBurn;
     QCheckBox *burnISOUnderrunProtection;
 
-    QPushButton *burnDeviceUpdateGeneralButton;
-    QPushButton *speedUpdateGeneralButton;
     QLineEdit *edIsoExSystemIdValue;
     QLineEdit *edIsoExVolumeSetValue;
     QLineEdit *edIsoExPublisherValue;
@@ -214,6 +214,30 @@ public:
     QLineEdit *loadSegmentBootEdit;
     QLineEdit *imagePathBootEdit;
 
+    QLineEdit *cdTextArrangerEdit;
+    QLineEdit *cdTextComposerEdit;
+    QLineEdit *cdTextSongWriterEdit;
+    QLineEdit *cdTextPerformerEdit;
+    QLineEdit *cdTextMessageEdit;
+    QLineEdit *cdTextTitleEdit;
+    QLineEdit *cdTextEANEdit;
+
+    QDoubleSpinBox *indexesMinSelector;
+    QDoubleSpinBox *indexesSecSelector;
+    QDoubleSpinBox *indexesFrameSelector;
+    QListWidget * indexesCollectionList;
+    QListWidget * fileFilterList;
+    QDoubleSpinBox *audioPauseLength;
+    QCheckBox *audioAddPause;
+    QCheckBox *filterByDate;
+
+    QToolButton *addIndexToList;
+    QToolButton *delIndexFromList;
+    QToolButton *addFilterToList;
+    QToolButton *delFilterFromList;
+    QToolButton *importFilterList;
+    QToolButton *resetFilterList;
+
     QComboBox *listBurnDevicesWidget;
     QComboBox *listReadDevicesWidget;
 
@@ -223,17 +247,23 @@ public:
     QMenu* m_windowMenu;
     QMenu* m_imagetMenu;
 
+    QDateEdit *filterFromDate;
+    QDateEdit *filterToDate;
+
 
 private:
     void fillSourceDriveList();
     void onHandleError( int32 res );
     void checkButtonsSelBurnDevice();
+    QStringList *getFilterList();
+    void setNewFilterValues();
 
     void fillDriveList();
     bool isBurnDevice(QString toTest);
     void mdiAreaActivationTemplate();
     void checkFileSystemNaming();
     void loadPlugins();
+
 
 private slots:
     MdiChildDialog *createMdiChild(const RuleManager::ProjectType project_type);
@@ -252,6 +282,10 @@ private slots:
     void renameItemEx();
     void addDataTrack();
     void addAudioTrack();
+    void filterAddToList();
+    void filterDelFromList();
+    void filterImport();
+    void filterReset();
 
     void unLockBurnDevice();
     void closeTray(bool readDevice = false);
@@ -275,6 +309,7 @@ private slots:
     void setActiveSubWindow(QWidget *window);
     void updateDiskInfo();
     void toggleFileExplorer();
+    void togglePropertyGrid();
     void mdiNextWindow();
     void showFullScreenMode();
     void updateDiskList();
@@ -323,7 +358,7 @@ private slots:
     void projectAVCHDChanged(int nState);
     void errorCorrectionChanged(int nState);
     void jobCreateChanged(int nState);
-    void jobVerifyChanged(int nState);
+    void jobVerifyChanged(int nState);    
     //Update Bootdisk
     void bootEmulationTypeChanged(int iIndex);
     void imageCreateMethod(int iIndex);
@@ -362,6 +397,16 @@ private slots:
 
     //Show
     void loadDefaultProject();
+
+    //CDText
+    void onEnterCDTextText(QLineEdit* edit);
+    void onAudioPauseLength(double nValue);
+    void onAudioAddPause(int nState);
+    void onActionIndexes(bool isAdd);
+    void onActionAudioReset();
+
+    //Filter
+    void filterByDateTrigger(int state);
 
 
 public slots:

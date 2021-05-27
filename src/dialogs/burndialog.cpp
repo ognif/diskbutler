@@ -309,6 +309,8 @@ void ContentThread::run()
                 int32 nAttrib = 0;
                 if(((QDataItem*)(*it))->GetHidden()==true) nAttrib |= BS_FA_HIDDEN;
                 if(((QDataItem*)(*it))->GetHiddenExt()==true) nAttrib |= BS_FA_ADVANCED_HIDDEN;
+                if(((QDataItem*)(*it))->GetArchive()==true) nAttrib |= BS_FA_ARCHIVE;
+                if(((QDataItem*)(*it))->GetDirectory()==true) nAttrib |= BS_FA_DIRECTORY;
 
                 const TCHAR *pAttrFilePath = convertToFoxValue(destFilePath);
                 res = ::SetFileAttr(pAttrFilePath, nAttrib);

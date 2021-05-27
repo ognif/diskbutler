@@ -68,6 +68,8 @@ private slots:
   void on_buttonResetFilter_clicked();
   void on_dateUsage_stateChanged(int arg1);
 
+  void on_checkByDate_stateChanged(int arg1);
+
 private:
   Ui::VDiskPropertyDialog *ui;
   QDiskItem *mDiskItem;

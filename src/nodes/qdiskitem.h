@@ -79,7 +79,7 @@ public:
     QDateTime getDiskDateExpiration() {return mDateExpiration;}
     QDateTime getDiskDateEffective() {return mDateEffective;}
     QDateTime getDiskDateCreation() {return mDateCreation;}
-    QDateTime getDiskDateMdification() {return mDateMdification;}
+    QDateTime getDiskDateMdification() {return mDateModification;}
 
     bool getIsAllowedBootDisk() {return isAllowedBootDisk;}
     bool getDoBootDisk() {return doBootDisk;}
@@ -97,6 +97,9 @@ public:
     void setMessage(QString str) {mAudioMessage = str;}
     void setTitle(QString str) {mAudioTitle = str;}
     void setUPCEAN(QString str) {mUPCEAN = str;}
+
+    void resetCDText();
+
     void setPause(QString str) {mPause = str;}
     void setBurnDevice(QString str) {strDrive = str;}
 
@@ -153,6 +156,11 @@ public:
     bool getFeaturePadDataTrack(){return usePadDataTrack;}
     bool getIsoExUseDates(){return useDiskDates;}
 
+    bool getUseDateModification(){return mUseDateModification;}
+    bool getUseDateCreation(){return mUseDateCreation;}
+    bool getUseDateEffective(){return mUseDateEffective;}
+    bool getUseDateExpiration(){return mUseDateExpiration;}
+
     void setFeatureOPC(bool bState){useOPC=bState;}
     void setFeatureAVCHD(bool bState){useAVCDH=bState;}
     void setFeatureSimulate(bool bState){useSimulate=bState;}
@@ -166,8 +174,16 @@ public:
     void setDiskDateExpiration(QDateTime date) {mDateExpiration = date;}
     void setDiskDateEffective(QDateTime date) {mDateEffective = date;}
     void setDiskDateCreation(QDateTime date) {mDateCreation = date;}
-    void setDateMdification(QDateTime date) {mDateMdification = date;}
+    void setDateMdification(QDateTime date) {mDateModification = date;}
+
+
+
     void setIsoExUseDates(bool newValue){useDiskDates = newValue;}
+
+    void setUseDateModification(bool newValue){mUseDateModification = newValue;}
+    void setUseDateCreation(bool newValue){mUseDateCreation = newValue;}
+    void setUseDateEffective(bool newValue){mUseDateEffective = newValue;}
+    void setUseDateExpiration(bool newValue){mUseDateExpiration = newValue;}
 
 
     bool isFilterSuffix(QString suffix);
@@ -177,12 +193,14 @@ private:
     QDateTime mDateExpiration;
     QDateTime mDateEffective;
     QDateTime mDateCreation;
-    QDateTime mDateMdification;
+    QDateTime mDateModification;
 
-    bool mUseDateExpiration;
-    bool mUseDateEffective;
+    bool mUseDateModification;
     bool mUseDateCreation;
-    bool mUseDateMdification;
+    bool mUseDateEffective;
+    bool mUseDateExpiration;
+
+    bool useDiskDates;
 
     //filter
     QStringList *mFilterList;
@@ -222,7 +240,7 @@ private:
     int nCopies;
     int nSpeed;
 
-    bool useDiskDates;
+
 
     bool isAllowedSimulate;
     bool useSimulate;

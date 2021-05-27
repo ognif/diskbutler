@@ -22,7 +22,7 @@
 #include <QCryptographicHash>
 #include <QFile>
 #include "FoxSDKExport.h"
-
+#include "qaudiotrackitem.h"
 
 
 extern QString humanReadableSector(const qint64 src_size);
@@ -39,3 +39,4 @@ extern int32 MSFStrToInt32(QString str);
 extern bool fileExists(QString strFile);
 //extern QMainWindow* getMainWindow();
 extern wchar_t *machineString(QString input);
+extern QAudioTrackItem *getAudioTrack(QDataItem *item);

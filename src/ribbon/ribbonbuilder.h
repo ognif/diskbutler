@@ -17,6 +17,7 @@ extern void ribbonBuilderAll(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseRibbon->addTab(QIcon(":/icons/burnaction32.png"),  QObject::tr("General"));
     baseRibbon->addTab(QIcon(":/icons/filesystem32.png"),  QObject::tr("File System"));
     baseRibbon->addTab(QIcon(":/icons/extiso32.png"),  QObject::tr("ISO Extended"));
+    baseRibbon->addTab(QIcon(":/icons/cdtext32.png"),  QObject::tr("Audio"));
     baseRibbon->addTab(QIcon(":/icons/boot32.png"),  QObject::tr("Boot Disc"));
     baseRibbon->addTab(QIcon(":/icons/view32.png"),  QObject::tr("View"));
 
@@ -25,84 +26,84 @@ extern void ribbonBuilderAll(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->dataIsoProjectButton->setToolTip(QObject::tr("Create ISO Project"));
     baseWindow->dataIsoProjectButton->setIcon(QIcon(":/icons/datacd32.png"));
     baseWindow->dataIsoProjectButton->setEnabled(true);
-    baseRibbon->addButton( QObject::tr("Project"), QObject::tr("Data"), baseWindow->dataIsoProjectButton,nullptr);
+    baseRibbon->addGButton( QObject::tr("Project"), QObject::tr("Data"), baseWindow->dataIsoProjectButton,nullptr);
 
     baseWindow->dataUdfProjectButton = new QToolButton;
     baseWindow->dataUdfProjectButton->setText(QObject::tr("UDF"));
     baseWindow->dataUdfProjectButton->setToolTip(QObject::tr("Create UDF Project"));
     baseWindow->dataUdfProjectButton->setIcon(QIcon(":/icons/dataudf32.png"));
     baseWindow->dataUdfProjectButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Data"), baseWindow->dataUdfProjectButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Data"), baseWindow->dataUdfProjectButton,nullptr);
 
     baseWindow->dataIsoUdfProjectButton = new QToolButton;
     baseWindow->dataIsoUdfProjectButton->setText(QObject::tr("ISO/UDF"));
     baseWindow->dataIsoUdfProjectButton->setToolTip(QObject::tr("Create ISO/UDF Bridge Project"));
     baseWindow->dataIsoUdfProjectButton->setIcon(QIcon(":/icons/dataudfiso32.png"));
     baseWindow->dataIsoUdfProjectButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Data"), baseWindow->dataIsoUdfProjectButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Data"), baseWindow->dataIsoUdfProjectButton,nullptr);
 
     baseWindow->mmAudioProjectButton = new QToolButton;
     baseWindow->mmAudioProjectButton->setText(QObject::tr("Audio"));
     baseWindow->mmAudioProjectButton->setToolTip(QObject::tr("Create AudioCD Project"));
     baseWindow->mmAudioProjectButton->setIcon(QIcon(":/icons/audiocd32.png"));
     baseWindow->mmAudioProjectButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Multimedia"), baseWindow->mmAudioProjectButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Multimedia"), baseWindow->mmAudioProjectButton,nullptr);
 
     baseWindow->mmEnhancedProjectButton = new QToolButton;
     baseWindow->mmEnhancedProjectButton->setText(QObject::tr("MixedMode"));
     baseWindow->mmEnhancedProjectButton->setToolTip(QObject::tr("Create MixedModeCD Project"));
     baseWindow->mmEnhancedProjectButton->setIcon(QIcon(":/icons/mixedmode32.png"));
     baseWindow->mmEnhancedProjectButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Multimedia"), baseWindow->mmEnhancedProjectButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Multimedia"), baseWindow->mmEnhancedProjectButton,nullptr);
 
     baseWindow->vidSVCDProjectButton = new QToolButton;
     baseWindow->vidSVCDProjectButton->setText(QObject::tr("SVCD"));
     baseWindow->vidSVCDProjectButton->setToolTip(QObject::tr("Create SVCD Video Project"));
     baseWindow->vidSVCDProjectButton->setIcon(QIcon(":/icons/svideocd32.png"));
     baseWindow->vidSVCDProjectButton->setEnabled(false);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Video"), baseWindow->vidSVCDProjectButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Video"), baseWindow->vidSVCDProjectButton,nullptr);
 
     baseWindow->vidDVDProjectButton = new QToolButton;
     baseWindow->vidDVDProjectButton->setText(QObject::tr("Video DVD"));
     baseWindow->vidDVDProjectButton->setToolTip(QObject::tr("Create VideoDVD Project"));
     baseWindow->vidDVDProjectButton->setIcon(QIcon(":/icons/videodvd32.png"));
     baseWindow->vidDVDProjectButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Video"), baseWindow->vidDVDProjectButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Video"), baseWindow->vidDVDProjectButton,nullptr);
 
     baseWindow->vidBlueProjectButton = new QToolButton;
     baseWindow->vidBlueProjectButton->setText(QObject::tr("Blu-ray"));
     baseWindow->vidBlueProjectButton->setToolTip(QObject::tr("Create Blu-ray Video Project"));
     baseWindow->vidBlueProjectButton->setIcon(QIcon(":/icons/bluray32.png"));
     baseWindow->vidBlueProjectButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Video"), baseWindow->vidBlueProjectButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Video"), baseWindow->vidBlueProjectButton,nullptr);
 
     baseWindow->appOpenButton = new QToolButton;
     baseWindow->appOpenButton->setText(QObject::tr("Open"));
     baseWindow->appOpenButton->setToolTip(QObject::tr("Open DiskButler project"));
     baseWindow->appOpenButton->setIcon(QIcon(":/icons/open32.png"));
     baseWindow->appOpenButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Open & Save"), baseWindow->appOpenButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Open & Save"), baseWindow->appOpenButton,nullptr);
 
     baseWindow->appSaveButton = new QToolButton;
     baseWindow->appSaveButton->setText(QObject::tr("Save"));
     baseWindow->appSaveButton->setToolTip(QObject::tr("Save disk to DiskButler project"));
     baseWindow->appSaveButton->setIcon(QIcon(":/icons/save32.png"));
     baseWindow->appSaveButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Open & Save"), baseWindow->appSaveButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Open & Save"), baseWindow->appSaveButton,nullptr);
 
     baseWindow->appSaveAsButton = new QToolButton;
     baseWindow->appSaveAsButton->setText(QObject::tr("Save As"));
     baseWindow->appSaveAsButton->setToolTip(QObject::tr("Save disk to DiskButler project"));
     baseWindow->appSaveAsButton->setIcon(QIcon(":/icons/save32.png"));
     baseWindow->appSaveAsButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Open & Save"), baseWindow->appSaveAsButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Open & Save"), baseWindow->appSaveAsButton,nullptr);
 
     baseWindow->appSettings = new QToolButton;
     baseWindow->appSettings->setText(QObject::tr("Settings"));
     baseWindow->appSettings->setToolTip(QObject::tr("Edit basic software configuration"));
     baseWindow->appSettings->setIcon(QIcon(":/icons/projectset32.png"));
     baseWindow->appSettings->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Project"), QObject::tr("Software"), baseWindow->appSettings,nullptr);
+    baseRibbon->addGButton(QObject::tr("Project"), QObject::tr("Software"), baseWindow->appSettings,nullptr);
 }
 
 extern void ribbonBuilderProject(Ribbon *baseRibbon, MainWindow *baseWindow){
@@ -112,88 +113,169 @@ extern void ribbonBuilderProject(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->addFileEditButton->setToolTip(QObject::tr("Add File to the project"));
     baseWindow->addFileEditButton->setIcon(QIcon(":/icons/file_add32.png"));
     baseWindow->addFileEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->addFileEditButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->addFileEditButton,nullptr);
 
     baseWindow->addFolderEditButton = new QToolButton;
     baseWindow->addFolderEditButton->setText(QObject::tr("Add Folder"));
     baseWindow->addFolderEditButton->setToolTip(QObject::tr("Add a folder and its content"));
     baseWindow->addFolderEditButton->setIcon(QIcon(":/icons/folder_add32.png"));
     baseWindow->addFolderEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->addFolderEditButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->addFolderEditButton,nullptr);
 
     baseWindow->createFolderEditButton = new QToolButton;
     baseWindow->createFolderEditButton->setText(QObject::tr("Create Folder"));
     baseWindow->createFolderEditButton->setToolTip(QObject::tr("Create a new empty folder"));
     baseWindow->createFolderEditButton->setIcon(QIcon(":/icons/folder_create32.png"));
     baseWindow->createFolderEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->createFolderEditButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->createFolderEditButton,nullptr);
 
     baseWindow->delEditButton = new QToolButton;
     baseWindow->delEditButton->setText(QObject::tr("Delete Item"));
     baseWindow->delEditButton->setToolTip(QObject::tr("Delete selected item or folder"));
     baseWindow->delEditButton->setIcon(QIcon(":/icons/delete32.png"));
     baseWindow->delEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->delEditButton, nullptr);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->delEditButton, nullptr);
 
-    QVBoxLayout *myVerticalLayout = new QVBoxLayout();
-    baseRibbon->addVerticalLayout(QObject::tr("Edit"), QObject::tr("Files & Folders"), myVerticalLayout);
+    QGridLayout *utilGroup = new QGridLayout();
+    baseRibbon->addGridLayout(QObject::tr("Edit"), QObject::tr("Files & Folders"), utilGroup);
 
     baseWindow->renameEditButton = new QToolButton;
     baseWindow->renameEditButton->setText(QObject::tr("Rename"));
     baseWindow->renameEditButton->setToolTip(QObject::tr("Rename selected item"));
     baseWindow->renameEditButton->setIcon(QIcon(":/icons/rename32.png"));
     baseWindow->renameEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->renameEditButton,myVerticalLayout);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->renameEditButton,utilGroup);
 
     baseWindow->delAllEditButton = new QToolButton;
     baseWindow->delAllEditButton->setText(QObject::tr("Delete all"));
     baseWindow->delAllEditButton->setToolTip(QObject::tr("Delete all content"));
     baseWindow->delAllEditButton->setIcon(QIcon(":/icons/delete_all32.png"));
     baseWindow->delAllEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->delAllEditButton, myVerticalLayout);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->delAllEditButton, utilGroup);
 
     baseWindow->updtEditButton = new QToolButton;
     baseWindow->updtEditButton->setText(QObject::tr("Update project"));
     baseWindow->updtEditButton->setToolTip(QObject::tr("Update all file & folder info"));
     baseWindow->updtEditButton->setIcon(QIcon(":/icons/refresh32.png"));
     baseWindow->updtEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->updtEditButton, myVerticalLayout);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Files & Folders"), baseWindow->updtEditButton, utilGroup);
+
+    utilGroup->setRowMinimumHeight(1,25);
+    utilGroup->setRowMinimumHeight(2,25);
+    utilGroup->setRowMinimumHeight(3,30);
+    utilGroup->setContentsMargins(3,0,0,0);
 
     baseWindow->dataTrackEditButton = new QToolButton;
     baseWindow->dataTrackEditButton->setText(QObject::tr("Data Track"));
     baseWindow->dataTrackEditButton->setToolTip(QObject::tr("Add a data track to the disc"));
     baseWindow->dataTrackEditButton->setIcon(QIcon(":/icons/datatrack32.png"));
     baseWindow->dataTrackEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Tracks"), baseWindow->dataTrackEditButton, nullptr);
+    baseRibbon->addVButton(QObject::tr("Edit"), QObject::tr("Tracks"), baseWindow->dataTrackEditButton, nullptr);
 
     baseWindow->audioTrackEditButton = new QToolButton;
     baseWindow->audioTrackEditButton->setText(QObject::tr("Audio Track"));
     baseWindow->audioTrackEditButton->setToolTip(QObject::tr("Add a audio track to the disc"));
     baseWindow->audioTrackEditButton->setIcon(QIcon(":/icons/audiotrack32.png"));
     baseWindow->audioTrackEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Tracks"), baseWindow->audioTrackEditButton, nullptr);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Tracks"), baseWindow->audioTrackEditButton, nullptr);
+
+
+    //Buttongroup
+    QGridLayout *selGroup = new QGridLayout();
+    baseRibbon->addGridLayout(QObject::tr("Edit"), QObject::tr("Selection"), selGroup);
 
     baseWindow->allSelectEditButton = new QToolButton;
     baseWindow->allSelectEditButton->setText(QObject::tr("Select All"));
     baseWindow->allSelectEditButton->setToolTip(QObject::tr("Select All files and folders"));
     baseWindow->allSelectEditButton->setIcon(QIcon(":/icons/sel_all32.png"));
     baseWindow->allSelectEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Selection"), baseWindow->allSelectEditButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Selection"), baseWindow->allSelectEditButton,selGroup);
 
     baseWindow->inverseSelectEditButton = new QToolButton;
     baseWindow->inverseSelectEditButton->setText(QObject::tr("Inverse Selection"));
     baseWindow->inverseSelectEditButton->setToolTip(QObject::tr("Selected all expect the selected"));
     baseWindow->inverseSelectEditButton->setIcon(QIcon(":/icons/inverse_sel32.png"));
     baseWindow->inverseSelectEditButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Edit"), QObject::tr("Selection"), baseWindow->inverseSelectEditButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Edit"), QObject::tr("Selection"), baseWindow->inverseSelectEditButton,selGroup);
+
+    QSpacerItem *spacerItem = new QSpacerItem(10,baseWindow->inverseSelectEditButton->sizeHint().height()+selGroup->layout()->spacing(), QSizePolicy::Fixed, QSizePolicy::Fixed);
+    selGroup->addItem(spacerItem,2,0);
+
+    selGroup->setRowMinimumHeight(1,25);
+    selGroup->setRowMinimumHeight(2,25);
+    selGroup->setRowMinimumHeight(3,30);
+    selGroup->setContentsMargins(3,0,0,0);
+
+    QGridLayout *filterGridLayout = new QGridLayout();
+    QWidget * wdgfilterFeatures = new QWidget();
+
+    baseWindow->fileFilterList = new QListWidget();
+    baseWindow->fileFilterList->setSelectionMode(QAbstractItemView::SingleSelection);
+    baseWindow->fileFilterList->setMinimumWidth(80);
+    baseWindow->fileFilterList->setMaximumWidth(80);
+    filterGridLayout->addWidget(baseWindow->fileFilterList,0,0,3,1);
+
+    QFont font;
+    font.setFamily("Font Awesome 5 Free Solid");
+    font.setPixelSize(14);
+
+    baseWindow->addFilterToList = new QToolButton;
+    baseWindow->addFilterToList->setToolTip(QObject::tr("Add new filter to list"));
+    baseWindow->addFilterToList->setFont(font);
+    baseWindow->addFilterToList->setText(QChar(0xf055));
+    baseWindow->addFilterToList->setEnabled(true);
+    filterGridLayout->addWidget(baseWindow->addFilterToList,0,2);
+
+    baseWindow->delFilterFromList = new QToolButton;
+    baseWindow->delFilterFromList->setToolTip(QObject::tr("Remove selected filter from list"));
+    baseWindow->delFilterFromList->setFont(font);
+    baseWindow->delFilterFromList->setText(QChar(0xf056));
+    baseWindow->delFilterFromList->setEnabled(true);
+    filterGridLayout->addWidget(baseWindow->delFilterFromList,1,2);
+
+    baseWindow->importFilterList = new QToolButton;
+    baseWindow->importFilterList->setToolTip(QObject::tr("Import from settings to list"));
+    baseWindow->importFilterList->setFont(font);
+    baseWindow->importFilterList->setText(QChar(0xf56f));
+    baseWindow->importFilterList->setEnabled(true);
+    filterGridLayout->addWidget(baseWindow->importFilterList,2,2);
+
+    baseWindow->filterByDate = new QCheckBox(QObject::tr("By date"));
+    baseWindow->filterByDate->setToolTip(QObject::tr("Simulate the burn processs by hardware"));
+    baseWindow->filterByDate->setCheckState(Qt::Unchecked);
+    filterGridLayout->addWidget(baseWindow->filterByDate,0,3);
+
+    baseWindow->filterFromDate = new QDateEdit;
+    baseWindow->filterFromDate->setEnabled(false);
+    filterGridLayout->addWidget(baseWindow->filterFromDate,1,3);
+
+    baseWindow->filterToDate = new QDateEdit;
+    baseWindow->filterToDate->setEnabled(false);
+    filterGridLayout->addWidget(baseWindow->filterToDate,2,3);
+
+
+    filterGridLayout->setContentsMargins(3,0,3,3);
+    filterGridLayout->setRowMinimumHeight(0,25);
+    filterGridLayout->setRowMinimumHeight(1,25);
+    filterGridLayout->setRowMinimumHeight(2,25);
+    wdgfilterFeatures->setLayout(filterGridLayout);
+    wdgfilterFeatures->setFixedHeight(80);
+
+    baseRibbon->addWidgetGroup(QObject::tr("Edit"), QObject::tr("Filters"), wdgfilterFeatures);
+
+    baseWindow->resetFilterList = new QToolButton;
+    baseWindow->resetFilterList->setText(QObject::tr("Reset"));
+    baseWindow->resetFilterList->setToolTip(QObject::tr("Reset the filter settings"));
+    baseWindow->resetFilterList->setIcon(QIcon(":/icons/filter_reset32.png"));
+    baseWindow->resetFilterList->setEnabled(true);
+    baseRibbon->addVButton(QObject::tr("Edit"), QObject::tr("Filters"), baseWindow->resetFilterList,nullptr);
+
 }
 
 extern void ribbonBuilderDevice(Ribbon *baseRibbon, MainWindow *baseWindow){
 
     //GridLayout
     QHBoxLayout *test = new QHBoxLayout();
-
-
 
     QGridLayout *devicesGroup = new QGridLayout();
 
@@ -230,7 +312,7 @@ extern void ribbonBuilderDevice(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->readDeviceUpdateButton->setToolTip(QObject::tr("Refresh device list"));
     baseWindow->readDeviceUpdateButton->setIcon(QIcon(":/icons/refresh32.png"));
     baseWindow->readDeviceUpdateButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Read Device"), baseWindow->readDeviceUpdateButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Read Device"), baseWindow->readDeviceUpdateButton,nullptr);
 
     baseWindow->m_EjectTrayMenu = new QMenu();
     baseWindow->openDeviceButton = new QToolButton;
@@ -239,7 +321,7 @@ extern void ribbonBuilderDevice(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->openDeviceButton->setIcon(QIcon(":/icons/eject32.png"));
     baseWindow->openDeviceButton->setEnabled(true);
     baseWindow->openDeviceButton->setMenu(baseWindow->m_EjectTrayMenu);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->openDeviceButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->openDeviceButton,nullptr);
 
     baseWindow->m_CloseTrayMenu = new QMenu();
     baseWindow->closeDeviceButton = new QToolButton;
@@ -248,21 +330,21 @@ extern void ribbonBuilderDevice(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->closeDeviceButton->setIcon(QIcon(":/icons/load32.png"));
     baseWindow->closeDeviceButton->setEnabled(true);
     baseWindow->closeDeviceButton->setMenu(baseWindow->m_CloseTrayMenu);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->closeDeviceButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->closeDeviceButton,nullptr);
 
     baseWindow->unLockDevice = new QToolButton;
     baseWindow->unLockDevice->setText(QObject::tr("Unlock"));
     baseWindow->unLockDevice->setToolTip(QObject::tr("This will try to unlock an locked burning device"));
     baseWindow->unLockDevice->setIcon(QIcon(":/icons/unlock32.png"));
     baseWindow->unLockDevice->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->unLockDevice,nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->unLockDevice,nullptr);
 
     baseWindow->infoDeviceButton = new QToolButton;
     baseWindow->infoDeviceButton->setText(QObject::tr("Device Info"));
     baseWindow->infoDeviceButton->setToolTip(QObject::tr("This will open the device information dialog."));
     baseWindow->infoDeviceButton->setIcon(QIcon(":/icons/deviceinfo32.png"));
     baseWindow->infoDeviceButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->infoDeviceButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Device"), baseWindow->infoDeviceButton,nullptr);
 
     baseWindow->m_diskInfoMenu = new QMenu();
     baseWindow->infoMediaButton = new QToolButton;
@@ -271,14 +353,14 @@ extern void ribbonBuilderDevice(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->infoMediaButton->setIcon(QIcon(":/icons/discinfo32.png"));
     baseWindow->infoMediaButton->setEnabled(true);
     baseWindow->infoMediaButton->setMenu(baseWindow->m_diskInfoMenu);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->infoMediaButton, nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->infoMediaButton, nullptr);
 
     baseWindow->imageMediaButton = new QToolButton;
     baseWindow->imageMediaButton->setText(QObject::tr("2Image"));
     baseWindow->imageMediaButton->setToolTip(QObject::tr("Save the current disk to disk image"));
     baseWindow->imageMediaButton->setIcon(QIcon(":/icons/create_image32.png"));
     baseWindow->imageMediaButton->setEnabled(false);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->imageMediaButton, nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->imageMediaButton, nullptr);
 
 
     baseWindow->grabAudioMediaButton = new QToolButton;
@@ -286,21 +368,21 @@ extern void ribbonBuilderDevice(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->grabAudioMediaButton->setToolTip(QObject::tr("Grab audio tracks to audio files"));
     baseWindow->grabAudioMediaButton->setIcon(QIcon(":/icons/grabaudio32.png"));
     baseWindow->grabAudioMediaButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->grabAudioMediaButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->grabAudioMediaButton,nullptr);
 
     baseWindow->scanMediaButton = new QToolButton;
     baseWindow->scanMediaButton->setText(QObject::tr("Scan"));
     baseWindow->scanMediaButton->setToolTip(QObject::tr("Scan disc about read errors"));
     baseWindow->scanMediaButton->setIcon(QIcon(":/icons/diskscan32.png"));
     baseWindow->scanMediaButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->scanMediaButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->scanMediaButton,nullptr);
 
     baseWindow->hexMediaButton = new QToolButton;
     baseWindow->hexMediaButton->setText(QObject::tr("Sector Viewer"));
     baseWindow->hexMediaButton->setToolTip(QObject::tr("Show sectors in hexdecimal view"));
     baseWindow->hexMediaButton->setIcon(QIcon(":/icons/hexedit32.png"));
     baseWindow->hexMediaButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->hexMediaButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Device"), QObject::tr("Media"), baseWindow->hexMediaButton,nullptr);
 }
 
 extern void ribbonBuilderGeneral(Ribbon *baseRibbon, MainWindow *baseWindow){
@@ -409,21 +491,21 @@ extern void ribbonBuilderGeneral(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->burnGeneralButton->setToolTip(QObject::tr("Burn selected Project"));
     baseWindow->burnGeneralButton->setIcon(QIcon(":/icons/burn32.png"));
     baseWindow->burnGeneralButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->burnGeneralButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->burnGeneralButton,nullptr);
 
     baseWindow->eraseGeneralButton = new QToolButton;
     baseWindow->eraseGeneralButton->setText(QObject::tr("Erase"));
     baseWindow->eraseGeneralButton->setToolTip(QObject::tr("Erase RW disk"));
     baseWindow->eraseGeneralButton->setIcon(QIcon(":/icons/erase32.png"));
     baseWindow->eraseGeneralButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->eraseGeneralButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->eraseGeneralButton,nullptr);
 
     baseWindow->burnDiskImage = new QToolButton;
     baseWindow->burnDiskImage->setText(QObject::tr("Burn image"));
     baseWindow->burnDiskImage->setToolTip(QObject::tr("Burn disc image to disk"));
     baseWindow->burnDiskImage->setIcon(QIcon(":/icons/burnimage32.png"));
     baseWindow->burnDiskImage->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->burnDiskImage,nullptr);
+    baseRibbon->addGButton(QObject::tr("General"), QObject::tr("Action"), baseWindow->burnDiskImage,nullptr);
 
 }
 
@@ -434,28 +516,35 @@ extern void ribbonBuilderView(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->viewBrowserButton->setToolTip(QObject::tr("Toggle disc explorer in project view"));
     baseWindow->viewBrowserButton->setIcon(QIcon(":/icons/filebrowser32.png"));
     baseWindow->viewBrowserButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("View"), QObject::tr("Explorer"), baseWindow->viewBrowserButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("View"), QObject::tr("Browser"), baseWindow->viewBrowserButton,nullptr);
+
+    baseWindow->viewPropertyGridButton = new QToolButton;
+    baseWindow->viewPropertyGridButton->setText(QObject::tr("Property grid"));
+    baseWindow->viewPropertyGridButton->setToolTip(QObject::tr("Toggle file / folger property grid"));
+    baseWindow->viewPropertyGridButton->setIcon(QIcon(":/icons/propertygrid32.png"));
+    baseWindow->viewPropertyGridButton->setEnabled(true);
+    baseRibbon->addGButton(QObject::tr("View"), QObject::tr("Browser"), baseWindow->viewPropertyGridButton,nullptr);
 
     baseWindow->viewTileButton = new QToolButton;
     baseWindow->viewTileButton->setText(QObject::tr("Tile"));
     baseWindow->viewTileButton->setToolTip(QObject::tr("Tile all windows in project view"));
     baseWindow->viewTileButton->setIcon(QIcon(":/icons/tile_window32.png"));
     baseWindow->viewTileButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("View"), QObject::tr("Windows"), baseWindow->viewTileButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("View"), QObject::tr("Windows"), baseWindow->viewTileButton,nullptr);
 
     baseWindow->viewCascadeButton = new QToolButton;
     baseWindow->viewCascadeButton->setText(QObject::tr("Cascade"));
     baseWindow->viewCascadeButton->setToolTip(QObject::tr("Cascade all windows in project view"));
     baseWindow->viewCascadeButton->setIcon(QIcon(":/icons/cascade32.png"));
     baseWindow->viewCascadeButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("View"), QObject::tr("Windows"), baseWindow->viewCascadeButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("View"), QObject::tr("Windows"), baseWindow->viewCascadeButton,nullptr);
 
     baseWindow->viewCloseAllbutton = new QToolButton;
     baseWindow->viewCloseAllbutton->setText(QObject::tr("Close all"));
     baseWindow->viewCloseAllbutton->setToolTip(QObject::tr("Close all open sub windows"));
     baseWindow->viewCloseAllbutton->setIcon(QIcon(":/icons/close_all32.png"));
     baseWindow->viewCloseAllbutton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("View"), QObject::tr("Windows"), baseWindow->viewCloseAllbutton,nullptr);
+    baseRibbon->addGButton(QObject::tr("View"), QObject::tr("Windows"), baseWindow->viewCloseAllbutton,nullptr);
 
     baseWindow->m_windowMenu = new QMenu();
     baseWindow->viewSwitchButton = new QToolButton;
@@ -464,7 +553,7 @@ extern void ribbonBuilderView(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->viewSwitchButton->setIcon(QIcon(":/icons/windowswitch32.png"));
     baseWindow->viewSwitchButton->setEnabled(true);
     baseWindow->viewSwitchButton->setMenu(baseWindow->m_windowMenu);
-    baseRibbon->addButton(QObject::tr("View"), QObject::tr("Windows"), baseWindow->viewSwitchButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("View"), QObject::tr("Windows"), baseWindow->viewSwitchButton,nullptr);
 
 }
 
@@ -552,7 +641,7 @@ extern void ribbonBuilder2Image(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->startImageCreateJob->setToolTip(QObject::tr("Start create disk image"));
     baseWindow->startImageCreateJob->setIcon(QIcon(":/icons/create_image_start32.png"));
     baseWindow->startImageCreateJob->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Create image"), QObject::tr("Job"), baseWindow->startImageCreateJob,nullptr);
+    baseRibbon->addGButton(QObject::tr("Create image"), QObject::tr("Job"), baseWindow->startImageCreateJob,nullptr);
 }
 
 extern void ribbonBuilderHex(Ribbon *baseRibbon, MainWindow *baseWindow){
@@ -581,42 +670,42 @@ extern void ribbonBuilderHex(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->updateHexEditor->setToolTip(QObject::tr("Re-read disk content"));
     baseWindow->updateHexEditor->setIcon(QIcon(":/icons/refresh32.png"));
     baseWindow->updateHexEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Hex Editor"), QObject::tr("Actions"), baseWindow->updateHexEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Hex Editor"), QObject::tr("Actions"), baseWindow->updateHexEditor,nullptr);
 
     baseWindow->saveHexEditor = new QToolButton;
     baseWindow->saveHexEditor->setText(QObject::tr("Save"));
     baseWindow->saveHexEditor->setToolTip(QObject::tr("Save sector content to text file"));
     baseWindow->saveHexEditor->setIcon(QIcon(":/icons/saveas32.png"));
     baseWindow->saveHexEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Hex Editor"), QObject::tr("Actions"), baseWindow->saveHexEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Hex Editor"), QObject::tr("Actions"), baseWindow->saveHexEditor,nullptr);
 
     baseWindow->navFirstHexEditor = new QToolButton;
     baseWindow->navFirstHexEditor->setText(QObject::tr("First"));
     baseWindow->navFirstHexEditor->setToolTip(QObject::tr("Jump to the first sector"));
     baseWindow->navFirstHexEditor->setIcon(QIcon(":/icons/backward32.png"));
     baseWindow->navFirstHexEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Hex Editor"), QObject::tr("Navigate"), baseWindow->navFirstHexEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Hex Editor"), QObject::tr("Navigate"), baseWindow->navFirstHexEditor,nullptr);
 
     baseWindow->navStepBackHexEditor = new QToolButton;
     baseWindow->navStepBackHexEditor->setText(QObject::tr("Back"));
     baseWindow->navStepBackHexEditor->setToolTip(QObject::tr("One sector back"));
     baseWindow->navStepBackHexEditor->setIcon(QIcon(":/icons/arrow_left32.png"));
     baseWindow->navStepBackHexEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Hex Editor"), QObject::tr("Navigate"), baseWindow->navStepBackHexEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Hex Editor"), QObject::tr("Navigate"), baseWindow->navStepBackHexEditor,nullptr);
 
     baseWindow->navStepForwardHexEditor = new QToolButton;
     baseWindow->navStepForwardHexEditor->setText(QObject::tr("Forward"));
     baseWindow->navStepForwardHexEditor->setToolTip(QObject::tr("One sector forward"));
     baseWindow->navStepForwardHexEditor->setIcon(QIcon(":/icons/arrow_right32.png"));
     baseWindow->navStepForwardHexEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Hex Editor"), QObject::tr("Navigate"), baseWindow->navStepForwardHexEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Hex Editor"), QObject::tr("Navigate"), baseWindow->navStepForwardHexEditor,nullptr);
 
     baseWindow->navLastHexEditor = new QToolButton;
     baseWindow->navLastHexEditor->setText(QObject::tr("Last"));
     baseWindow->navLastHexEditor->setToolTip(QObject::tr("Jump to the last sector"));
     baseWindow->navLastHexEditor->setIcon(QIcon(":/icons/forward32.png"));
     baseWindow->navLastHexEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Hex Editor"), QObject::tr("Navigate"), baseWindow->navLastHexEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Hex Editor"), QObject::tr("Navigate"), baseWindow->navLastHexEditor,nullptr);
 }
 
 extern void ribbonBuilderScan(Ribbon *baseRibbon, MainWindow *baseWindow){
@@ -664,28 +753,28 @@ extern void ribbonBuilderScan(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->updateScanEditor->setToolTip(QObject::tr("Update reading device"));
     baseWindow->updateScanEditor->setIcon(QIcon(":/icons/refresh32.png"));
     baseWindow->updateScanEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Scan Editor"), QObject::tr("Actions"), baseWindow->updateScanEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Scan Editor"), QObject::tr("Actions"), baseWindow->updateScanEditor,nullptr);
 
     baseWindow->startScanEditor = new QToolButton;
     baseWindow->startScanEditor->setText(QObject::tr("Start"));
     baseWindow->startScanEditor->setToolTip(QObject::tr("Start scanning the disc"));
     baseWindow->startScanEditor->setIcon(QIcon(":/icons/diskscan_start32.png"));
     baseWindow->startScanEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Scan Editor"), QObject::tr("Actions"), baseWindow->startScanEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Scan Editor"), QObject::tr("Actions"), baseWindow->startScanEditor,nullptr);
 
     baseWindow->stopScanEditor = new QToolButton;
     baseWindow->stopScanEditor->setText(QObject::tr("Stop"));
     baseWindow->stopScanEditor->setToolTip(QObject::tr("Stop scanning the disc"));
     baseWindow->stopScanEditor->setIcon(QIcon(":/icons/diskscan_stop32.png"));
     baseWindow->stopScanEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Scan Editor"), QObject::tr("Actions"), baseWindow->stopScanEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Scan Editor"), QObject::tr("Actions"), baseWindow->stopScanEditor,nullptr);
 
     baseWindow->saveScanEditor = new QToolButton;
     baseWindow->saveScanEditor->setText(QObject::tr("Save"));
     baseWindow->saveScanEditor->setToolTip(QObject::tr("Save current scan log to file"));
     baseWindow->saveScanEditor->setIcon(QIcon(":/icons/saveas32.png"));
     baseWindow->saveScanEditor->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Scan Editor"), QObject::tr("Actions"), baseWindow->saveScanEditor,nullptr);
+    baseRibbon->addGButton(QObject::tr("Scan Editor"), QObject::tr("Actions"), baseWindow->saveScanEditor,nullptr);
 }
 
 extern void ribbonBuilderFileSystem(Ribbon *baseRibbon, MainWindow *baseWindow){
@@ -790,6 +879,192 @@ extern void ribbonBuilderFileSystem(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseRibbon->addWidgetGroup(QObject::tr("File System"), QObject::tr("UDF"), wdgFSUDFFeatues);
 }
 
+extern void ribbonBuilderCDText(Ribbon *baseRibbon, MainWindow *baseWindow){
+
+    QGridLayout *cdTextGridLayout = new QGridLayout();
+    QWidget * wdgcdTextFeatures = new QWidget();
+
+    QLabel *wdgcdTextArrangerText = new QLabel();
+    wdgcdTextArrangerText->setText(QObject::tr("Arranger:"));
+    cdTextGridLayout->addWidget(wdgcdTextArrangerText,0,0);
+    baseWindow->cdTextArrangerEdit = new QLineEdit(baseWindow);
+    baseWindow->cdTextArrangerEdit->setMinimumWidth(130);
+    baseWindow->cdTextArrangerEdit->setMaximumWidth(130);
+    baseWindow->cdTextArrangerEdit->setObjectName("wdgArranger");
+    cdTextGridLayout->addWidget(baseWindow->cdTextArrangerEdit,0,1);
+
+    QLabel *wdgcdTextComposerText = new QLabel();
+    wdgcdTextComposerText->setText(QObject::tr("Composer:"));
+    cdTextGridLayout->addWidget(wdgcdTextComposerText,0,2);
+    baseWindow->cdTextComposerEdit = new QLineEdit(baseWindow);
+    baseWindow->cdTextComposerEdit->setMinimumWidth(130);
+    baseWindow->cdTextComposerEdit->setMaximumWidth(130);
+    baseWindow->cdTextComposerEdit->setObjectName("wdgComposer");
+    cdTextGridLayout->addWidget(baseWindow->cdTextComposerEdit,0,3);
+
+    QLabel *wdgcdTextSongWriterText = new QLabel();
+    wdgcdTextSongWriterText->setText(QObject::tr("Song writer:"));
+    cdTextGridLayout->addWidget(wdgcdTextSongWriterText,0,4);
+    baseWindow->cdTextSongWriterEdit = new QLineEdit(baseWindow);
+    baseWindow->cdTextSongWriterEdit->setMinimumWidth(130);
+    baseWindow->cdTextSongWriterEdit->setMaximumWidth(130);
+    baseWindow->cdTextSongWriterEdit->setObjectName("wdgSongwriter");
+    cdTextGridLayout->addWidget(baseWindow->cdTextSongWriterEdit,0,5);
+
+    QLabel *wdgcdTextPerformerText = new QLabel();
+    wdgcdTextPerformerText->setText(QObject::tr("Performer:"));
+    cdTextGridLayout->addWidget(wdgcdTextPerformerText,1,0);
+    baseWindow->cdTextPerformerEdit = new QLineEdit(baseWindow);
+    baseWindow->cdTextPerformerEdit->setMinimumWidth(130);
+    baseWindow->cdTextPerformerEdit->setMaximumWidth(130);
+    baseWindow->cdTextPerformerEdit->setObjectName("wdgPerformer");
+    cdTextGridLayout->addWidget(baseWindow->cdTextPerformerEdit,1,1);
+
+    QLabel *wdgcdTextMessageText = new QLabel();
+    wdgcdTextMessageText->setText(QObject::tr("Message:"));
+    cdTextGridLayout->addWidget(wdgcdTextMessageText,1,2);
+    baseWindow->cdTextMessageEdit = new QLineEdit(baseWindow);
+    baseWindow->cdTextMessageEdit->setMinimumWidth(130);
+    baseWindow->cdTextMessageEdit->setMaximumWidth(130);
+    baseWindow->cdTextMessageEdit->setObjectName("wdgMessage");
+    cdTextGridLayout->addWidget(baseWindow->cdTextMessageEdit,1,3);
+
+    QLabel *wdgcdTextTitleText = new QLabel();
+    wdgcdTextTitleText->setText(QObject::tr("Title:"));
+    cdTextGridLayout->addWidget(wdgcdTextTitleText,1,4);
+    baseWindow->cdTextTitleEdit = new QLineEdit(baseWindow);
+    baseWindow->cdTextTitleEdit->setMinimumWidth(130);
+    baseWindow->cdTextTitleEdit->setMaximumWidth(130);
+    baseWindow->cdTextTitleEdit->setObjectName("wdgTitle");
+    cdTextGridLayout->addWidget(baseWindow->cdTextTitleEdit,1,5);
+
+    QLabel *wdgcdTextEANText = new QLabel();
+    wdgcdTextEANText->setText(QObject::tr("UPC/EAN:"));
+    cdTextGridLayout->addWidget(wdgcdTextEANText,2,0);
+    baseWindow->cdTextEANEdit = new QLineEdit(baseWindow);
+    baseWindow->cdTextEANEdit->setMinimumWidth(130);
+    baseWindow->cdTextEANEdit->setMaximumWidth(130);
+    baseWindow->cdTextEANEdit->setObjectName("wdgUpcEan");
+    cdTextGridLayout->addWidget(baseWindow->cdTextEANEdit,2,1);
+
+    cdTextGridLayout->setContentsMargins(3,0,0,0);
+    cdTextGridLayout->setRowMinimumHeight(0,25);
+    cdTextGridLayout->setRowMinimumHeight(1,25);
+    cdTextGridLayout->setRowMinimumHeight(2,25);
+    wdgcdTextFeatures->setLayout(cdTextGridLayout);
+    wdgcdTextFeatures->setFixedHeight(80);
+    baseRibbon->addWidgetGroup(QObject::tr("Audio"), QObject::tr("CD Text"), wdgcdTextFeatures);
+
+    QGridLayout *pauseGridLayout = new QGridLayout();
+    QWidget * wdgpauseFeatures = new QWidget();
+
+    QLabel *wdgpauseText = new QLabel();
+    wdgpauseText->setText(QObject::tr("Seconds:"));
+    pauseGridLayout->addWidget(wdgpauseText,0,0);
+    baseWindow->audioPauseLength = new QDoubleSpinBox;
+    baseWindow->audioPauseLength->setMinimumWidth(50);
+    baseWindow->audioPauseLength->setMaximumWidth(50);
+    baseWindow->audioPauseLength->setRange(0, 60.0);
+    baseWindow->audioPauseLength->setSingleStep(1.0);
+    baseWindow->audioPauseLength->setValue(0.0);
+    baseWindow->audioPauseLength->setDecimals(0); //No need to abstract int64 spinbox
+    pauseGridLayout->addWidget(baseWindow->audioPauseLength,0,1);
+
+    baseWindow->audioAddPause = new QCheckBox(QObject::tr("Use Pause"));
+    baseWindow->audioAddPause->setToolTip(QObject::tr("USe the pause in seconds between tracks"));
+    baseWindow->audioAddPause->setCheckState(Qt::Unchecked);
+    pauseGridLayout->addWidget(baseWindow->audioAddPause,1,0,1,2);
+
+    pauseGridLayout->setContentsMargins(3,0,0,0);
+    pauseGridLayout->setRowMinimumHeight(0,25);
+    pauseGridLayout->setRowMinimumHeight(1,25);
+    pauseGridLayout->setRowMinimumHeight(2,25);
+    wdgpauseFeatures->setLayout(pauseGridLayout);
+    wdgpauseFeatures->setFixedHeight(80);
+
+    baseRibbon->addWidgetGroup(QObject::tr("Audio"), QObject::tr("Pause"), wdgpauseFeatures);
+
+    //Part2 Indexes
+    QGridLayout *indexesGridLayout = new QGridLayout();
+    QWidget * wdgindexesFeatures = new QWidget();
+
+    baseWindow->indexesCollectionList = new QListWidget();
+    baseWindow->indexesCollectionList->setSelectionMode(QAbstractItemView::SingleSelection);
+    baseWindow->indexesCollectionList->setMinimumWidth(80);
+    baseWindow->indexesCollectionList->setMaximumWidth(80);
+    indexesGridLayout->addWidget(baseWindow->indexesCollectionList,0,0,3,1);
+
+    QLabel *wdgindexesMinuteText = new QLabel();
+    wdgindexesMinuteText->setText(QObject::tr("M:"));
+    indexesGridLayout->addWidget(wdgindexesMinuteText,0,1);
+    baseWindow->indexesMinSelector = new QDoubleSpinBox;
+    baseWindow->indexesMinSelector->setMinimumWidth(40);
+    baseWindow->indexesMinSelector->setMaximumWidth(40);
+    baseWindow->indexesMinSelector->setRange(0, 60.0);
+    baseWindow->indexesMinSelector->setSingleStep(1.0);
+    baseWindow->indexesMinSelector->setValue(0.0);
+    baseWindow->indexesMinSelector->setDecimals(0); //No need to abstract int64 spinbox
+    indexesGridLayout->addWidget(baseWindow->indexesMinSelector,0,2);
+
+    QLabel *wdgindexesSecondText = new QLabel();
+    wdgindexesSecondText->setText(QObject::tr("S:"));
+    indexesGridLayout->addWidget(wdgindexesSecondText,1,1);
+    baseWindow->indexesSecSelector = new QDoubleSpinBox;
+    baseWindow->indexesSecSelector->setMinimumWidth(40);
+    baseWindow->indexesSecSelector->setMaximumWidth(40);
+    baseWindow->indexesSecSelector->setRange(0, 60.0);
+    baseWindow->indexesSecSelector->setSingleStep(1.0);
+    baseWindow->indexesSecSelector->setValue(0.0);
+    baseWindow->indexesSecSelector->setDecimals(0); //No need to abstract int64 spinbox
+    indexesGridLayout->addWidget(baseWindow->indexesSecSelector,1,2);
+
+    QLabel *wdgindexesFrameText = new QLabel();
+    wdgindexesFrameText->setText(QObject::tr("F:"));
+    indexesGridLayout->addWidget(wdgindexesFrameText,2,1);
+    baseWindow->indexesFrameSelector = new QDoubleSpinBox;
+    baseWindow->indexesFrameSelector->setMinimumWidth(40);
+    baseWindow->indexesFrameSelector->setMaximumWidth(40);
+    baseWindow->indexesFrameSelector->setRange(0, 99.0);
+    baseWindow->indexesFrameSelector->setSingleStep(1.0);
+    baseWindow->indexesFrameSelector->setValue(0.0);
+    baseWindow->indexesFrameSelector->setDecimals(0); //No need to abstract int64 spinbox
+    indexesGridLayout->addWidget(baseWindow->indexesFrameSelector,2,2);
+
+    QFont font;
+    font.setFamily("Font Awesome 5 Free Solid");
+    font.setPixelSize(14);
+
+    baseWindow->addIndexToList = new QToolButton;
+    baseWindow->addIndexToList->setToolTip(QObject::tr("Add new Index to list"));
+    baseWindow->addIndexToList->setFont(font);
+    baseWindow->addIndexToList->setText(QChar(0xf055));
+    baseWindow->addIndexToList->setEnabled(true);
+    indexesGridLayout->addWidget(baseWindow->addIndexToList,0,3);
+
+    baseWindow->delIndexFromList = new QToolButton;
+    baseWindow->delIndexFromList->setToolTip(QObject::tr("Remove selected index from list"));
+    baseWindow->delIndexFromList->setFont(font);
+    baseWindow->delIndexFromList->setText(QChar(0xf056));
+    baseWindow->delIndexFromList->setEnabled(true);
+    indexesGridLayout->addWidget(baseWindow->delIndexFromList,1,3);
+
+    indexesGridLayout->setContentsMargins(3,0,0,0);
+    indexesGridLayout->setRowMinimumHeight(0,25);
+    indexesGridLayout->setRowMinimumHeight(1,25);
+    indexesGridLayout->setRowMinimumHeight(2,25);
+    wdgindexesFeatures->setLayout(indexesGridLayout);
+    wdgindexesFeatures->setFixedHeight(80);
+
+    baseRibbon->addWidgetGroup(QObject::tr("Audio"), QObject::tr("Indexes"), wdgindexesFeatures);
+
+    baseWindow->resetAudioData = new QToolButton;
+    baseWindow->resetAudioData->setText(QObject::tr("Reset"));
+    baseWindow->resetAudioData->setToolTip(QObject::tr("Clear all CDText data and set other to default"));
+    baseWindow->resetAudioData->setIcon(QIcon(":/icons/cdtext_reset32.png"));
+    baseWindow->resetAudioData->setEnabled(true);
+    baseRibbon->addGButton(QObject::tr("Audio"), QObject::tr("Data"), baseWindow->resetAudioData,nullptr);
+}
+
 extern void ribbonBuilderISOExtended(Ribbon *baseRibbon, MainWindow *baseWindow){
 
     QGridLayout *isoExGridLayout = new QGridLayout();
@@ -880,14 +1155,14 @@ extern void ribbonBuilderISOExtended(Ribbon *baseRibbon, MainWindow *baseWindow)
     baseWindow->importIsoExButton->setToolTip(QObject::tr("Import IsoEx from software settings"));
     baseWindow->importIsoExButton->setIcon(QIcon(":/icons/extiso_import32.png"));
     baseWindow->importIsoExButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("ISO Extended"), QObject::tr("Data"), baseWindow->importIsoExButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("ISO Extended"), QObject::tr("Data"), baseWindow->importIsoExButton,nullptr);
 
     baseWindow->resetIsoExButton = new QToolButton;
     baseWindow->resetIsoExButton->setText(QObject::tr("Reset"));
     baseWindow->resetIsoExButton->setToolTip(QObject::tr("Reset all IsoEx fields"));
     baseWindow->resetIsoExButton->setIcon(QIcon(":/icons/extiso_reset32.png"));
     baseWindow->resetIsoExButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("ISO Extended"), QObject::tr("Data"), baseWindow->resetIsoExButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("ISO Extended"), QObject::tr("Data"), baseWindow->resetIsoExButton,nullptr);
 
 }
 
@@ -898,7 +1173,7 @@ extern void ribbonBuilderBoot(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->selBootImageButton->setToolTip(QObject::tr("If the BootImage is set, Doiskbutler will create a bootable disk."));
     baseWindow->selBootImageButton->setIcon(QIcon(":/icons/bootimage32.png"));
     baseWindow->selBootImageButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Boot Disc"), QObject::tr("Boot Image"), baseWindow->selBootImageButton,nullptr);
+    baseRibbon->addGButton(QObject::tr("Boot Disc"), QObject::tr("Boot Image"), baseWindow->selBootImageButton,nullptr);
     //connect(selBootImageButton, SIGNAL(clicked()),this, SLOT(clickedSelBootImagePath()));
 
     QVBoxLayout *bootVerticalLayout = new QVBoxLayout();
@@ -909,7 +1184,7 @@ extern void ribbonBuilderBoot(Ribbon *baseRibbon, MainWindow *baseWindow){
     baseWindow->delBootImageButton->setToolTip(QObject::tr("Remove current boot image"));
     baseWindow->delBootImageButton->setIcon(QIcon(":/icons/delete32.png"));
     baseWindow->delBootImageButton->setEnabled(true);
-    baseRibbon->addButton(QObject::tr("Boot Disc"), QObject::tr("Boot Image"), baseWindow->delBootImageButton, bootVerticalLayout);
+    baseRibbon->addVButton(QObject::tr("Boot Disc"), QObject::tr("Boot Image"), baseWindow->delBootImageButton, bootVerticalLayout);
     //connect(delBootImageButton, SIGNAL(clicked()), this, SLOT(deleteBootImage()));
 
     //bootVerticalLayout->addStretch();
