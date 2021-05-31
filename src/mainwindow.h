@@ -286,6 +286,7 @@ private slots:
     void filterDelFromList();
     void filterImport();
     void filterReset();
+    void filterTextChanged(QWidget*);
 
     void unLockBurnDevice();
     void closeTray(bool readDevice = false);

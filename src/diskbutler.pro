@@ -11,7 +11,7 @@ QT       += xml
 QT       += network
 QT       += core5compat
 
-VERSION = 2.3.0.3
+VERSION = 2.4.7.6
 
 macx: ICON = diskbutler.icns
 macx: DEFINES += MAC

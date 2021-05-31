@@ -197,6 +197,9 @@ void MdiChildDialog::createTreeWidget(RuleManager::ProjectType projectType, bool
             this, SLOT(onGrabItem()));
     connect(treeWidget, SIGNAL(statusMessage(QString,bool)),
             this, SLOT(onStatusMessage(QString,bool)));
+    connect(treeWidget, SIGNAL(propertyItemChanged(QDataItem*)),
+            this, SLOT(onUpdatePropertyValuesExtern(QDataItem*)));
+
 
     BuildPropertyTree();
 }
@@ -905,6 +908,8 @@ void MdiChildDialog::setUIControls(Ribbon *baseRibbon, QWidget* parent)
     //Mal schauen ob der Cast arbeitet.
     MainWindow *ribbonOwner = qobject_cast<MainWindow *>(parent);
 
+    blockAllWidgetEvents(parent, true);
+
     ribbonOwner->simulateBurnGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_SIMULATE));
     ribbonOwner->burnProofGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_BURNPROOF));
     ribbonOwner->ejectAfterGeneralCheck->setEnabled(RuleManager::IsOptionAllowed(mProjectType, RuleManager::OPTION_SETTINGS_EJECT));
@@ -962,6 +967,8 @@ void MdiChildDialog::setUIControls(Ribbon *baseRibbon, QWidget* parent)
 
     ribbonOwner->updtEditButton->setEnabled(true);
 
+    ribbonOwner->createFolderEditButton->setEnabled(true);
+
     QDataItem *tempItem = nullptr;
 
 
@@ -1005,14 +1012,15 @@ void MdiChildDialog::setUIControls(Ribbon *baseRibbon, QWidget* parent)
 
     if(GetProjectType() == RuleManager::TYPE_PROJECT_AUDIOCD || GetProjectType() == RuleManager::TYPE_PROJECT_MIXEDMODE || GetProjectType() == RuleManager::TYPE_PROJECT_OPEN)
     {
-        tempItem = GetSelectedTreeItem();
-        QTreeWidgetItem* parentItem = tempItem->parent();
+        tempItem = GetSelectedTreeItem();        
 
         baseRibbon->disableButtonGroup(tr("Audio"), tr("CD Text"), false);
         baseRibbon->disableButtonGroup(tr("Audio"), tr("Pause"), false);
         baseRibbon->disableButtonGroup(tr("Audio"), tr("Indexes"), false);
 
         if(tempItem){
+
+            QTreeWidgetItem* parentItem = tempItem->parent();
 
             switch(tempItem->GetType()){
             case QDataItem::Disk:
@@ -1041,46 +1049,56 @@ void MdiChildDialog::setUIControls(Ribbon *baseRibbon, QWidget* parent)
                 break;
             }
 
-        }
-        //Fill Content
-        if(tempItem->GetType()==QDataItem::Disk){
-            QDiskItem *diskItem = dynamic_cast<QDiskItem *>( tempItem );
-            ribbonOwner->cdTextArrangerEdit->setText(diskItem->getArranger());
-            ribbonOwner->cdTextComposerEdit->setText(diskItem->getComposer());
-            ribbonOwner->cdTextSongWriterEdit->setText(diskItem->getSongWriter());
-            ribbonOwner->cdTextPerformerEdit->setText(diskItem->getPerformer());
-            ribbonOwner->cdTextMessageEdit->setText(diskItem->getMessage());
-            ribbonOwner->cdTextTitleEdit->setText(diskItem->getTitle());
-            ribbonOwner->cdTextEANEdit->setText(diskItem->getUPCEAN());
-            ribbonOwner->indexesCollectionList->clear();
-            ribbonOwner->indexesMinSelector->setValue(0);
-            ribbonOwner->indexesSecSelector->setValue(0);
-            ribbonOwner->indexesFrameSelector->setValue(0);
-            ribbonOwner->audioPauseLength->setValue(2);
-            ribbonOwner->audioAddPause->setChecked(false);
-        }
-        if(tempItem->GetType()==QDataItem::AudioTrack || tempItem->GetType()==QDataItem::File){
-            QAudioTrackItem *audio_track = getAudioTrack(tempItem);
-            if(audio_track){
-                ribbonOwner->cdTextArrangerEdit->setText(audio_track->getArranger());
-                ribbonOwner->cdTextComposerEdit->setText(audio_track->getComposer());
-                ribbonOwner->cdTextSongWriterEdit->setText(audio_track->getSongWriter());
-                ribbonOwner->cdTextPerformerEdit->setText(audio_track->getPerformer());
-                ribbonOwner->cdTextMessageEdit->setText(audio_track->getMessage());
-                ribbonOwner->cdTextTitleEdit->setText(audio_track->getTitle());
-                ribbonOwner->cdTextEANEdit->setText(audio_track->getUPCEAN());
+            //Fill Content
+            if(tempItem->GetType()==QDataItem::Disk){
+                QDiskItem *diskItem = dynamic_cast<QDiskItem *>( tempItem );
+                ribbonOwner->cdTextArrangerEdit->setText(diskItem->getArranger());
+                ribbonOwner->cdTextComposerEdit->setText(diskItem->getComposer());
+                ribbonOwner->cdTextSongWriterEdit->setText(diskItem->getSongWriter());
+                ribbonOwner->cdTextPerformerEdit->setText(diskItem->getPerformer());
+                ribbonOwner->cdTextMessageEdit->setText(diskItem->getMessage());
+                ribbonOwner->cdTextTitleEdit->setText(diskItem->getTitle());
+                ribbonOwner->cdTextEANEdit->setText(diskItem->getUPCEAN());
                 ribbonOwner->indexesCollectionList->clear();
-                std::vector<int32> indexes = audio_track->getIndexes();
-                for (int i = 0; i < static_cast<int>(indexes.size()); i++) {
-                    ribbonOwner->indexesCollectionList->addItem(MSFInt32ToStr(indexes[i]));
-                }
                 ribbonOwner->indexesMinSelector->setValue(0);
                 ribbonOwner->indexesSecSelector->setValue(0);
                 ribbonOwner->indexesFrameSelector->setValue(0);
-                ribbonOwner->audioPauseLength->setValue(audio_track->getPause());
-                ribbonOwner->audioAddPause->setChecked(audio_track->getPauseInFrames());
+                ribbonOwner->audioPauseLength->setValue(2);
+                ribbonOwner->audioAddPause->setChecked(false);
             }
+
+            if(tempItem->GetType()==QDataItem::AudioTrack || tempItem->GetType()==QDataItem::File){
+                QAudioTrackItem *audio_track = getAudioTrack(tempItem);
+                if(audio_track){
+                    if(audio_track->childCount() > 0){
+                        ribbonOwner->addFileEditButton->setEnabled(false);
+                        ribbonOwner->addFolderEditButton->setEnabled(false);
+                        ribbonOwner->createFolderEditButton->setEnabled(false);
+                        ribbonOwner->renameEditButton->setEnabled(false);
+                    }
+                    ribbonOwner->cdTextArrangerEdit->setText(audio_track->getArranger());
+                    ribbonOwner->cdTextComposerEdit->setText(audio_track->getComposer());
+                    ribbonOwner->cdTextSongWriterEdit->setText(audio_track->getSongWriter());
+                    ribbonOwner->cdTextPerformerEdit->setText(audio_track->getPerformer());
+                    ribbonOwner->cdTextMessageEdit->setText(audio_track->getMessage());
+                    ribbonOwner->cdTextTitleEdit->setText(audio_track->getTitle());
+                    ribbonOwner->cdTextEANEdit->setText(audio_track->getUPCEAN());
+                    ribbonOwner->indexesCollectionList->clear();
+                    std::vector<int32> indexes = audio_track->getIndexes();
+                    for (int i = 0; i < static_cast<int>(indexes.size()); i++) {
+                        ribbonOwner->indexesCollectionList->addItem(MSFInt32ToStr(indexes[i]));
+                    }
+                    ribbonOwner->indexesMinSelector->setValue(0);
+                    ribbonOwner->indexesSecSelector->setValue(0);
+                    ribbonOwner->indexesFrameSelector->setValue(0);
+                    ribbonOwner->audioPauseLength->setValue(audio_track->getPause());
+                    ribbonOwner->audioAddPause->setChecked(audio_track->getPauseInFrames());
+                }
+            }
+
+
         }
+
     }
 
     QDiskItem *diskItem = (QDiskItem *)getTreeWidget()->topLevelItem(0);
@@ -1114,7 +1132,7 @@ void MdiChildDialog::setUIControls(Ribbon *baseRibbon, QWidget* parent)
             listItem->setFlags(listItem->flags() | Qt::ItemIsEditable);
             listItem->setText(list->at(i));
         }
-        if(ribbonOwner->fileFilterList->count()>0){
+        if(ribbonOwner->fileFilterList->count()>0 && ribbonOwner->filterByDate->isChecked()==false){
             ribbonOwner->delFilterFromList->setEnabled(true);
         }else{
             ribbonOwner->delFilterFromList->setEnabled(false);
@@ -1254,7 +1272,7 @@ void MdiChildDialog::setUIControls(Ribbon *baseRibbon, QWidget* parent)
     ribbonOwner->burnProofGeneralCheck->setChecked(diskItem->getFeatureBurnProof());
     ribbonOwner->autoEraseGeneralCheck->setChecked(diskItem->getFeatureAutoErase());
 
-    ribbonOwner->createFolderEditButton->setEnabled(true);
+
     if(GetProjectType() == RuleManager::TYPE_PROJECT_AUDIOCD){
         ribbonOwner->addFolderEditButton->setEnabled(false);
         ribbonOwner->createFolderEditButton->setEnabled(false);
@@ -1278,6 +1296,8 @@ void MdiChildDialog::setUIControls(Ribbon *baseRibbon, QWidget* parent)
             ribbonOwner->renameEditButton->setEnabled(false);
         }
     }
+
+    blockAllWidgetEvents(parent, false);
 
 }
 
@@ -1699,10 +1719,52 @@ void MdiChildDialog::onUpdatePropertyValues()
 
     }
 
+}
 
+void MdiChildDialog::blockAllWidgetEvents(QWidget* parent, bool bBlock)
+{
+    MainWindow *ribbonOwner = qobject_cast<MainWindow *>(parent);
 
+    ribbonOwner->filterByDate->blockSignals(bBlock);
+    ribbonOwner->audioAddPause->blockSignals(bBlock);
+    ribbonOwner->simulateBurnGeneralCheck->blockSignals(bBlock);
+    ribbonOwner->autoEraseGeneralCheck->blockSignals(bBlock);
+    ribbonOwner->burnProofGeneralCheck->blockSignals(bBlock);
+    ribbonOwner->ejectAfterGeneralCheck->blockSignals(bBlock);
+    ribbonOwner->padDataGeneralCheck->blockSignals(bBlock);
+    ribbonOwner->verifyAfterGeneralCheck->blockSignals(bBlock);
+    ribbonOwner->activeOPCGeneralCheck->blockSignals(bBlock);
+    ribbonOwner->finishDiscGeneralCheck->blockSignals(bBlock);
+    ribbonOwner->avchdGeneralCheck->blockSignals(bBlock);
+    ribbonOwner->jolietLongNamesFSCheck->blockSignals(bBlock);
+    ribbonOwner->useJolietFSCheck->blockSignals(bBlock);
+    ribbonOwner->isoManyDirectoriesFSCheck->blockSignals(bBlock);
+    ribbonOwner->isoExtent1FSCheck->blockSignals(bBlock);
+    ribbonOwner->isoLongPathFSCheck->blockSignals(bBlock);
+    ribbonOwner->useRockRidgeFSCheck->blockSignals(bBlock);
+    ribbonOwner->isoLongFileNamesFSCheck->blockSignals(bBlock);
+    ribbonOwner->udfFileStreamFSCheck->blockSignals(bBlock);
+    ribbonOwner->eraseFast->blockSignals(bBlock);
+    ribbonOwner->ejectAfterErase->blockSignals(bBlock);
+    ribbonOwner->burnISOAutoErase->blockSignals(bBlock);
+    ribbonOwner->burnISOEjectAfterBurn->blockSignals(bBlock);
+    ribbonOwner->burnISOUnderrunProtection->blockSignals(bBlock);
+    ribbonOwner->imageReadJobCreate->blockSignals(bBlock);
+    ribbonOwner->imageReadJobVerify->blockSignals(bBlock);
+    ribbonOwner->imageReadErrorSwitch->blockSignals(bBlock);
+}
 
+void MdiChildDialog::onUpdatePropertyValuesExtern(QDataItem *item)
+{
+    if (item == nullptr || propertyTree == nullptr) {
+        return;
+    }
 
+    nItemPropSize->setValue(humanReadableSize(item->GetDataSize(),nullptr)
+                                + ", " + humanReadableSector(item->GetDataSize()));
 
+    dItemPropCreatedDateTime->setValue(item->GetDateCreated());
+    dItemPropModifiedDateTime->setValue(item->GetDateModified());
 
+    sItemPropName->setValue(item->GetName());
 }

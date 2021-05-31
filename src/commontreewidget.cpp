@@ -41,8 +41,6 @@
 #include "utils_common.h"
 #include "dynbasslib.h"
 #include "vcddialog.h"
-#include "vpropertydialog.h"
-#include "vdiskpropertydialog.h"
 #include "zreplacefiledialog.h"
 #include "zplaylistloader.h"
 #include <vector>
@@ -188,8 +186,7 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
 
     mStopAct = new QAction( tr("Stop"), this );
     connect( mStopAct, SIGNAL( triggered() ), this, SLOT( showStop() ) );
-    mCDTextAct = new QAction( tr("CDText"), this );
-    connect( mCDTextAct, SIGNAL( triggered() ), this, SLOT( showCDText() ) );
+
 
 
 
@@ -206,10 +203,8 @@ CommonTreeWidget::CommonTreeWidget( RuleManager::ProjectType projectType, bool i
     // For Folder and Files
     mRenameAct = new QAction( tr("Rename"), this );
     connect( mRenameAct, SIGNAL( triggered() ), this, SLOT( slot_rename_in_place() ) );
-    mPropertyAct = new QAction( tr("Properties"), this );
-    connect( mPropertyAct, SIGNAL( triggered() ), this, SLOT( showProperty() ) );
-
-
+    mSyncItemAct = new QAction( tr("Synchronize"), this );
+    connect( mSyncItemAct, SIGNAL( triggered() ), this, SLOT( synchronizeItem() ) );
 
     mSelectAllAct = new QAction( tr("Select all"), this );
     connect( mSelectAllAct, SIGNAL( triggered() ), this, SLOT( SelectAll() ) );
@@ -258,6 +253,8 @@ void CommonTreeWidget::handleRename(QTreeWidgetItem *item, int column)
         item->setText(column, new_name);
     }
     ((QDataItem*)item)->SetName(new_name);
+
+    emit propertyItemChanged((QDataItem*)item);
 }
 
 void CommonTreeWidget::handleChangeComment(QTreeWidgetItem *item, int column)
@@ -268,6 +265,7 @@ void CommonTreeWidget::handleChangeComment(QTreeWidgetItem *item, int column)
 void CommonTreeWidget::slot_handle_itemChanged(QTreeWidgetItem *item, int column)
 {
     if (0 == column) {
+        qDebug() << "Rename done";
         handleRename(item, column);
     } else if (2 == column) {
         //handleChangeComment(item, column);
@@ -871,9 +869,9 @@ void CommonTreeWidget::DeleteItem()
                 updateAudioTrackName();
             }else if(QDataItem::AudioTrack == ((QDataItem*)parentItem)->GetType()){
                 //Reset all Data
-                    parentItem->removeChild(selected);
-                    ((QDataItem*)parentItem)->SetDataSize(0);
-                    ((QDataItem*)parentItem)->SetDataTime(0);
+                parentItem->removeChild(selected);
+                ((QDataItem*)parentItem)->SetDataSize(0);
+                ((QDataItem*)parentItem)->SetDataTime(0);
                 QAudioTrackItem *audio_track = (QAudioTrackItem*)mSelectedItem;
                 audio_track->resetAll();
                 audio_track->setText(2, tr("00:00:00"));
@@ -1195,17 +1193,15 @@ void CommonTreeWidget::contextMenuEvent(QContextMenuEvent *event)
             menu.addAction(mClearAudioAct);
             menu.addAction(mPlayAct);
             menu.addAction(mStopAct);
-            menu.addAction(mCDTextAct);
             if (item->childCount() > 0) {
                 mClearAudioAct->setEnabled(true);
                 mPlayAct->setEnabled(true);
                 mStopAct->setEnabled(true);
-                mCDTextAct->setEnabled(true);
             } else {
                 mClearAudioAct->setEnabled(false);
                 mPlayAct->setEnabled(false);
                 mStopAct->setEnabled(false);
-                mCDTextAct->setEnabled(false);
+
             }
             menu.addAction(mAudioUp);
             menu.addAction(mAudioDown);
@@ -1228,9 +1224,6 @@ void CommonTreeWidget::contextMenuEvent(QContextMenuEvent *event)
             mPlayAct->setEnabled(true);
             mStopAct->setEnabled(true);
         } else {
-            if (QDataItem::Disk == item->GetType()) {
-                menu.addAction(mPropertyAct);
-            }
 
             mInsertItemAct->setEnabled(true);
             mInsertNodeAct->setEnabled(true);
@@ -1331,7 +1324,9 @@ void CommonTreeWidget::contextMenuEvent(QContextMenuEvent *event)
                 menu.addAction(mDeleteAct);
                 menu.addAction(mSelectAllAct);
                 menu.addAction(mReverseSelectionAct);
-                menu.addAction(mPropertyAct);
+                if(QDataItem::File == item->GetType()){
+                    menu.addAction(mSyncItemAct);
+                }
             }
 
             if (isMultipleSelected) {
@@ -1342,7 +1337,7 @@ void CommonTreeWidget::contextMenuEvent(QContextMenuEvent *event)
                 mDeleteAct->setEnabled(true);
                 mSelectAllAct->setEnabled(false);
                 mReverseSelectionAct->setEnabled(true);
-                mPropertyAct->setEnabled(false);
+                mSyncItemAct->setEnabled(false);
             } else if (QDataItem::Folder == item->GetType()
                        || QDataItem::VirtualFolder == item->GetType()) {
                 mRenameAct->setEnabled(true);
@@ -1352,7 +1347,6 @@ void CommonTreeWidget::contextMenuEvent(QContextMenuEvent *event)
                 mDeleteAct->setEnabled(true);
                 mSelectAllAct->setEnabled(true);
                 mReverseSelectionAct->setEnabled(true);
-                mPropertyAct->setEnabled(true);
             } else if (QDataItem::FixedFolder == item->GetType()) {
                 ZImportStrategy::ImportError err = importCheck2(item->GetName(), tr("New Folder"), true);
                 if (ZImportStrategy::ERROR_SUBFOLDER_NOT_ALLOWED == err
@@ -1368,7 +1362,7 @@ void CommonTreeWidget::contextMenuEvent(QContextMenuEvent *event)
                 mDeleteAct->setEnabled(false);
                 mSelectAllAct->setEnabled(true);
                 mReverseSelectionAct->setEnabled(true);
-                mPropertyAct->setEnabled(false);
+                mSyncItemAct->setEnabled(false);
             } else if (QDataItem::File == item->GetType()) {
                 mRenameAct->setEnabled(true);
                 mInsertItemAct->setEnabled(true);
@@ -1377,7 +1371,7 @@ void CommonTreeWidget::contextMenuEvent(QContextMenuEvent *event)
                 mDeleteAct->setEnabled(true);
                 mSelectAllAct->setEnabled(false);
                 mReverseSelectionAct->setEnabled(true);
-                mPropertyAct->setEnabled(true);
+                mSyncItemAct->setEnabled(true);
             }
         }
         menu.exec(event->globalPos());
@@ -1426,7 +1420,7 @@ QDataItem *CommonTreeWidget::addTree(QDataItem *parent, const QString &path,
         //item->setFlags(item->flags() | Qt::ItemIsEditable);
         item->SetType(QDataItem::Folder);
         item->SetProjectType(mProjectType);
-        item->SetData(path);     
+        item->SetData(path);
         item->SetDataNodeCount(1);
     }
 
@@ -1490,23 +1484,30 @@ QDataItem* CommonTreeWidget::addFileEx(QDataItem *parent, const QFileInfo &entry
     if (isFiltered(entry)) {
         return nullptr;
     }
-    if (isAudioFile(entry.filePath())) {
-        if(mNeedQueryAddAudioTrack) {
-            queryAddAudioTrack();
-        }
-        if (mDoAddAudioTrack) {
-            addAudioToNewAudioTrack(entry.filePath());
-        }
-        if (ConfigurationPage::mSettings.value("AudioToDataTrack", false).toBool()
-                || ConfigurationPage::mSettings.value("AudioToDataTrackToo", false).toBool()) {
+
+    if(RuleManager::TYPE_PROJECT_AUDIOCD == mProjectType || RuleManager::TYPE_PROJECT_MIXEDMODE == mProjectType){
+        if (isAudioFile(entry.filePath())) {
+            if(mNeedQueryAddAudioTrack) {
+                queryAddAudioTrack();
+            }
+            if (mDoAddAudioTrack) {
+                addAudioToNewAudioTrack(entry.filePath());
+            }
+            if (ConfigurationPage::mSettings.value("AudioToDataTrack", false).toBool()
+                    || ConfigurationPage::mSettings.value("AudioToDataTrackToo", false).toBool()) {
+                add_file_to_data_track = (RuleManager::TYPE_PROJECT_AUDIOCD == mProjectType)?false:true;
+            }
+
+        } else {
+            // common data file
             add_file_to_data_track = (RuleManager::TYPE_PROJECT_AUDIOCD == mProjectType)?false:true;
+
         }
-
-    } else {
-        // common data file
-        add_file_to_data_track = (RuleManager::TYPE_PROJECT_AUDIOCD == mProjectType)?false:true;
-
+    }else{
+        add_file_to_data_track = true;
     }
+
+
     QDataItem *childItem = nullptr;
     if (add_file_to_data_track) {
         int index = findSameNameInLevel(parent, entry.absoluteFilePath());
@@ -1566,10 +1567,10 @@ void CommonTreeWidget::updateDataSize(QDataItem *parent, qint64 size, int item_c
                 }
                 qDebug() << "audiosize: " + QString::number(nTotalDataSize);
                 ((QDataItem *)parentTmp)->SetDataSize(
-                                ((QDataItem *)parentTmp)->GetDataSize() + size, nTotalDataSize);
+                            ((QDataItem *)parentTmp)->GetDataSize() + size, nTotalDataSize);
             }else{
                 ((QDataItem *)parentTmp)->SetDataSize(
-                                ((QDataItem *)parentTmp)->GetDataSize() + size);
+                            ((QDataItem *)parentTmp)->GetDataSize() + size);
             }
             ((QDataItem *)parentTmp)->SetDataItemCount(
                         ((QDataItem *)parentTmp)->GetDataItemCount() + item_count);
@@ -1806,126 +1807,17 @@ void CommonTreeWidget::insertAudio()
     }
 }
 
-void CommonTreeWidget::showCDText() {
+void CommonTreeWidget::synchronizeItem() {
+    //Synchronize
+    QFileInfo entry(mSelectedItem->GetFullPath());
+    mSelectedItem->SetDateCreated(entry.birthTime());
+    mSelectedItem->SetDateModified(entry.lastModified());
 
-    QDataItem *selected = GetSelectedItem();
-
-    if(selected == nullptr) return;
-    QTreeWidgetItem *checkParent = selected->parent();
-    if (checkParent != mSessionItem && checkParent->parent()!= mSessionItem) return;
-    if (((QDataItem*)checkParent)->GetType()!= QDataItem::AudioTrack && selected->GetType() != QDataItem::AudioTrack) return;
-
-    QAudioTrackItem *audio_track;
-    if(selected->GetType() == QDataItem::AudioTrack){
-        audio_track = (QAudioTrackItem*)selected;
-    }else{
-        audio_track = (QAudioTrackItem*)checkParent;
+    if (QDataItem::File == mSelectedItem->GetType()) {
+        mSelectedItem->SetDataSize(entry.size());
     }
 
-    VCDDialog dialog(this, audio_track);
-    //dialog.show();
-    if (dialog.exec() == QDialog::Accepted) {
-        audio_track->setArranger(dialog.getArranger());
-        audio_track->setComposer(dialog.getComposer());
-        audio_track->setSongWriter(dialog.getSongWriter());
-        audio_track->setPerformer(dialog.getPerformer());
-        audio_track->setMessage(dialog.getMessage());
-        audio_track->setTitle(dialog.getTitle());
-        audio_track->setUPCEAN(dialog.getUPCEAN());
-        audio_track->setPause(dialog.getPause());
-        audio_track->setPauseInFrames(dialog.getPauseInFrames());
-    }
-}
-
-void CommonTreeWidget::showProperty() {
-    if (QDataItem::Disk == mSelectedItem->GetType()) {
-        showProperty_Disk();
-    } else {
-        showProperty_File();
-    }
-}
-
-void CommonTreeWidget::showProperty_File() {
-    VPropertyDialog dialog(this, mSelectedItem);
-    if (dialog.exec() == QDialog::Accepted) {
-        QString newName = dialog.getName();
-        if (mSelectedItem->GetName() != newName && newName != "") {
-            QFileInfo info(mSelectedItem->GetName());
-            QString old_suffix = info.suffix();
-            info.setFile(newName);
-            QString new_suffix = info.suffix();
-            if (old_suffix != "")
-                newName = info.baseName()+"."+old_suffix;
-            else
-                newName = info.baseName();
-            mSelectedItem->SetName(newName);
-            mSelectedItem->setText(0, dialog.getName());
-        }
-
-        mSelectedItem->SetHidden(dialog.getHidden());
-        mSelectedItem->SetHiddenExt(dialog.getHiddenExt());
-        mSelectedItem->SetPriority(dialog.getPriority());
-        mSelectedItem->SetDateAdded(dialog.getDateAdded());
-        mSelectedItem->SetDateCreated(dialog.getDateCreated());
-        mSelectedItem->SetDateModified(dialog.getDateModified());
-
-        if (QDataItem::File == mSelectedItem->GetType() && dialog.didSync()) {
-            QFileInfo entry(mSelectedItem->GetFullPath());
-            // update parent
-            qint64 old_size = mSelectedItem->GetDataSize();
-            updateDataSize((QDataItem*)mSelectedItem->parent(), entry.size()-old_size, 0, 0);
-            // update self
-            mSelectedItem->SetDataSize(entry.size());
-        }
-        mSelectedItem->SetComment(dialog.getComment());
-        mSelectedItem->setText(2, dialog.getComment());
-    }
-}
-
-void CommonTreeWidget::showProperty_Disk() {
-    QDataItem *selected = GetSelectedItem();
-    if (selected->GetType() != QDataItem::Disk) {
-        return;
-    }
-    QDiskItem *item = (QDiskItem*)selected;
-
-    VDiskPropertyDialog dialog(this, (QDiskItem*)mHeadItem, getAudioTrackCount(), mDataTrackItem != nullptr);
-    if (dialog.exec() == QDialog::Accepted) {
-        item->SetName(dialog.getDiskName());
-        if (getAudioTrackCount()){
-            item->setArranger(dialog.getArranger());
-            item->setComposer(dialog.getComposer());
-            item->setSongWriter(dialog.getSongWriter());
-            item->setPerformer(dialog.getPerformer());
-            item->setMessage(dialog.getMessage());
-            item->setTitle(dialog.getTitle());
-            item->setUPCEAN(dialog.getUPCEAN());
-        }
-
-        if(mDataTrackItem==nullptr){ //This is the basic information of the disk, no matter if used or not
-            item->SetText0(dialog.getDiskName());
-            item->setDiskDateExpiration(dialog.getDateTimeExpiration());
-            item->setDiskDateEffective(dialog.getDateTimeEffective());
-            item->setDiskDateCreation(dialog.getDateTimeCreation());
-            item->setDateMdification(dialog.getDateTimeMdification());
-            item->setIsoExUseDates(dialog.getDateUsage()==Qt::Checked?true:false);
-        }
-
-        if (mDataTrackItem!=nullptr) {
-            item->setDiskDateExpiration(dialog.getDateTimeExpiration());
-            item->setDiskDateEffective(dialog.getDateTimeEffective());
-            item->setDiskDateCreation(dialog.getDateTimeCreation());
-            item->setDateMdification(dialog.getDateTimeMdification());
-            item->setIsoExUseDates(dialog.getDateUsage()==Qt::Checked?true:false);
-
-
-        }
-
-        item->setFilterList(dialog.getFilterList());
-        item->setByDate(dialog.getByDate());
-        item->setDateFrom(dialog.getDateFrom());
-        item->setDateTo(dialog.getDateTo());
-    }
+    emit propertyItemChanged(mSelectedItem);
 }
 
 void CommonTreeWidget::showPlay() {

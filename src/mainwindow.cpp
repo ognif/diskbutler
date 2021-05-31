@@ -161,6 +161,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( importFilterList, SIGNAL( clicked() ), this, SLOT( filterImport() ) );
     connect( resetFilterList, SIGNAL( clicked() ), this, SLOT( filterReset() ) );
     connect( filterByDate , SIGNAL(stateChanged(int)), this, SLOT(filterByDateTrigger(int)));
+    connect( fileFilterList->itemDelegate(), SIGNAL(closeEditor(QWidget*)),SLOT(filterTextChanged(QWidget*)));
+
 
     //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     //Start General Tab
@@ -953,6 +955,7 @@ void MainWindow::reverseSelection()
 
 void MainWindow::setNewFilterValues()
 {
+    qDebug() << "setNewFilterValues";
     if(activeMdiChild() != nullptr){
         QDiskItem *diskItem = (QDiskItem *)activeMdiChild()->getTreeWidget()->topLevelItem(0);
         if(diskItem){
@@ -964,7 +967,7 @@ void MainWindow::setNewFilterValues()
     }
 
     // WE need to add the query about the checkdate
-    if(fileFilterList->count()>0){
+    if(fileFilterList->count()>0 && filterByDate->isChecked()==false){
         delFilterFromList->setEnabled(true);
     }else{
         delFilterFromList->setEnabled(false);
@@ -973,6 +976,7 @@ void MainWindow::setNewFilterValues()
 
 QStringList *MainWindow::getFilterList()
 {
+    qDebug() << "getFilterList";
     QStringList *list = new QStringList();
     for (int i=0; i<fileFilterList->count(); i++) {
         list->insert(i, fileFilterList->item(i)->text());
@@ -982,6 +986,7 @@ QStringList *MainWindow::getFilterList()
 
 void MainWindow::filterAddToList()
 {
+    qDebug() << "filterAddToList";
     QListWidgetItem *item = new QListWidgetItem("");
     fileFilterList->insertItem(0,item);
     item->setFlags(item->flags() | Qt::ItemIsEditable);
@@ -992,12 +997,14 @@ void MainWindow::filterAddToList()
 
 void MainWindow::filterDelFromList()
 {
+    qDebug() << "filterDelFromList";
     fileFilterList->takeItem(fileFilterList->currentRow());
     setNewFilterValues();
 }
 
 void MainWindow::filterImport()
 {
+    qDebug() << "filterImport";
     filterByDate->setChecked(ConfigurationPage::mSettings.value("bydate", false).toBool());
     filterFromDate->setDate(ConfigurationPage::mSettings.value("datefrom").toDate());
     filterToDate->setDate(ConfigurationPage::mSettings.value("dateto").toDate());
@@ -1014,6 +1021,7 @@ void MainWindow::filterImport()
 
 void MainWindow::filterReset()
 {
+    qDebug() << "filterReset";
     filterByDate->setChecked(false);
     filterFromDate->setDate(QDate::currentDate());
     filterToDate->setDate(QDate::currentDate());
@@ -1027,6 +1035,7 @@ void MainWindow::filterReset()
 
 void MainWindow::filterByDateTrigger(int state)
 {
+    qDebug() << "filterByDateTrigger";
     filterFromDate->setEnabled(state);
     filterToDate->setEnabled(state);
 
@@ -1034,6 +1043,17 @@ void MainWindow::filterByDateTrigger(int state)
     addFilterToList->setEnabled(!state);
     delFilterFromList->setEnabled(!state);
 
+    setNewFilterValues();
+}
+
+void MainWindow::filterTextChanged(QWidget*)
+{
+    qDebug() << "filterTextChanged";
+
+    QListWidgetItem *current = fileFilterList->currentItem();
+    if(current->text()==""){
+        fileFilterList->takeItem(fileFilterList->currentRow());
+    }
     setNewFilterValues();
 }
 
@@ -2933,16 +2953,13 @@ void MainWindow::mdiAreaActivationTemplate()
 /*
  * Todo inside this
  * Import Session, wie managen wir das?
+ * Ich würde sagen beim Starten des BRennvorgangs. Damit man nicht durch die gegend fliegt.
  *
  * Die eigenen TExtelemente bei Scan etc. auf Linux und Mac prüfen.
  *
  *
  * 2 Image: Default Werte aus den DriveInfoEx eintragen, Create als Default.
  *
- *
- *Also, FileProperties werden wohl beim Hinzufügen von Dateien direkt geschrieben.
- *Diese müssen im Splitter neben die Dateien der Disk angezeigt werden, weil wir die Info
- *nicht im Explorer haben. Warum auch.
  *
  *2Image geht weg wenn dailog wieder nach vorne kommt.
  *

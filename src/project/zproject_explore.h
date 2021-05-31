@@ -20,7 +20,7 @@
 #ifndef ZPROJECT_EXPLORE_H
 #define ZPROJECT_EXPLORE_H
 
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 
 class ZProjectExplore : public CommonTreeWidget
 {
@@ -44,6 +44,7 @@ protected:
   QAction *mExploreExtractDisk;
   QAction *mExploreIndexList;
   QAction *mExploreGrabTrack;
+  QAction *mPropertyAct;
 
   virtual void contextMenuEvent(QContextMenuEvent *event);
   virtual void showProperty_File();

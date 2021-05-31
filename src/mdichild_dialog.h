@@ -100,6 +100,7 @@ public:
   void setBurnDeviceList(QWidget* parent);
   void setRibbonTabs(Ribbon *baseRibbon, QWidget* parent);
 
+
 Q_SIGNALS:
   void status_changed(QString text, bool isRight);
   void list_view_root_changed(QString &root_path);
@@ -107,6 +108,8 @@ Q_SIGNALS:
   void audiotrack_changed(bool bEnable);
   void extract_item();
   void grab_item();
+  void propertyItemChanged(QDataItem*);
+
 
 
 protected:
@@ -126,6 +129,7 @@ private:
   bool isParentAudioTrack(QDataItem *item);
   int countTotalTracks();
   bool isAudioTrack();
+  void blockAllWidgetEvents(QWidget* parent, bool bBlock = false);
 
 private slots:
   void documentWasModified(bool modified);
@@ -138,6 +142,7 @@ private slots:
   void onGrabItem();
   void onStatusMessage(QString msg, bool isRight);
   void onUpdatePropertyValues();
+  void onUpdatePropertyValuesExtern(QDataItem *item);
 
 private:
   RuleManager::ProjectType mProjectType;
