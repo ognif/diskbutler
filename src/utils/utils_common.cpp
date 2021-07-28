@@ -134,7 +134,12 @@ QString MSFInt32ToStr(int32 index)
 int32 MSFStrToInt32(QString str)
 {
     int minutes, seconds, frames;
+#if defined (WIN32)
     sscanf_s(str.toStdString().c_str(), "%02d:%02d:%02d", &minutes, &seconds, &frames);
+#else
+    sscanf(str.toStdString().c_str(), "%02d:%02d:%02d", &minutes, &seconds, &frames);
+#endif
+    
     return MSFToInt32(minutes, seconds, frames);
 }
 
