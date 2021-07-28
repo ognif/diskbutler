@@ -20,7 +20,7 @@
 #ifndef ZPROJECT_VIDEODVD_H
 #define ZPROJECT_VIDEODVD_H
 
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 
 class ZProjectVideoDVD : public CommonTreeWidget
 {

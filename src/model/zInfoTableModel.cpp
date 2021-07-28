@@ -17,7 +17,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "zinfotablemodel.h"
+#include "zInfoTableModel.h"
 
 ZInfoTableModel::ZInfoTableModel(QObject *parent)
   : QAbstractTableModel(parent)

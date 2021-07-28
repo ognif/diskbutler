@@ -21,7 +21,7 @@
 #define ZIMAGELOADER_H
 
 #include <QIcon>
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 #include "FoxSDKBurningLib.h"
 
 class ZImageLoader
