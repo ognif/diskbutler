@@ -588,7 +588,7 @@ bool PluginPage::readPlugins()
         it.next();
 
 #if defined (LINUX)
-        compare(str1, str2, Qt::CaseInsensitive);
+        //compare(str1, str2, Qt::CaseInsensitive);
         if(it.fileInfo().completeSuffix().compare("so",Qt::CaseInsensitive)==0){
             pluginsSub(it.fileName(), it.filePath(), excludeList);
         }
