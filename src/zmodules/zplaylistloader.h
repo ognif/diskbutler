@@ -21,7 +21,7 @@
 #define ZPLAYLISTLOADER_H
 
 #include <QIcon>
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 #include "qdataitem.h"
 #include "FoxSDKBurningLib.h"
 #include <vector>

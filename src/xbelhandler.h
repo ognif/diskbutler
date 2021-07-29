@@ -22,7 +22,7 @@
 
 #include <QIcon>
 #include <QXmlDefaultHandler>
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 #include "qdataitem.h"
 
 QT_BEGIN_NAMESPACE

@@ -20,7 +20,7 @@
 #ifndef ZPROJECT_BLURAY_H
 #define ZPROJECT_BLURAY_H
 
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 
 class ZProjectBluRay : public CommonTreeWidget
 {

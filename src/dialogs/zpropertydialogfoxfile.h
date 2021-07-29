@@ -23,7 +23,7 @@
 #include <QDialog>
 #include "qdataitem.h"
 #include "zallocation_table_model.h"
-#include "zinfotablemodel.h"
+#include "zInfoTableModel.h"
 
 namespace Ui {
 class ZPropertyDialogFoxFile;

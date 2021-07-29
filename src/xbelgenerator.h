@@ -21,7 +21,7 @@
 #define XBELGENERATOR_H
 
 #include <QTextStream>
-#include "CommonTreeWidget.h"
+#include "commontreewidget.h"
 #include "qdataitem.h"
 
 QT_BEGIN_NAMESPACE
