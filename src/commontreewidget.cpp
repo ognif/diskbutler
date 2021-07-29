@@ -1990,7 +1990,7 @@ bool CommonTreeWidget::isFiltered(QFileInfo info)
     QDate to = QDate::fromString(diskItem->getDateTo());
 
     if (diskItem->getByDate()) {
-        if (operator>=(create,from) && operator <=(create,to)) {
+        if ((create>=from) && (create<=to)) {
             return true;
         }
     } else {
