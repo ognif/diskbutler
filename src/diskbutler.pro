@@ -9,7 +9,12 @@ QT       += gui
 QT       += widgets
 QT       += xml
 QT       += network
-QT       += core5compat
+
+greaterThan(QT_MAJOR_VERSION, 6) {
+    QT       += core5compat
+}
+
+!versionAtLeast(QT_VERSION, 5.15):error("Use at least Qt version 5.15")
 
 VERSION = 2.4.7.6
 
