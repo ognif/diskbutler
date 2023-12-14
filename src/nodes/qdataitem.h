@@ -21,7 +21,11 @@
 #define QDATAITEM_H
 
 #include <QTreeWidgetItem>
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #include <QXmlDefaultHandler>
+#else
+#include <QtCore5Compat/QXmlDefaultHandler>
+#endif
 #include <QDateTime>
 #include <QDebug>
 #include "FoxSDKExport.h"

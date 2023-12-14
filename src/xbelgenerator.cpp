@@ -18,7 +18,10 @@
  */
 
 #include <QtGui>
+#include <QTextCodec>
+#if QT_VERSION > QT_VERSION_CHECK(5, 16, 0)
 #include <QStringConverter>
+#endif
 
 #include "xbelgenerator.h"
 
@@ -30,7 +33,11 @@ XbelGenerator::XbelGenerator(CommonTreeWidget *treeWidget)
 bool XbelGenerator::write(QIODevice *device, bool isIndexFile)
 {
   out.setDevice(device);
+#if QT_VERSION > QT_VERSION_CHECK(5, 16, 0)
   out.setEncoding(QStringConverter::Utf8);
+#else
+  out.setCodec("UTF-8");
+#endif
 
   QDate date = QDate::currentDate();
   QString info("<xbel name=\"project\" version=\"1.0\" date=\"%1\" size=\"%2\" item_count=\"%3\">\n");

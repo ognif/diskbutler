@@ -16,7 +16,7 @@ greaterThan(QT_MAJOR_VERSION, 6) {
 
 !versionAtLeast(QT_VERSION, 5.15):error("Use at least Qt version 5.15")
 
-VERSION = 2.4.7.6
+VERSION = 2.4.7.7
 
 macx: ICON = diskbutler.icns
 macx: DEFINES += MAC
@@ -206,11 +206,10 @@ HEADERS += $${HEADERS_CONTROLS} \
         xbelgenerator.h \
         xbelhandler.h
 
-TRANSLATIONS = diskbutler_de.ts
+#TRANSLATIONS = diskbutler_de.ts
 CODECFORSRC = UTF-8
 
-OTHER_FILES += \
-  diskbutler_de.ts
+#OTHER_FILES += diskbutler_de.ts
 
 FORMS += \
         dialogs/burndialog.ui \
@@ -239,7 +238,7 @@ win32: LIBS += -L$$PWD/foxsdk/ -lFoxSDKCore
 win32: PRE_TARGETDEPS += $$PWD/foxsdk/FoxSDKCore.lib
 
 unix:!macx {
-LIBS += -L$$PWD/foxsdk/ -lFoxSDKCore
+LIBS += -lm -ldl -L$$PWD/foxsdk/ -lFoxSDKCore
 PRE_TARGETDEPS += $$PWD/foxsdk/libFoxSDKCore.so
 }
 
@@ -251,5 +250,4 @@ MediaFiles.path = Contents/MacOS
 QMAKE_BUNDLE_DATA += MediaFiles
 }
 
-DISTFILES += \
-    diskbutler_de.ts
+#DISTFILES += diskbutler_de.ts
